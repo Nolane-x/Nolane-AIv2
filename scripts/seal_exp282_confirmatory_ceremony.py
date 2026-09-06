@@ -11,6 +11,8 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from nolane_ai.experiments.exp282_confirmatory_ceremony import seal_exp282_confirmatory_ceremony
+from nolane_ai.experiments.exp282_confirmatory_execution_court import authorize_exp282_confirmatory_execution
+from nolane_ai.experiments.exp282_reconstruction_court import authorize_exp282_confirmatory_reconstruction
 from nolane_ai.protocol.identity import file_sha256, require_canonical_stage_a_v1_digest, source_tree_digest
 from nolane_ai.protocol.schema import load_and_validate_protocol
 
@@ -21,8 +23,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--protocol-digest-file", type=Path, default=ROOT / "protocols" / "stage_a_v1.sha256")
     parser.add_argument("--execution", type=Path, required=True)
     parser.add_argument("--prep", type=Path, required=True)
-    parser.add_argument("--authorization", type=Path, required=True)
-    parser.add_argument("--reconstruction", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
 
@@ -47,13 +47,25 @@ def main() -> int:
         raise SystemExit(f"output already exists: {args.output}")
 
     protocol_digest = _verified_protocol(args.protocol, args.protocol_digest_file)
+    execution = _load_json(args.execution)
+    prep = _load_json(args.prep)
+    ceremony_code_digest = source_tree_digest(ROOT)
+
+    execution_authorization = authorize_exp282_confirmatory_execution(
+        prep_artifact=prep,
+        execution_code_digest=ceremony_code_digest,
+    )
+    reconstruction_authorization = authorize_exp282_confirmatory_reconstruction(
+        execution_artifact=execution,
+        execution_authorization=execution_authorization,
+    )
     seal = seal_exp282_confirmatory_ceremony(
         protocol_digest=protocol_digest,
-        paired_execution_artifact=_load_json(args.execution),
-        prep_artifact=_load_json(args.prep),
-        execution_authorization=_load_json(args.authorization),
-        reconstruction_authorization=_load_json(args.reconstruction),
-        ceremony_code_digest=source_tree_digest(ROOT),
+        paired_execution_artifact=execution,
+        prep_artifact=prep,
+        execution_authorization=execution_authorization,
+        reconstruction_authorization=reconstruction_authorization,
+        ceremony_code_digest=ceremony_code_digest,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(seal, sort_keys=True, indent=2) + "\n", encoding="utf-8")
