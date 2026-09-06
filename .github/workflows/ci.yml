@@ -55,6 +55,9 @@ jobs:
           tests/test_neural_arm_registry.py
           tests/test_exp277_neural_import.py
           tests/test_matched_cbrf_arms.py
+          tests/test_exp277_structure_dense.py
+          tests/test_exp277_paired_runner.py
+          tests/test_exp277_registry_integration.py
           tests/test_matched_belief_arms.py
           tests/test_exp282_compute_ledger.py
           tests/test_exp282_partial_observability.py
