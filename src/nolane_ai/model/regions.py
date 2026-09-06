@@ -4,13 +4,42 @@ import torch
 from torch import nn
 
 
-class BudgetedResidualRegion(nn.Module):
-    """A small functional residual path plus an explicit unallocated capacity reserve.
+def finalize_region_budget(
+    module: nn.Module,
+    target_parameters: int,
+    *,
+    device: str | torch.device | None,
+    frozen: bool,
+) -> None:
+    """Fill unused regional capacity explicitly while preserving exact accounting."""
+    used = sum(parameter.numel() for parameter in module.parameters())
+    reserve = target_parameters - used
+    if reserve < 0:
+        raise ValueError(
+            f"target budget {target_parameters:,} is smaller than functional path {used:,}"
+        )
 
-    The reserve is intentionally visible. It keeps parameter accounting faithful while
-    avoiding the false claim that every V0.16 research subsystem has already earned a
-    full neural implementation before Stage-A evidence exists.
-    """
+    module.register_parameter(
+        "capacity_reserve",
+        nn.Parameter(torch.empty(reserve, device=device)),
+    )
+    device_type = torch.device(device).type if device is not None else "cpu"
+    if reserve and device_type != "meta":
+        nn.init.zeros_(module.capacity_reserve)
+
+    actual = sum(parameter.numel() for parameter in module.parameters())
+    if actual != target_parameters:
+        raise RuntimeError(
+            f"region count mismatch: expected {target_parameters:,}, got {actual:,}"
+        )
+
+    if frozen:
+        for parameter in module.parameters():
+            parameter.requires_grad_(False)
+
+
+class BudgetedResidualRegion(nn.Module):
+    """Generic residual fallback plus an explicit capacity reserve."""
 
     def __init__(
         self,
@@ -37,23 +66,12 @@ class BudgetedResidualRegion(nn.Module):
             self.fc2 = None
             self.register_parameter("gate", None)
 
-        used = sum(p.numel() for p in self.parameters())
-        reserve = target_parameters - used
-        if reserve < 0:
-            raise ValueError(
-                f"target budget {target_parameters:,} is smaller than functional path {used:,}"
-            )
-        self.capacity_reserve = nn.Parameter(torch.empty(reserve, device=device))
-        if reserve and device != "meta":
-            nn.init.zeros_(self.capacity_reserve)
-
-        actual = sum(p.numel() for p in self.parameters())
-        if actual != target_parameters:
-            raise RuntimeError(f"region count mismatch: expected {target_parameters}, got {actual}")
-
-        if frozen:
-            for parameter in self.parameters():
-                parameter.requires_grad_(False)
+        finalize_region_budget(
+            self,
+            target_parameters,
+            device=device,
+            frozen=frozen,
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if not self.functional:

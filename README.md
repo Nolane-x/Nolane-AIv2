@@ -1,54 +1,91 @@
 # Nolane-AIv2 — NLM V0.16.1 100M Research Substrate
 
-This repository is the executable starting point for the **Nolane Living Model (NLM) V0.16.1** research program.
+Nolane-AIv2 is the executable research repository for the **Nolane Living Model (NLM) V0.16.1** program. The project is intentionally built as a falsification lab: mechanisms earn complexity by surviving frozen Stage-A gates; structural correctness is never relabeled as neural capability evidence.
 
-## What is frozen now
+## Current authoritative boundary
 
-- Authoritative candidate footprint: **100,000,000 parameters**.
-- Frozen support: **10,000,000**; currently trainable allocation: **90,000,000**.
-- Canonical namespaces: `EXP-###` for experiments, `EV-*` for evidence maturity.
-- `NLM Reasoning Stage-A Confirmatory Protocol v1` for six first gates:
-  - EXP-277 — oracle constraint-structure headroom
-  - EXP-279 — propagation vs branch vs hybrid
-  - EXP-282 — explicit belief state vs recurrent hidden state
-  - EXP-286 — oracle conflict-core value
-  - EXP-289 — episode-local nogood learning
-  - EXP-297 — compile-valid semantic-fidelity traps
+- Candidate footprint: **exactly 100,000,000 parameters**.
+- Frozen support allocation: **10,000,000**; trainable allocation: **90,000,000**.
+- Canonical experiment namespace: `EXP-###`.
+- Evidence maturity namespace: `EV-*`.
+- Confirmatory Stage-A protocol remains frozen at `protocols/stage_a_v1.json`.
+- Neural architecture claims remain **UNVERIFIED** until matched neural runs produce EV-E3 evidence.
 
-The V0.16.1 source required these experiments to freeze arms, endpoints, MESI, sample-size planning, analysis, multiplicity, resource matching, failure rules, challenge rules and metric cards before confirmatory evidence exists. The numeric MESI choices in `protocols/stage_a_v1.json` are **new V1 execution commitments**, not claimed empirical results.
+## What is executable now
 
-## What this repository does *not* claim
+The repository now has two separate reasoning lanes.
 
-The 100M scaffold is not yet a trained or validated intelligence. Exact parameter accounting, deterministic seeds, passing tests and protocol hashes are structural/process evidence only. They do not promote any NLM neural hypothesis above `UNVERIFIED`.
+### 1. Algorithmic Stage-A falsification lane
 
-## Architecture bootstrap
+A dependency-light structured substrate implements:
 
-The PyTorch model has a functional residual path in each active named region and an explicit `capacity_reserve` filling the remainder of that region's budget. This is intentional: complexity that has not survived Stage-A is represented as unallocated capacity rather than silently turned into a decorative neural subsystem.
+- Canonical Problem State with finite-domain table constraints;
+- generalized arc-consistency propagation;
+- chronological branch search;
+- propagation + branch hybrid search;
+- oracle conflict-variable prioritization;
+- episode-local nogood storage;
+- explicit binary belief-state updates and a recurrent evidence baseline;
+- bounded exact semantic-equivalence checking for compile-valid fidelity traps;
+- paired open-seed runners for `EXP-277`, `EXP-279`, `EXP-282`, `EXP-286`, `EXP-289`, and `EXP-297`;
+- deterministic paired-effect/bootstrap summaries over an explicitly labeled abstract operation proxy;
+- EV-E2 Evidence Packet generation locked to the frozen protocol digest and source-tree digest.
 
-Once a gate survives falsification, reserve can be replaced by the earned mechanism while preserving the region budget and matched-rival accounting.
+This lane measures whether the *mechanisms have headroom*. It cannot promote a neural claim by itself.
 
-## Quick verification
+### 2. Exact-100M neural candidate lane
+
+The 100M PyTorch candidate no longer routes every region through the same generic residual block. Four Stage-A-critical regions now expose specialized functional computation while preserving the exact V0.16 budget:
+
+- `recurrent_deliberation_core` → recurrent GRU deliberation;
+- `constraint_belief_fabric` → differentiable constraint↔variable message passing + belief logits;
+- `conflict_core_backjump_clause` → learned conflict attribution scores;
+- `problem_compiler_fidelity_court` → learned semantic-pair fidelity score.
+
+The remaining unused budget is still represented as explicit `capacity_reserve`. This is deliberate: reserve is capacity, not evidence that a mechanism exists.
+
+A model audit reports functional vs reserved parameters per region so architecture growth cannot hide behind the headline 100M count.
+
+## Run the Stage-A engineering smoke lane
+
+```bash
+python -m pip install -e '.[dev]'
+python scripts/verify_protocol.py
+python scripts/run_stage_a.py --replicates 4 --output /tmp/stage-a-smoke.json
+```
+
+Run all 32 frozen open replicate indices:
+
+```bash
+python scripts/run_stage_a.py --full-open --output /tmp/stage-a-open-32.json
+```
+
+The runner always emits `EV-E2 / UNVERIFIED`. Its cost counters are explicitly labeled `ABSTRACT_OPERATIONS_NOT_HARDWARE_FLOPS`, so smoke effects cannot be interpreted as satisfying the confirmatory FLOP-based MESI. It is intentionally incapable of declaring the neural thesis verified.
+
+## Audit the exact 100M candidate
 
 ```bash
 python -m pip install -e '.[dev,model]'
+python scripts/audit_model.py
+```
+
+The audit instantiates the authoritative candidate on PyTorch's `meta` device, so exact parameter accounting can be checked without allocating 100M real parameter values.
+
+## Tests
+
+```bash
 pytest -q
-python scripts/verify_protocol.py
+python -m compileall -q src scripts
 ```
 
-To verify the full 100M shape without allocating the parameter storage:
-
-```python
-from nolane_ai.model.config import NLMConfig
-from nolane_ai.model.nlm import NolaneLivingModel
-
-model = NolaneLivingModel(NLMConfig.authoritative_100m(), device="meta")
-print(sum(p.numel() for p in model.parameters()))  # 100000000
-```
+CI has a dependency-light core lane plus a separate PyTorch model lane. The model lane verifies exact 100M accounting, tiny forward execution, structured reasoning shapes, Stage-A loss backpropagation and reserve isolation.
 
 ## Evidence discipline
 
-- Architecture-caused divergence is a scientific failure and remains in the result ledger.
-- Post-freeze challenge seeds are intentionally unavailable before freeze.
-- Same hashes establish artifact identity, not scientific truth.
+- A protocol hash establishes committed bytes, not scientific truth.
+- Open-smoke results are development/process evidence, not EV-E3 neural evidence.
+- Architecture-caused divergence remains a scientific outcome.
 - Practical equivalence selects the simpler rival.
-- Negative Stage-A evidence is allowed to delete NLM subsystems.
+- Post-freeze challenge randomness remains unavailable until code/config/evaluator/analysis freeze.
+- A negative gate is allowed to delete a subsystem.
+- `capacity_reserve` must not be counted as implemented capability.
