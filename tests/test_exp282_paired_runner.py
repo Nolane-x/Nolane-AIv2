@@ -51,8 +51,13 @@ def test_exp282_paired_runner_retains_primary_and_protected_metrics_per_replicat
         assert 0.0 <= row["explicit_belief"]["grounded_decision_accuracy"] <= 1.0
         assert row["recurrent_hidden"]["brier_score"] >= 0.0
         assert row["explicit_belief"]["brier_score"] >= 0.0
-        assert row["explicit_minus_recurrent_accuracy"] == pytest.approx(row["explicit_belief"]["grounded_decision_accuracy"] - row["recurrent_hidden"]["grounded_decision_accuracy"])
-        assert row["explicit_minus_recurrent_brier"] == pytest.approx(row["explicit_belief"]["brier_score"] - row["recurrent_hidden"]["brier_score"])
+        assert row["explicit_minus_recurrent_accuracy"] == pytest.approx(
+            row["explicit_belief"]["grounded_decision_accuracy"]
+            - row["recurrent_hidden"]["grounded_decision_accuracy"]
+        )
+        assert row["explicit_minus_recurrent_brier"] == pytest.approx(
+            row["explicit_belief"]["brier_score"] - row["recurrent_hidden"]["brier_score"]
+        )
     aggregate = result["evaluation"]["aggregate"]
     assert aggregate["n"] == 4
     assert "mean_accuracy_gain" in aggregate
@@ -74,7 +79,24 @@ def test_exp282_paired_runner_is_replay_deterministic():
 def test_exp282_paired_runner_rejects_missing_provenance_or_invalid_counts():
     from nolane_ai.experiments.exp282_paired_runner import run_exp282_paired_development
 
-    kwargs = dict(root_seed="invalid", d_model=8, hidden_size=6, target_parameters=5_000, train_replicates=1, eval_replicates=1, eval_start_replicate=100, batch_size=2, timesteps=3, variables=2, visibility_rate=0.5, noise_std=0.25, lr=1e-3, weight_decay=0.0, protocol_digest="p", code_digest="c")
+    kwargs = dict(
+        root_seed="invalid",
+        d_model=8,
+        hidden_size=6,
+        target_parameters=5_000,
+        train_replicates=1,
+        eval_replicates=1,
+        eval_start_replicate=100,
+        batch_size=2,
+        timesteps=3,
+        variables=2,
+        visibility_rate=0.5,
+        noise_std=0.25,
+        lr=1e-3,
+        weight_decay=0.0,
+        protocol_digest="p",
+        code_digest="c",
+    )
     with pytest.raises(ValueError, match="protocol_digest and code_digest"):
         run_exp282_paired_development(**{**kwargs, "protocol_digest": ""})
     with pytest.raises(ValueError, match="execution counts"):
@@ -104,3 +126,33 @@ def test_exp282_paired_artifact_validator_requires_complete_ordered_evaluation_l
     errors = validate_exp282_paired_development(result)
     assert "EXP-282 evaluation replicate count does not match raw lineage" in errors
     assert "EXP-282 paired artifact digest mismatch" in errors
+
+
+def test_exp282_paired_runner_records_training_lineage_and_rejects_train_eval_overlap():
+    from nolane_ai.experiments.exp282_paired_runner import run_exp282_paired_development
+
+    result = _run("disjoint-lineage")
+    assert result["training"]["start_replicate"] == 0
+    train_ids = set(range(result["training"]["start_replicate"], result["training"]["start_replicate"] + result["training"]["replicates"]))
+    eval_ids = {row["replicate"] for row in result["evaluation"]["per_replicate"]}
+    assert train_ids.isdisjoint(eval_ids)
+
+    with pytest.raises(ValueError, match="training and evaluation replicate lineages must be disjoint"):
+        run_exp282_paired_development(
+            root_seed="overlap",
+            d_model=8,
+            hidden_size=6,
+            target_parameters=5_000,
+            train_replicates=3,
+            eval_replicates=2,
+            eval_start_replicate=2,
+            batch_size=2,
+            timesteps=3,
+            variables=2,
+            visibility_rate=0.5,
+            noise_std=0.25,
+            lr=1e-3,
+            weight_decay=0.0,
+            protocol_digest="p",
+            code_digest="c",
+        )

@@ -54,6 +54,8 @@ jobs:
           tests/test_exp282_partial_observability.py
           tests/test_exp282_paired_runner.py
           tests/test_exp282_paired_cli.py
+          tests/test_exp282_confirmatory_prep.py
+          tests/test_exp282_confirmatory_prep_cli.py
       - run: python scripts/audit_model.py > /tmp/model-audit.json
       - run: python scripts/audit_stage_a_pilot.py > /tmp/stage-a-pilot-audit.json
       - run: >-
@@ -89,10 +91,15 @@ jobs:
           python scripts/run_exp282_paired_dev.py
           --tiny
           --train-replicates 1
-          --eval-replicates 2
+          --eval-replicates 32
           --batch-size 2
           --timesteps 3
           --variables 2
           --output /tmp/nlm-exp282-paired.json
           --registry-output /tmp/nlm-neural-arm-registry.json
+      - run: >-
+          python scripts/prepare_exp282_confirmatory_open.py
+          --execution /tmp/nlm-exp282-paired.json
+          --registry /tmp/nlm-neural-arm-registry.json
+          --output /tmp/nlm-exp282-confirmatory-prep.json
       - run: python -m compileall -q src scripts
