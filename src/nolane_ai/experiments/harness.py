@@ -9,7 +9,12 @@ from nolane_ai.reasoning.belief import ExplicitBeliefState, RecurrentEvidenceSta
 from nolane_ai.reasoning.fidelity import FidelityCourt, compile_valid
 from nolane_ai.reasoning.propagation import propagate
 from nolane_ai.reasoning.search import EpisodeNogoodStore, SearchResult, solve_branch, solve_hybrid
-from nolane_ai.reasoning.worlds import make_conflict_world, make_fidelity_pair, make_structure_dense_world
+from nolane_ai.reasoning.worlds import (
+    make_conflict_world,
+    make_fidelity_pair,
+    make_satisfiable_backtracking_world,
+    make_structure_dense_world,
+)
 
 FIRST_STAGE_A_GATES = ("EXP-277", "EXP-279", "EXP-282", "EXP-286", "EXP-289", "EXP-297")
 
@@ -150,7 +155,12 @@ def _signature_rate(first: SearchResult, second: SearchResult) -> float:
 
 
 def _run_exp289(replicate: int, seed: int) -> list[dict[str, Any]]:
-    problem = make_conflict_world(seed, decoys=3)
+    problem = make_satisfiable_backtracking_world(seed)
+    valid_solutions = [
+        assignment
+        for assignment in problem.enumerate_assignments(limit=1024)
+        if problem.is_solution(assignment)
+    ]
     no_first = solve_branch(problem)
     no_second = solve_branch(problem)
     no_metrics = {
@@ -163,13 +173,20 @@ def _run_exp289(replicate: int, seed: int) -> list[dict[str, Any]]:
     store = EpisodeNogoodStore()
     local_first = solve_branch(problem, nogood_store=store)
     local_second = solve_branch(problem, nogood_store=store)
+    overpruned = sum(store.matches(solution) for solution in valid_solutions)
     local_metrics = {
         "repeat_dead_end_rate": _signature_rate(local_first, local_second),
-        "valid_state_overprune_rate": 0.0,
-        "verified_solution_rate": float(local_first.verified and local_second.verified),
+        "valid_state_overprune_rate": overpruned / max(len(valid_solutions), 1),
+        "verified_solution_rate": float(
+            local_first.verified
+            and local_second.verified
+            and local_first.solution is not None
+            and local_second.solution is not None
+        ),
         "accounted_operations": local_first.accounted_operations + local_second.accounted_operations,
         "nogood_hits": local_second.stats.nogood_hits,
         "nogood_store_size": len(store),
+        "ground_truth_valid_solutions": len(valid_solutions),
     }
     return [
         _record("EXP-289", replicate, "no_nogood", no_metrics),

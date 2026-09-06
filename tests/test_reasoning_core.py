@@ -45,3 +45,17 @@ def test_episode_local_nogood_prunes_repeated_dead_end_across_restarts():
     assert first.solution is None and second.solution is None
     assert second.stats.nogood_hits > 0
     assert second.accounted_operations < first.accounted_operations
+
+
+def test_satisfiable_backtracking_world_has_dead_end_and_nogoods_do_not_cover_valid_solution():
+    from nolane_ai.reasoning.worlds import make_satisfiable_backtracking_world
+    problem = make_satisfiable_backtracking_world(seed=13)
+    solutions = list(problem.enumerate_assignments(limit=1024))
+    valid = [assignment for assignment in solutions if problem.is_solution(assignment)]
+    assert valid
+    store = EpisodeNogoodStore()
+    first = solve_branch(problem, nogood_store=store)
+    assert first.solution is not None
+    assert first.stats.dead_end_signatures
+    assert len(store) > 0
+    assert all(not store.matches(solution) for solution in valid)

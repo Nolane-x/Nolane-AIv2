@@ -54,3 +54,24 @@ def make_fidelity_pair(seed: int) -> tuple[CanonicalProblemState, CanonicalProbl
     faithful = CanonicalProblemState(variables, (TableConstraint("compiled_relation", ("x", "y"), faithful_rows),), world_id=f"fid-{seed}-faithful")
     wrong = CanonicalProblemState(variables, (TableConstraint("compiled_relation", ("x", "y"), wrong_rows),), world_id=f"fid-{seed}-wrong")
     return original, faithful, wrong
+
+
+def make_satisfiable_backtracking_world(seed: int) -> CanonicalProblemState:
+    """Small satisfiable world with an early chronological dead-end.
+
+    The seed changes irrelevant naming/order metadata without changing the intended
+    mechanism: branch value 0 for y is a dead-end, while x=0,y=1 is valid.
+    """
+    rng = random.Random(seed)
+    domain = (0, 1)
+    decoy_name = f"d{rng.randrange(1_000_000)}"
+    variables = (Variable(decoy_name, domain), Variable("x", domain), Variable("y", domain))
+    inequality = ((0, 1), (1, 0))
+    return CanonicalProblemState(
+        variables=variables,
+        constraints=(
+            TableConstraint("xy_neq", ("x", "y"), inequality),
+            TableConstraint("y_anchor", ("y",), ((1,),)),
+        ),
+        world_id=f"sat-backtrack-{seed}",
+    )
