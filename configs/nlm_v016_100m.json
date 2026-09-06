@@ -1,0 +1,26 @@
+{
+  "config_id": "NLM-V0.16.1-100M-AUTHORITATIVE",
+  "total_parameters": 100000000,
+  "frozen_parameters": 10000000,
+  "trainable_parameters": 90000000,
+  "vocab_size": 8192,
+  "d_model": 512,
+  "regions": {
+    "language_perception_binding": 7000000,
+    "stable_mechanism_semantic_cortex": 7000000,
+    "frozen_hbae_support": 5000000,
+    "pcsa_mcra_world_state": 10000000,
+    "recurrent_deliberation_core": 15000000,
+    "constraint_belief_fabric": 11000000,
+    "conflict_core_backjump_clause": 6000000,
+    "lemma_invariant_economy": 5000000,
+    "latent_hypothesis_bank": 5000000,
+    "problem_compiler_fidelity_court": 6000000,
+    "verifier_proof_counterexample_heads": 6000000,
+    "cognitive_isa_program_bridge": 4000000,
+    "mvtc_meta_reasoning_controller": 3000000,
+    "frozen_consolidation_meta_updater": 5000000,
+    "developmental_reserve": 5000000
+  },
+  "warning": "Exact parameter accounting is structural EV-E2 evidence only; it is not a neural capability result."
+}
