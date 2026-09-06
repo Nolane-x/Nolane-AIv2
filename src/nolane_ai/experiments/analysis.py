@@ -23,9 +23,9 @@ class EffectSummary:
 
 
 _COMPARISONS: dict[str, tuple[str, str, str, str]] = {
-    "EXP-277": ("verified_utility_per_accounted_flop", "arcs_branch", "oracle_cbrf", "relative_gain"),
+    "EXP-277": ("verified_utility_per_accounted_operation_proxy", "arcs_branch", "oracle_cbrf", "relative_gain"),
     "EXP-282": ("grounded_decision_accuracy", "recurrent_hidden", "explicit_belief", "absolute_gain"),
-    "EXP-286": ("accounted_reasoning_flops_to_verified_solution", "chronological_failure", "oracle_conflict_core", "relative_reduction"),
+    "EXP-286": ("accounted_reasoning_operation_proxy_to_verified_resolution", "chronological_failure", "oracle_conflict_core", "relative_reduction"),
     "EXP-289": ("repeat_dead_end_rate", "no_nogood", "local_nogood", "relative_reduction"),
     "EXP-297": ("semantic_fidelity_balanced_accuracy", "compile_only", "fidelity_court", "absolute_gain"),
 }
@@ -53,7 +53,7 @@ def _effect(base: float, candidate: float, effect_type: str) -> float:
 
 def _exp279_effects(bundle: StageASmokeBundle) -> tuple[list[float], str, str, str]:
     paired = _rows_for(bundle, "EXP-279")
-    metric = "verified_utility_per_accounted_flop_on_structure_dense_stratum"
+    metric = "verified_utility_per_accounted_operation_proxy_on_structure_dense_stratum"
     effects: list[float] = []
     for replicate in sorted(paired):
         arms = paired[replicate]
@@ -138,4 +138,5 @@ def build_smoke_evidence_packet(
         "root_seed": bundle.root_seed,
         "replicates": bundle.replicates,
         "raw_per_replicate_metrics": bundle.raw_per_replicate_metrics,
+        "measurement_boundary": bundle.measurement_boundary,
     }

@@ -26,3 +26,15 @@ def test_smoke_evidence_packet_is_valid_but_cannot_promote_neural_claims():
     assert packet["decision"] == "UNVERIFIED"
     assert packet["raw_per_replicate_metrics"] == bundle.raw_per_replicate_metrics
     assert validate_evidence_packet(packet) == []
+
+
+def test_smoke_packet_declares_operation_proxy_boundary_and_never_claims_flop_measurement():
+    bundle = run_stage_a_smoke(replicates=2, root_seed="measurement-boundary")
+    packet = build_smoke_evidence_packet(bundle, protocol_digest="p", code_digest="c")
+    assert packet["measurement_boundary"] == "EV-E2_ABSTRACT_OPERATIONS_NOT_HARDWARE_FLOPS"
+    metric_keys = {
+        key
+        for row in packet["raw_per_replicate_metrics"]
+        for key in row["metrics"]
+    }
+    assert not any("flop" in key.lower() for key in metric_keys)

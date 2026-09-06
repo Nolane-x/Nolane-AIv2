@@ -17,6 +17,7 @@ from nolane_ai.reasoning.worlds import (
 )
 
 FIRST_STAGE_A_GATES = ("EXP-277", "EXP-279", "EXP-282", "EXP-286", "EXP-289", "EXP-297")
+MEASUREMENT_BOUNDARY = "EV-E2_ABSTRACT_OPERATIONS_NOT_HARDWARE_FLOPS"
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,6 +28,7 @@ class StageASmokeBundle:
     evidence_level: str
     decision: str
     raw_per_replicate_metrics: list[dict[str, Any]]
+    measurement_boundary: str
 
     def as_evidence_fragment(self) -> dict[str, Any]:
         return {
@@ -34,6 +36,7 @@ class StageASmokeBundle:
             "evidence_level": self.evidence_level,
             "decision": self.decision,
             "raw_per_replicate_metrics": self.raw_per_replicate_metrics,
+            "measurement_boundary": self.measurement_boundary,
         }
 
 
@@ -43,7 +46,7 @@ def _result_metrics(result: SearchResult) -> dict[str, float | int]:
     return {
         "verified_solution_rate": verified,
         "accounted_operations": cost,
-        "verified_utility_per_accounted_flop": verified / cost,
+        "verified_utility_per_accounted_operation_proxy": verified / cost,
         "search_nodes": result.stats.nodes,
         "backtracks": result.stats.backtracks,
     }
@@ -77,17 +80,17 @@ def _run_exp279(replicate: int, seed: int) -> list[dict[str, Any]]:
     propagation_metrics = {
         "verified_solution_rate": float(solved),
         "accounted_operations": propagation_cost,
-        "verified_utility_per_accounted_flop_on_structure_dense_stratum": float(solved) / propagation_cost,
+        "verified_utility_per_accounted_operation_proxy_on_structure_dense_stratum": float(solved) / propagation_cost,
     }
     branch = solve_branch(problem)
     hybrid = solve_hybrid(problem)
     branch_metrics = _result_metrics(branch)
-    branch_metrics["verified_utility_per_accounted_flop_on_structure_dense_stratum"] = branch_metrics.pop(
-        "verified_utility_per_accounted_flop"
+    branch_metrics["verified_utility_per_accounted_operation_proxy_on_structure_dense_stratum"] = branch_metrics.pop(
+        "verified_utility_per_accounted_operation_proxy"
     )
     hybrid_metrics = _result_metrics(hybrid)
-    hybrid_metrics["verified_utility_per_accounted_flop_on_structure_dense_stratum"] = hybrid_metrics.pop(
-        "verified_utility_per_accounted_flop"
+    hybrid_metrics["verified_utility_per_accounted_operation_proxy_on_structure_dense_stratum"] = hybrid_metrics.pop(
+        "verified_utility_per_accounted_operation_proxy"
     )
     return [
         _record("EXP-279", replicate, "propagation_only", propagation_metrics),
@@ -119,7 +122,7 @@ def _belief_batch(seed: int, *, episodes: int = 48, observations_per_episode: in
         output[name] = {
             "grounded_decision_accuracy": totals[name]["correct"] / episodes,
             "brier_score": totals[name]["brier"] / episodes,
-            "accounted_flops": float(episodes * observations_per_episode * 4),
+            "accounted_operation_proxy": float(episodes * observations_per_episode * 4),
         }
     return output
 
@@ -137,9 +140,9 @@ def _run_exp286(replicate: int, seed: int) -> list[dict[str, Any]]:
     chronological = solve_branch(problem)
     oracle = solve_branch(problem, priority_variables=problem.oracle_conflict_variables)
     chrono_metrics = _result_metrics(chronological)
-    chrono_metrics["accounted_reasoning_flops_to_verified_solution"] = chrono_metrics["accounted_operations"]
+    chrono_metrics["accounted_reasoning_operation_proxy_to_verified_resolution"] = chrono_metrics["accounted_operations"]
     oracle_metrics = _result_metrics(oracle)
-    oracle_metrics["accounted_reasoning_flops_to_verified_solution"] = oracle_metrics["accounted_operations"]
+    oracle_metrics["accounted_reasoning_operation_proxy_to_verified_resolution"] = oracle_metrics["accounted_operations"]
     return [
         _record("EXP-286", replicate, "chronological_failure", chrono_metrics),
         _record("EXP-286", replicate, "oracle_conflict_core", oracle_metrics),
@@ -252,4 +255,5 @@ def run_stage_a_smoke(*, replicates: int = 4, root_seed: str = "20260906") -> St
         evidence_level="EV-E2",
         decision="UNVERIFIED",
         raw_per_replicate_metrics=rows,
+        measurement_boundary=MEASUREMENT_BOUNDARY,
     )

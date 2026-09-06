@@ -28,7 +28,7 @@ A dependency-light structured substrate implements:
 - explicit binary belief-state updates and a recurrent evidence baseline;
 - bounded exact semantic-equivalence checking for compile-valid fidelity traps;
 - paired open-seed runners for `EXP-277`, `EXP-279`, `EXP-282`, `EXP-286`, `EXP-289`, and `EXP-297`;
-- deterministic paired-effect/bootstrap summaries;
+- deterministic paired-effect/bootstrap summaries over an explicitly labeled abstract operation proxy;
 - EV-E2 Evidence Packet generation locked to the frozen protocol digest and source-tree digest.
 
 This lane measures whether the *mechanisms have headroom*. It cannot promote a neural claim by itself.
@@ -60,7 +60,7 @@ Run all 32 frozen open replicate indices:
 python scripts/run_stage_a.py --full-open --output /tmp/stage-a-open-32.json
 ```
 
-The runner always emits `EV-E2 / UNVERIFIED`. It is intentionally incapable of declaring the neural thesis verified.
+The runner always emits `EV-E2 / UNVERIFIED`. Its cost counters are explicitly labeled `ABSTRACT_OPERATIONS_NOT_HARDWARE_FLOPS`, so smoke effects cannot be interpreted as satisfying the confirmatory FLOP-based MESI. It is intentionally incapable of declaring the neural thesis verified.
 
 ## Audit the exact 100M candidate
 
