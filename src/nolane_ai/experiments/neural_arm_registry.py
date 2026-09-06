@@ -115,7 +115,10 @@ def _validate_protocol_authority(protocol: dict[str, Any]) -> dict[str, dict[str
     if set(experiments) != set(TARGET_EXPERIMENTS):
         raise ValueError("protocol experiment drift for neural arm registry")
     for experiment_id in TARGET_EXPERIMENTS:
-        observed = tuple((str(arm.get("id")), str(arm.get("description"))) for arm in experiments[experiment_id].get("arms", []))
+        observed = tuple(
+            (str(arm.get("id")), str(arm.get("description")))
+            for arm in experiments[experiment_id].get("arms", [])
+        )
         if observed != _EXPECTED_ARMS[experiment_id]:
             raise ValueError(f"protocol arm drift for {experiment_id}")
     return experiments
@@ -146,7 +149,52 @@ def _validate_exp277_pair_audit(pair_audit: dict[str, Any]) -> None:
         and int(oracle.get("accounted_flops_per_episode", 0) or 0) <= ceiling
     )
     if not all(required_true) or not ledger_closed:
-        raise ValueError("EXP-277 matched pair audit does not close frozen parameter/oracle-information/compute resource match")
+        raise ValueError(
+            "EXP-277 matched pair audit does not close frozen parameter/oracle-information/compute resource match"
+        )
+
+
+def _validate_exp279_pair_audit(pair_audit: dict[str, Any]) -> None:
+    expected_strata = ["PROPAGATION_FIT", "BRANCH_FIT", "MIXED_RESIDUAL"]
+    required_true = (
+        pair_audit.get("schema") == "NLM-EXP-279-MATCHED-ROUTING-ARMS-DEV-V1",
+        pair_audit.get("evidence_level") == "EV-E2",
+        pair_audit.get("decision") == "UNVERIFIED",
+        pair_audit.get("parameter_match") is True,
+        pair_audit.get("functional_parameter_match") is True,
+        pair_audit.get("active_functional_parameter_match") is True,
+        pair_audit.get("optimizer_visible_parameter_match") is True,
+        pair_audit.get("reclaimed_parameter_assignment_closed") is True,
+        pair_audit.get("compute_budget_closed") is True,
+        pair_audit.get("inactive_excluded_reclaimed_parameters") == 0,
+        pair_audit.get("structure_fit_strata") == expected_strata,
+    )
+    ceiling = int(pair_audit.get("declared_max_accounted_flops_per_episode", 0) or 0)
+    ledger = pair_audit.get("compute_ledger") or {}
+    ledger_closed = ceiling > 0 and set(ledger) == {"propagation_only", "branch_only", "hybrid"}
+    if ledger_closed:
+        for arm_id in ("propagation_only", "branch_only", "hybrid"):
+            arm_ledger = ledger.get(arm_id) or {}
+            if (
+                arm_ledger.get("hardware_profiler_flops_claimed") is not False
+                or int(arm_ledger.get("max_accounted_flops_per_episode", 0) or 0) <= 0
+                or int(arm_ledger.get("max_accounted_flops_per_episode", 0) or 0) > ceiling
+            ):
+                ledger_closed = False
+                break
+        hybrid = ledger.get("hybrid") or {}
+        stop_cost = int(hybrid.get("stop_accounted_flops_per_episode", 0) or 0)
+        branch_cost = int(hybrid.get("branch_accounted_flops_per_episode", 0) or 0)
+        if stop_cost <= 0 or branch_cost < stop_cost or branch_cost > ceiling:
+            ledger_closed = False
+    try:
+        threshold = float(pair_audit.get("route_threshold"))
+    except (TypeError, ValueError):
+        threshold = -1.0
+    if not all(required_true) or not ledger_closed or not 0.0 <= threshold <= 1.0:
+        raise ValueError(
+            "EXP-279 matched triplet audit does not close frozen parameter/reclaim/compute/strata resource match"
+        )
 
 
 def _validate_exp282_pair_audit(pair_audit: dict[str, Any]) -> None:
@@ -161,7 +209,9 @@ def _validate_exp282_pair_audit(pair_audit: dict[str, Any]) -> None:
         float(pair_audit.get("relative_accounted_flop_difference", 1.0)) <= 0.05,
     )
     if not all(required_true):
-        raise ValueError("EXP-282 matched pair audit does not close frozen parameter/observation/compute resource match")
+        raise ValueError(
+            "EXP-282 matched pair audit does not close frozen parameter/observation/compute resource match"
+        )
 
 
 def build_neural_arm_registry(
@@ -171,6 +221,8 @@ def build_neural_arm_registry(
     model_audit: ModelAudit,
     exp277_pair_audit: dict[str, Any] | None = None,
     exp277_execution_artifact: dict[str, Any] | None = None,
+    exp279_pair_audit: dict[str, Any] | None = None,
+    exp279_execution_artifact: dict[str, Any] | None = None,
     exp282_pair_audit: dict[str, Any] | None = None,
     exp282_execution_artifact: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -187,9 +239,26 @@ def build_neural_arm_registry(
 
         execution_errors = validate_exp277_paired_development(exp277_execution_artifact)
         if execution_errors:
-            raise ValueError("EXP-277 paired execution artifact is invalid: " + "; ".join(execution_errors))
+            raise ValueError(
+                "EXP-277 paired execution artifact is invalid: " + "; ".join(execution_errors)
+            )
         if exp277_execution_artifact.get("protocol_digest") != protocol_digest:
             raise ValueError("EXP-277 paired execution artifact protocol digest mismatch")
+
+    if exp279_pair_audit is not None:
+        _validate_exp279_pair_audit(exp279_pair_audit)
+    if exp279_execution_artifact is not None:
+        if exp279_pair_audit is None:
+            raise ValueError("EXP-279 paired execution artifact requires matched triplet audit")
+        from .exp279_paired_runner import validate_exp279_paired_development
+
+        execution_errors = validate_exp279_paired_development(exp279_execution_artifact)
+        if execution_errors:
+            raise ValueError(
+                "EXP-279 paired execution artifact is invalid: " + "; ".join(execution_errors)
+            )
+        if exp279_execution_artifact.get("protocol_digest") != protocol_digest:
+            raise ValueError("EXP-279 paired execution artifact protocol digest mismatch")
 
     if exp282_pair_audit is not None:
         _validate_exp282_pair_audit(exp282_pair_audit)
@@ -200,7 +269,9 @@ def build_neural_arm_registry(
 
         execution_errors = validate_exp282_paired_development(exp282_execution_artifact)
         if execution_errors:
-            raise ValueError("EXP-282 paired execution artifact is invalid: " + "; ".join(execution_errors))
+            raise ValueError(
+                "EXP-282 paired execution artifact is invalid: " + "; ".join(execution_errors)
+            )
         if exp282_execution_artifact.get("protocol_digest") != protocol_digest:
             raise ValueError("EXP-282 paired execution artifact protocol digest mismatch")
 
@@ -217,6 +288,10 @@ def build_neural_arm_registry(
             implementation = dict(_ARM_IMPLEMENTATION[(experiment_id, arm_id)])
             implementation["blockers"] = list(implementation["blockers"])
             if experiment_id == "EXP-277" and exp277_pair_audit is not None:
+                implementation["implementation_status"] = "IMPLEMENTED"
+                implementation["implementation_tier"] = "MATCHED_EXPERIMENT_LOCAL_NEURAL_ARM"
+                implementation["blockers"] = []
+            if experiment_id == "EXP-279" and exp279_pair_audit is not None:
                 implementation["implementation_status"] = "IMPLEMENTED"
                 implementation["implementation_tier"] = "MATCHED_EXPERIMENT_LOCAL_NEURAL_ARM"
                 implementation["blockers"] = []
@@ -253,9 +328,15 @@ def build_neural_arm_registry(
                     "functional_parameter_match": True,
                     "oracle_information_separation": True,
                     "compute_budget_closed": True,
-                    "declared_max_accounted_flops_per_episode": int(exp277_pair_audit["declared_max_accounted_flops_per_episode"]),
-                    "arcs_accounted_flops_per_episode": int(ledger["arcs_branch"]["accounted_flops_per_episode"]),
-                    "oracle_accounted_flops_per_episode": int(ledger["oracle_cbrf"]["accounted_flops_per_episode"]),
+                    "declared_max_accounted_flops_per_episode": int(
+                        exp277_pair_audit["declared_max_accounted_flops_per_episode"]
+                    ),
+                    "arcs_accounted_flops_per_episode": int(
+                        ledger["arcs_branch"]["accounted_flops_per_episode"]
+                    ),
+                    "oracle_accounted_flops_per_episode": int(
+                        ledger["oracle_cbrf"]["accounted_flops_per_episode"]
+                    ),
                     "pair_audit_digest": canonical_sha256(exp277_pair_audit),
                 },
                 "development_match_status": development_match_status,
@@ -268,12 +349,71 @@ def build_neural_arm_registry(
                 experiment_payload[experiment_id]["paired_execution_evidence"] = {
                     "artifact_digest": exp277_execution_artifact["artifact_digest"],
                     "code_digest": exp277_execution_artifact["code_digest"],
-                    "training_replicates": int(exp277_execution_artifact["training"]["replicates"]),
-                    "evaluation_replicates": int(exp277_execution_artifact["evaluation"]["replicates"]),
+                    "training_replicates": int(
+                        exp277_execution_artifact["training"]["replicates"]
+                    ),
+                    "evaluation_replicates": int(
+                        exp277_execution_artifact["evaluation"]["replicates"]
+                    ),
                     "mean_arcs_utility": float(aggregate["mean_arcs_utility"]),
                     "mean_oracle_utility": float(aggregate["mean_oracle_utility"]),
-                    "oracle_relative_utility_gain": float(aggregate["oracle_relative_utility_gain"]),
-                    "oracle_minus_arcs_verified_solution_rate": float(aggregate["oracle_minus_arcs_verified_solution_rate"]),
+                    "oracle_relative_utility_gain": float(
+                        aggregate["oracle_relative_utility_gain"]
+                    ),
+                    "oracle_minus_arcs_verified_solution_rate": float(
+                        aggregate["oracle_minus_arcs_verified_solution_rate"]
+                    ),
+                }
+        elif experiment_id == "EXP-279" and exp279_pair_audit is not None:
+            if exp279_execution_artifact is not None:
+                blockers = [
+                    "EXP-279: confirmatory sample-size/blocked-analysis freeze, confirmatory-open execution and post-freeze challenge evidence remain open"
+                ]
+                development_match_status = "PAIRED_ROUTING_DEV_READY"
+            else:
+                blockers = [
+                    "EXP-279: matched arms are not yet integrated into paired structure-fit evaluator lineage"
+                ]
+                development_match_status = "PARAMETER_RECLAIM_COMPUTE_STRATA_CLOSED"
+            experiment_payload[experiment_id] = {
+                "protocol_arm_ids": [arm_id for arm_id, _ in _EXPECTED_ARMS[experiment_id]],
+                "resource_match_contract": dict(spec.get("resource_match") or {}),
+                "resource_match_evidence": {
+                    "parameter_match": True,
+                    "functional_parameter_match": True,
+                    "active_functional_parameter_match": True,
+                    "optimizer_visible_parameter_match": True,
+                    "reclaimed_parameter_assignment_closed": True,
+                    "compute_budget_closed": True,
+                    "structure_fit_strata": list(exp279_pair_audit["structure_fit_strata"]),
+                    "declared_max_accounted_flops_per_episode": int(
+                        exp279_pair_audit["declared_max_accounted_flops_per_episode"]
+                    ),
+                    "pair_audit_digest": canonical_sha256(exp279_pair_audit),
+                },
+                "development_match_status": development_match_status,
+                "arms": arm_payload,
+                "blockers": blockers,
+                "match_court": "BLOCKED",
+            }
+            if exp279_execution_artifact is not None:
+                aggregate = exp279_execution_artifact["evaluation"]["aggregate"]
+                experiment_payload[experiment_id]["paired_execution_evidence"] = {
+                    "artifact_digest": exp279_execution_artifact["artifact_digest"],
+                    "code_digest": exp279_execution_artifact["code_digest"],
+                    "training_replicates": int(
+                        exp279_execution_artifact["training"]["replicates"]
+                    ),
+                    "evaluation_replicates": int(
+                        exp279_execution_artifact["evaluation"]["replicates"]
+                    ),
+                    "best_simple_arm": str(aggregate["best_simple_arm"]),
+                    "hybrid_relative_utility_gain": float(
+                        aggregate["hybrid_relative_utility_gain"]
+                    ),
+                    "hybrid_minus_best_simple_verified_solution_rate": float(
+                        aggregate["hybrid_minus_best_simple_verified_solution_rate"]
+                    ),
                 }
         elif experiment_id == "EXP-282" and exp282_pair_audit is not None:
             if exp282_execution_artifact is not None:
@@ -294,7 +434,9 @@ def build_neural_arm_registry(
                     "observation_history_match": True,
                     "accounted_flop_match": True,
                     "primitive_operation_match": True,
-                    "relative_accounted_flop_difference": float(exp282_pair_audit["relative_accounted_flop_difference"]),
+                    "relative_accounted_flop_difference": float(
+                        exp282_pair_audit["relative_accounted_flop_difference"]
+                    ),
                     "pair_audit_digest": canonical_sha256(exp282_pair_audit),
                 },
                 "development_match_status": development_match_status,
@@ -306,10 +448,18 @@ def build_neural_arm_registry(
                 experiment_payload[experiment_id]["paired_execution_evidence"] = {
                     "artifact_digest": exp282_execution_artifact["artifact_digest"],
                     "code_digest": exp282_execution_artifact["code_digest"],
-                    "training_replicates": int(exp282_execution_artifact["training"]["replicates"]),
-                    "evaluation_replicates": int(exp282_execution_artifact["evaluation"]["replicates"]),
-                    "mean_accuracy_gain": float(exp282_execution_artifact["evaluation"]["aggregate"]["mean_accuracy_gain"]),
-                    "mean_brier_difference": float(exp282_execution_artifact["evaluation"]["aggregate"]["mean_brier_difference"]),
+                    "training_replicates": int(
+                        exp282_execution_artifact["training"]["replicates"]
+                    ),
+                    "evaluation_replicates": int(
+                        exp282_execution_artifact["evaluation"]["replicates"]
+                    ),
+                    "mean_accuracy_gain": float(
+                        exp282_execution_artifact["evaluation"]["aggregate"]["mean_accuracy_gain"]
+                    ),
+                    "mean_brier_difference": float(
+                        exp282_execution_artifact["evaluation"]["aggregate"]["mean_brier_difference"]
+                    ),
                 }
         else:
             experiment_payload[experiment_id] = {
@@ -351,7 +501,10 @@ def validate_neural_arm_registry(payload: dict[str, Any]) -> list[str]:
         errors.append("neural arm registry cannot claim EV-E3+")
     if payload.get("decision") != "UNVERIFIED":
         errors.append("neural arm registry cannot promote a scientific claim")
-    if payload.get("protocol_id") != "NLM-REASONING-STAGE-A-CONFIRMATORY-V1" or payload.get("protocol_status") != "FROZEN_V1":
+    if (
+        payload.get("protocol_id") != "NLM-REASONING-STAGE-A-CONFIRMATORY-V1"
+        or payload.get("protocol_status") != "FROZEN_V1"
+    ):
         errors.append("neural arm registry protocol authority mismatch")
     if int(payload.get("pilot_total_parameters", 0) or 0) != 16_000_000:
         errors.append("neural arm registry requires exact 16M pilot budget")
@@ -376,11 +529,19 @@ def validate_neural_arm_registry(payload: dict[str, Any]) -> list[str]:
         if exp277.get("match_court") != "BLOCKED":
             errors.append("EXP-277 development evidence cannot open confirmatory match court")
         evidence = exp277.get("resource_match_evidence") or {}
-        for key in ("parameter_match", "functional_parameter_match", "oracle_information_separation", "compute_budget_closed"):
+        for key in (
+            "parameter_match",
+            "functional_parameter_match",
+            "oracle_information_separation",
+            "compute_budget_closed",
+        ):
             if evidence.get(key) is not True:
                 errors.append(f"EXP-277 registry resource evidence {key} is not closed")
         arms = exp277.get("arms") or {}
-        if any((arms.get(arm_id) or {}).get("implementation_status") != "IMPLEMENTED" for arm_id in ("arcs_branch", "oracle_cbrf")):
+        if any(
+            (arms.get(arm_id) or {}).get("implementation_status") != "IMPLEMENTED"
+            for arm_id in ("arcs_branch", "oracle_cbrf")
+        ):
             errors.append("EXP-277 development evidence requires both neural arms implemented")
         status = exp277.get("development_match_status")
         has_execution = "paired_execution_evidence" in exp277
@@ -390,6 +551,42 @@ def validate_neural_arm_registry(payload: dict[str, Any]) -> list[str]:
             errors.append("EXP-277 pair-audit evidence/status mismatch")
         if not (exp277.get("blockers") or []):
             errors.append("EXP-277 development evidence cannot clear confirmatory blockers")
+
+    exp279 = experiments.get("EXP-279") or {}
+    if "development_match_status" in exp279:
+        if exp279.get("match_court") != "BLOCKED":
+            errors.append("EXP-279 development evidence cannot open confirmatory match court")
+        evidence = exp279.get("resource_match_evidence") or {}
+        for key in (
+            "parameter_match",
+            "functional_parameter_match",
+            "active_functional_parameter_match",
+            "optimizer_visible_parameter_match",
+            "reclaimed_parameter_assignment_closed",
+            "compute_budget_closed",
+        ):
+            if evidence.get(key) is not True:
+                errors.append(f"EXP-279 registry resource evidence {key} is not closed")
+        if evidence.get("structure_fit_strata") != [
+            "PROPAGATION_FIT",
+            "BRANCH_FIT",
+            "MIXED_RESIDUAL",
+        ]:
+            errors.append("EXP-279 registry structure-fit strata drift")
+        arms = exp279.get("arms") or {}
+        if any(
+            (arms.get(arm_id) or {}).get("implementation_status") != "IMPLEMENTED"
+            for arm_id in ("propagation_only", "branch_only", "hybrid")
+        ):
+            errors.append("EXP-279 development evidence requires all three neural arms implemented")
+        status = exp279.get("development_match_status")
+        has_execution = "paired_execution_evidence" in exp279
+        if has_execution and status != "PAIRED_ROUTING_DEV_READY":
+            errors.append("EXP-279 paired execution evidence/status mismatch")
+        if not has_execution and status != "PARAMETER_RECLAIM_COMPUTE_STRATA_CLOSED":
+            errors.append("EXP-279 triplet-audit evidence/status mismatch")
+        if not (exp279.get("blockers") or []):
+            errors.append("EXP-279 development evidence cannot clear confirmatory blockers")
 
     if payload.get("registry_digest") not in (None, "") and payload["registry_digest"] != _digest(payload):
         errors.append("neural arm registry digest mismatch")
