@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build an EV-E2 paired neural DEVELOPMENT lane for frozen EXP-279 comparing `propagation_only`, `branch_only`, and `hybrid` under exact parameter matching, shared accounted-FLOP ceiling, paired worlds, and predeclared structure-fit strata.
+**Goal:** Build an EV-E2 paired neural DEVELOPMENT lane for frozen EXP-279 comparing `propagation_only`, `branch_only`, and `hybrid` under exact total/functional/active-functional parameter matching, shared accounted-FLOP ceiling, paired worlds, and predeclared structure-fit strata.
 
-**Architecture:** Reuse the experiment-local matched-neural patterns proven by EXP-277. Implement one shared tri-arm substrate with computation gating, a deterministic EXP-279 routing generator with three structure-fit strata, a paired runner/semantic validator, registry integration, then a CPU-safe CLI and CI closure.
+**Architecture:** Reuse the experiment-local matched-neural patterns proven by EXP-277. Implement one shared tri-arm substrate in which every non-reserve functional parameter has an active semantic assignment in every arm, a deterministic EXP-279 routing generator with three structure-fit strata, a paired runner/semantic validator, registry integration, then a CPU-safe CLI and CI closure.
 
 **Tech Stack:** Python 3.11/3.13, PyTorch, pytest, existing NLM protocol/evidence/seed utilities.
 
@@ -18,6 +18,7 @@
 - Frozen MESI is hybrid relative gain `0.08` against the best simpler arm.
 - Frozen protected floor is `hybrid >= best_simple - 0.01` on verified solution rate.
 - Resource match requires reclaimed parameters assigned to simpler rivals, equal max accounted FLOPs, and predeclared structure-fit strata.
+- Every non-reserve functional parameter must have an active semantic assignment in every arm; `capacity_reserve` alone may remain non-functional.
 - Training RNG stream is `augmentation`; development evaluation RNG stream is `evaluation`.
 - No confirmatory-open observations or post-freeze challenge randomness may be materialized.
 - Hardware-profiler FLOPs are not claimed; accounting is analytical scalar arithmetic.
@@ -33,28 +34,13 @@
 **Interfaces:**
 - Produces the CI-enforced expectation that `nolane_ai.experiments.matched_routing_arms` and `nolane_ai.experiments.exp279_paired_runner` exist.
 
-- [ ] **Step 1: Write the failing import test**
+- [x] **Step 1: Write the failing import test**
 
-```python
-import pytest
-pytest.importorskip("torch")
+- [x] **Step 2: Add the test to model-smoke**
 
+- [x] **Step 3: Preserve clean RED**
 
-def test_exp279_neural_modules_import() -> None:
-    from nolane_ai.experiments.exp279_paired_runner import run_exp279_paired_development
-    from nolane_ai.experiments.matched_routing_arms import build_matched_exp279_arm_triplet
-
-    assert callable(run_exp279_paired_development)
-    assert callable(build_matched_exp279_arm_triplet)
-```
-
-- [ ] **Step 2: Add the test to model-smoke**
-
-Append `tests/test_exp279_neural_import.py` to the explicit model-smoke pytest list.
-
-- [ ] **Step 3: Push and preserve RED**
-
-Expected GitHub Actions outcome: core 3.11/3.13 green, model-smoke fails only with missing EXP-279 neural module. Do not implement production files before this RED is recorded.
+GitHub Actions run #136: core 3.11/3.13 green; model-smoke failed only because `nolane_ai.experiments.exp279_paired_runner` did not exist. Result: `1 failed, 143 passed`.
 
 ---
 
@@ -62,7 +48,7 @@ Expected GitHub Actions outcome: core 3.11/3.13 green, model-smoke fails only wi
 
 **Files:**
 - Create: `src/nolane_ai/experiments/matched_routing_arms.py`
-- Create: `tests/test_matched_routing_arms.py`
+- Test: `tests/test_matched_routing_arms.py`
 - Modify: `.github/workflows/ci.yml`
 
 **Interfaces:**
@@ -70,62 +56,33 @@ Expected GitHub Actions outcome: core 3.11/3.13 green, model-smoke fails only wi
 - Produces `build_matched_exp279_arm_triplet(...)` and `audit_matched_exp279_arm_triplet(...)`.
 - Output dataclass fields: `decision_logits`, `verifier_confidence`, `residual_uncertainty`, `branch_route_mask`, `representation_semantics`.
 
-- [ ] **Step 1: Write RED behavior tests**
+- [x] **Step 1: Write RED behavior tests**
 
-Tests must assert:
+Tests require exact total/functional/active-functional equality, explicit reclaimed-parameter assignment, shared compute ceiling, no hardware-profiler FLOP claim, exact output shapes, incidence separation, route-threshold behavior and fail-closed compute budgeting.
 
-```python
-prop, branch, hybrid = build_matched_exp279_arm_triplet(
-    d_model=8,
-    hidden_size=8,
-    target_parameters=4096,
-)
-audit = audit_matched_exp279_arm_triplet(
-    prop,
-    branch,
-    hybrid,
-    timesteps=3,
-    variables=4,
-    constraints=2,
-    max_accounted_flops_per_episode=None,
-)
-assert audit["parameter_match"] is True
-assert audit["functional_parameter_match"] is True
-assert audit["compute_budget_closed"] is True
-assert audit["compute_ledger"]["propagation_only"]["hardware_profiler_flops_claimed"] is False
-assert audit["compute_ledger"]["branch_only"]["hardware_profiler_flops_claimed"] is False
-assert audit["compute_ledger"]["hybrid"]["hardware_profiler_flops_claimed"] is False
-```
+- [ ] **Step 2: Verify broad RED**
 
-Also assert `branch_only` rejects an `incidence=` keyword, while propagation/hybrid require rank-3 incidence. All three arms must return identical decision-logit shape.
+Run the full explicit model-smoke test list before adding production modules. Expected failures are missing EXP-279 modules/script only.
 
-- [ ] **Step 2: Verify RED**
+- [ ] **Step 3: Implement one shared active parameter envelope**
 
-Run `pytest -q tests/test_matched_routing_arms.py` and confirm missing module/classes.
+Create `_MatchedExp279ArmBase` with common surface/variable projections, recurrent core, propagation transform, route scorer, decision/verifier heads and `capacity_reserve` closure via `finalize_region_budget(..., frozen=False)`. Construct all three arms with identical state dictionaries.
 
-- [ ] **Step 3: Implement one shared parameter envelope**
+- [ ] **Step 4: Implement reclaimed arm semantics**
 
-Create a `_MatchedExp279ArmBase` containing the complete functional module inventory. Use `finalize_region_budget(..., frozen=False)` for exact target closure. `build_matched_exp279_arm_triplet` constructs the three arms under one seeded architecture and clones identical state dictionaries.
+- `propagation_only`: consumes incidence; uses the propagation transform for constraint-variable message passing, reclaims the recurrent core as iterative propagation refinement, and uses the route scorer as a propagation-confidence gate. It never represents that recurrent refinement as branch search.
+- `branch_only`: has no incidence argument; reclaims the propagation transform as a branch preconditioner, uses the recurrent core for branch refinement, and uses the route scorer as a branch-confidence gate.
+- `hybrid`: consumes incidence, propagates first, uses the route scorer for residual uncertainty, and conditionally executes recurrent branch refinement only above the frozen `route_threshold`.
 
-- [ ] **Step 4: Implement arm execution semantics**
-
-- propagation-only: incidence message passing, no branch GRU execution;
-- branch-only: recurrent branch refinement from surface/variable representation, no incidence argument;
-- hybrid: propagation first, residual uncertainty from propagation logits, branch refinement only for batch episodes above `route_threshold`.
-
-The hybrid output must expose a boolean per-episode route mask.
+The hybrid output exposes a boolean per-episode route mask. Threshold `0.0` routes all episodes; threshold `1.0` routes none.
 
 - [ ] **Step 5: Implement analytical compute/resource audit**
 
-Audit exact total/functional/reclaimed-idle parameter counts and conservative scalar FLOPs for the supplied geometry. Record one shared declared max ceiling and fail if any arm exceeds it. Reclaimed/idle parameter capacity is part of the matched envelope but not executed FLOPs.
+Audit exact total/functional/active-functional counts and per-arm reclaimed semantic assignments. Record conservative scalar FLOPs for each arm, one shared declared ceiling, and a hybrid fully-routed max plus actual-route accounting components. Fail closed if any max exceeds the declared ceiling.
 
 - [ ] **Step 6: Verify GREEN**
 
-Run:
-
-`pytest -q tests/test_matched_routing_arms.py tests/test_matched_cbrf_arms.py tests/test_matched_belief_arms.py`
-
-Expected: all pass.
+Run `tests/test_matched_routing_arms.py` plus existing EXP-277/EXP-282 matched-arm tests.
 
 ---
 
@@ -133,30 +90,22 @@ Expected: all pass.
 
 **Files:**
 - Create: `src/nolane_ai/experiments/exp279_routing_worlds.py`
-- Create: `tests/test_exp279_routing_worlds.py`
+- Test: `tests/test_exp279_routing_worlds.py`
 
 **Interfaces:**
 - Produces `Exp279RoutingBatch` and `Exp279RoutingGenerator.make_batch(...)`.
-- Strata enum values are exactly `PROPAGATION_FIT`, `BRANCH_FIT`, `MIXED_RESIDUAL`.
-- Batch fields include `surface_events`, `variable_states`, `incidence`, `targets`, `stratum`, `metadata`, `digest`, `replicate`, `rng_stream`.
+- Strata are exactly `PROPAGATION_FIT`, `BRANCH_FIT`, `MIXED_RESIDUAL`.
+- Batch fields: `surface_events`, `variable_states`, `incidence`, `targets`, `stratum`, `metadata`, `digest`, `replicate`, `rng_stream`.
 
-- [ ] **Step 1: Write determinism/strata RED tests**
+- [x] **Step 1: Write determinism/strata RED tests**
 
-For identical root seed, replicate, stream, stratum and geometry, tensors and digest must be byte-identical. Changing replicate, stream, stratum or geometry must change digest. Incidence is rank-3 `[batch,constraints,variables]`, targets are binary, and every supported stratum can be generated.
+- [ ] **Step 2: Verify broad RED**
 
-- [ ] **Step 2: Verify RED**
-
-Run `pytest -q tests/test_exp279_routing_worlds.py`.
+Expected: missing `exp279_routing_worlds` module before implementation.
 
 - [ ] **Step 3: Implement generator**
 
-Use only:
-
-```python
-seed = derive_stream_seed(root_seed, "EXP-279", replicate, rng_stream)
-```
-
-Generate equality/component worlds with deterministic geometry differences by stratum. `PROPAGATION_FIT` exposes strongly aligned incidence/anchor structure; `BRANCH_FIT` weakens direct propagation support while preserving informative surface sequences; `MIXED_RESIDUAL` mixes both component types within the same batch. Hash lineage metadata plus raw tensor bytes using existing tensor-byte utilities.
+Derive randomness only with `derive_stream_seed(root_seed, "EXP-279", replicate, rng_stream)`. Generate truthful component-variable incidence in every stratum while varying structure/surface geometry, never oracle labels. Hash lineage metadata plus raw tensor bytes with existing tensor-byte utilities.
 
 - [ ] **Step 4: Verify regeneration twice**
 
@@ -168,68 +117,32 @@ Run generator tests twice and require both runs green.
 
 **Files:**
 - Create: `src/nolane_ai/experiments/exp279_paired_runner.py`
-- Create: `tests/test_exp279_paired_runner.py`
+- Test: `tests/test_exp279_paired_runner.py`
 
 **Interfaces:**
 - Produces `run_exp279_paired_development(...) -> dict[str, Any]`.
 - Produces `validate_exp279_paired_development(payload) -> list[str]`.
-- Artifact schema is `NLM-EXP-279-PAIRED-DEV-EVAL-V1`.
+- Artifact schema: `NLM-EXP-279-PAIRED-DEV-EVAL-V1`.
 
-- [ ] **Step 1: Write RED runner/validator tests**
-
-Assert artifact contains:
-
-```python
-assert payload["schema"] == "NLM-EXP-279-PAIRED-DEV-EVAL-V1"
-assert payload["evidence_level"] == "EV-E2"
-assert payload["decision"] == "UNVERIFIED"
-assert payload["confirmatory_ready"] is False
-assert payload["confirmatory_data_consumed"] is False
-assert payload["challenge_materialized"] is False
-assert payload["decision_rule_executed"] is False
-assert payload["primary_endpoint"]["metric"] == "verified_utility_per_accounted_flop_on_structure_dense_stratum"
-assert payload["primary_endpoint"]["mesi_relative_gain"] == 0.08
-assert payload["protected_endpoints"]["verified_solution_rate_floor"] == "hybrid >= best_simple - 0.01"
-```
-
-Also require identical initial functional digests, training stream `augmentation`, evaluation stream `evaluation`, disjoint replicate ranges, blocked deterministic strata, unique paired batch digests, resource-match closure, route receipt, and valid artifact self-hash.
-
-- [ ] **Step 2: Add semantic tamper tests**
-
-Deep-copy a valid payload, alter one field, recompute the top-level artifact digest, and require validation failure for each of:
-
-- primary metric/MESI;
-- protected floor;
-- arm ordering;
-- branch-only incidence receipt;
-- stratum ordering/membership;
-- route threshold;
-- route receipt counts/fractions;
-- compute ceiling/resource flags;
-- aggregate values;
-- confirmatory/challenge boundary.
-
-- [ ] **Step 3: Verify RED**
-
-Run `pytest -q tests/test_exp279_paired_runner.py`.
+- [x] **Step 1: Write runner/validator RED tests**
+- [x] **Step 2: Write semantic tamper tests**
+- [ ] **Step 3: Verify broad RED**
 
 - [ ] **Step 4: Implement paired training**
 
-Seed triplet initialization from `derive_stream_seed(root_seed, "EXP-279", 0, "model_init")`. Train all three arms on exactly the same ordered balanced augmentation batches and identical optimizer hyperparameters.
+Seed identical triplet state from `derive_stream_seed(root_seed, "EXP-279", 0, "model_init")`. Train all arms on the same balanced augmentation batches and identical optimizer hyperparameters.
 
 - [ ] **Step 5: Implement blocked paired evaluation**
 
-Evaluation repeats the stratum cycle `PROPAGATION_FIT`, `BRANCH_FIT`, `MIXED_RESIDUAL` deterministically from `eval_start_replicate`. For each replicate run all arms on one paired batch, externally verify predictions, charge arm-specific accounted FLOPs, record hybrid route mask/fraction, and emit raw per-replicate rows.
+Cycle evaluation strata deterministically `PROPAGATION_FIT -> BRANCH_FIT -> MIXED_RESIDUAL`. Run all arms on one paired batch, externally verify targets, charge arm-specific FLOPs, and record hybrid route mask/count/fraction.
 
 - [ ] **Step 6: Implement descriptive aggregates only**
 
-Compute mean utility/solution rate by arm and stratum, best simpler arm descriptively, hybrid relative utility gain and hybrid-minus-best-simple solution-rate difference. Do **not** run bootstrap/Holm inference and do not emit a scientific promotion state.
+Compute raw/mean arm metrics, deterministic best-simple arm, hybrid relative utility gain, hybrid-minus-best-simple solution-rate difference and by-stratum summaries. Do not run bootstrap/Holm confirmatory inference and do not emit promotion/kill decisions.
 
 - [ ] **Step 7: Verify GREEN**
 
-Run:
-
-`pytest -q tests/test_exp279_paired_runner.py tests/test_matched_routing_arms.py tests/test_exp279_routing_worlds.py`
+Run runner + matched arms + generator tests together.
 
 ---
 
@@ -237,29 +150,21 @@ Run:
 
 **Files:**
 - Modify: `src/nolane_ai/experiments/neural_arm_registry.py`
-- Create: `tests/test_exp279_registry_integration.py`
-- Modify: `tests/test_neural_arm_registry.py`
+- Test: `tests/test_exp279_registry_integration.py`
+- Modify: `tests/test_neural_arm_registry.py` only if shared validator coverage requires it.
 
 **Interfaces:**
 - Extend `build_neural_arm_registry(..., exp279_pair_audit=None, exp279_execution_artifact=None, ...)`.
 
-- [ ] **Step 1: Write RED registry tests**
-
-Valid pair audit clears implementation blockers for all three EXP-279 arms and records parameter/reclaimed-capacity/compute evidence. Valid execution artifact advances `development_match_status` to `PAIRED_ROUTING_DEV_READY`. Supplying execution without audit, invalid execution, protocol mismatch or failed compute closure must raise `ValueError`.
-
-- [ ] **Step 2: Verify RED**
-
-Run `pytest -q tests/test_exp279_registry_integration.py tests/test_neural_arm_registry.py`.
-
+- [x] **Step 1: Write RED registry tests**
+- [ ] **Step 2: Verify broad RED**
 - [ ] **Step 3: Implement registry wiring**
 
-Add `_validate_exp279_pair_audit`. On valid development evidence set each EXP-279 arm to `IMPLEMENTED` / `MATCHED_EXPERIMENT_LOCAL_NEURAL_ARM`, but keep `match_court = BLOCKED`.
-
-With execution evidence, blockers become exactly development-external scientific debts: confirmatory sample-size/blocked-analysis freeze, confirmatory-open execution, and post-freeze challenge evidence.
+Validate pair-audit active resource closure and execution semantics. Valid pair evidence sets all three EXP-279 arms to `IMPLEMENTED / MATCHED_EXPERIMENT_LOCAL_NEURAL_ARM` with `PARAMETER_RECLAIM_COMPUTE_STRATA_CLOSED`; valid execution advances development status to `PAIRED_ROUTING_DEV_READY`. `match_court` remains `BLOCKED`.
 
 - [ ] **Step 4: Verify GREEN**
 
-Run all neural registry tests plus all EXP-277/EXP-279/EXP-282 paired-runner tests.
+Run neural registry tests plus EXP-277/279/282 paired-runner tests.
 
 ---
 
@@ -267,72 +172,45 @@ Run all neural registry tests plus all EXP-277/EXP-279/EXP-282 paired-runner tes
 
 **Files:**
 - Create: `scripts/run_exp279_paired_dev.py`
-- Create: `tests/test_exp279_paired_cli.py`
+- Test: `tests/test_exp279_paired_cli.py`
 - Modify: `.github/workflows/ci.yml`
 - Modify: `pyproject.toml`
 - Modify: `src/nolane_ai/__init__.py`
 - Modify: `README.md`
 
 **Interfaces:**
-- CLI writes one append-only EXP-279 development artifact plus optional registry output.
+- CLI writes one append-only EXP-279 development artifact and one registry snapshot.
 
-- [ ] **Step 1: Write CLI RED tests**
-
-Test tiny execution, canonical protocol verification, output overwrite refusal, EV-E2 boundary, and absence of confirmatory/challenge consumption.
-
-- [ ] **Step 2: Verify RED**
-
-Run `pytest -q tests/test_exp279_paired_cli.py`.
-
+- [x] **Step 1: Write CLI RED tests**
+- [ ] **Step 2: Verify broad RED**
 - [ ] **Step 3: Implement CLI**
 
-Before model creation:
-
-1. resolve repository root;
-2. verify canonical `protocols/stage_a_v1.json` against its `.sha256` authority;
-3. refuse existing output paths;
-4. compute source-tree digest;
-5. execute tiny/default development geometry;
-6. validate artifact before writing;
-7. optionally build and write registry snapshot.
+Refuse existing outputs before protocol/model execution; verify canonical frozen Stage-A digest; compute source-tree digest; run tiny/default development geometry; semantically validate before writing; build exact-16M registry audit on meta; never derive confirmatory/challenge seeds.
 
 - [ ] **Step 4: Wire CI**
 
-Add all EXP-279 test files to the explicit model-smoke pytest command and one CPU-safe command:
-
-```bash
-python scripts/run_exp279_paired_dev.py \
-  --tiny \
-  --train-replicates 3 \
-  --eval-replicates 3 \
-  --batch-size 2 \
-  --timesteps 3 \
-  --variables 4 \
-  --constraints 2 \
-  --output /tmp/nlm-exp279-paired.json \
-  --registry-output /tmp/nlm-exp279-neural-arm-registry.json
-```
+Add all EXP-279 tests plus one CPU-safe `run_exp279_paired_dev.py --tiny --train-replicates 3 --eval-replicates 3 ...` smoke.
 
 - [ ] **Step 5: Version only after EXP-279 lane is green**
 
-Change package version from `0.11.0` to `0.12.0` in both version authorities used by the repo.
+Bump both package authorities from `0.11.0` to `0.12.0`.
 
 - [ ] **Step 6: Update README scientific boundary**
 
-Document the development command, three-arm information separation, predeclared strata and `EV-E2 / UNVERIFIED` boundary. Do not describe a development outcome as scientific evidence.
+Document development use, three-arm information separation, active parameter reclaim, predeclared strata, and EV-E2/UNVERIFIED limits.
 
 - [ ] **Step 7: Full exact-head verification**
 
-Require GitHub Actions core 3.11, core 3.13, and model-smoke all green. Confirm all EXP-277 and EXP-282 ceremony regressions remain green.
+Require core 3.11, core 3.13 and model-smoke all green, including EXP-277 and EXP-282 regressions.
 
 - [ ] **Step 8: Diff guard**
 
-Use the PR changed-file list/compare and confirm neither `protocols/stage_a_v1.json` nor `protocols/stage_a_v1.sha256` appears.
+Confirm neither frozen Stage-A protocol file appears in the PR diff.
 
 - [ ] **Step 9: Reviewer pass**
 
-Review information separation, route semantics, stratum predeclaration, aggregate recomputation, semantic tamper resistance, resource accounting and scientific-language boundaries. Fix every Critical/Important issue before merge.
+Review information separation, active parameter assignment, route semantics, predeclared strata, aggregate recomputation, tamper resistance, compute accounting and scientific-language boundaries. Fix every Critical/Important issue.
 
-- [ ] **Step 10: Squash merge exact head**
+- [ ] **Step 10: Squash merge exact head and verify post-merge main CI**
 
-Merge only with `expected_head_sha` equal to the verified green PR head. Then check post-merge `main` CI before claiming closure.
+Merge with `expected_head_sha` equal to the fully-green head, then verify post-merge `main` CI before claiming closure.
