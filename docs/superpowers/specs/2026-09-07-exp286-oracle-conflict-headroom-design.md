@@ -150,12 +150,14 @@ The generator/executor must model conflict-core delivery as an event, not as sta
 For every episode:
 
 1. both arms receive identical initial observations and surface state;
-2. both execute the same budgeted search/controller loop;
-3. when the current branch reaches a contradiction, the executor materializes the current contradiction event;
+2. both enter the same budgeted search/controller protocol on the same paired world;
+3. when an arm's current branch reaches a contradiction, the executor materializes that arm's current contradiction event from the shared ground-truth world;
 4. `chronological_failure` receives only the canonical null-core token;
 5. `oracle_conflict_core` receives the current ground-truth minimal/local core;
 6. each arm selects its rollback/priority action;
 7. the loop continues until a verified solution is reached or the shared episode FLOP ceiling is exhausted.
+
+The paired contract freezes the initial world, exogenous lineage, model initialization and episode ceiling. It does **not** force post-action contradiction sequences to remain identical: divergence caused by the arm's own rollback policy is a causal scientific outcome and must be retained, not normalized away.
 
 This timing rule is a hard semantic boundary. A validator must reject artifacts indicating pre-contradiction oracle delivery.
 
@@ -213,17 +215,19 @@ Use paired training/evaluation geometry with disjoint replicate lineages.
 Training:
 
 - RNG stream `augmentation`;
-- same batch for both arms;
+- same initial paired world for both arms;
 - same root/model-init lineage;
 - same number of optimizer updates;
 - same optimizer family and hyperparameters;
+- causal search-path divergence after arm-specific rollback actions is retained;
 - no evaluation or confirmatory data mixed into training.
 
 Development evaluation:
 
 - RNG stream `evaluation`;
 - replicate range disjoint from training;
-- same paired world and contradiction sequence for both arms;
+- same initial paired world and exogenous lineage for both arms;
+- causal divergence after different rollback decisions is preserved and charged;
 - raw per-replicate rows retained;
 - no selective reruns for scientific failures.
 
