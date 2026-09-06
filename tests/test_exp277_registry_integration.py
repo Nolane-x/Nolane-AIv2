@@ -54,6 +54,8 @@ def test_registry_accepts_exp277_pair_audit_but_keeps_confirmatory_gate_closed()
     assert exp277["resource_match_evidence"]["compute_budget_closed"] is True
     assert exp277["arms"]["arcs_branch"]["implementation_status"] == "IMPLEMENTED"
     assert exp277["arms"]["oracle_cbrf"]["implementation_status"] == "IMPLEMENTED"
+    assert exp277["arms"]["arcs_branch"]["implementation_id"] == "exp277_matched_arcs_dev_v1"
+    assert exp277["arms"]["oracle_cbrf"]["implementation_id"] == "exp277_matched_oracle_cbrf_dev_v1"
     assert exp277["match_court"] == "BLOCKED"
     assert exp277["blockers"] == [
         "EXP-277: matched arms are not yet integrated into paired structure-dense evaluator lineage"
