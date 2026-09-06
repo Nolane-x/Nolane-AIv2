@@ -33,6 +33,33 @@ def test_exp282_partial_observability_batch_exposes_visibility_and_exact_shapes(
     assert batch.metadata["latent_seed"] != batch.metadata["observation_seed"]
 
 
+def test_exp282_partial_observability_supports_confirmatory_scope_without_changing_tensors():
+    from nolane_ai.experiments.exp282_partial_observability import Exp282PartialObservabilityGenerator
+
+    generator = Exp282PartialObservabilityGenerator(root_seed="frozen-protocol-root")
+    kwargs = dict(
+        replicate=41,
+        batch_size=2,
+        timesteps=4,
+        variables=3,
+        d_model=8,
+        visibility_rate=0.5,
+        noise_std=0.25,
+        rng_stream="evaluation",
+    )
+    development = generator.make_batch(**kwargs)
+    confirmatory = generator.make_batch(
+        **kwargs,
+        scope="synthetic-exp282-partial-observability-confirmatory-open",
+    )
+    assert development.metadata["scope"] == "synthetic-exp282-partial-observability-development"
+    assert confirmatory.metadata["scope"] == "synthetic-exp282-partial-observability-confirmatory-open"
+    assert torch.equal(development.observations, confirmatory.observations)
+    assert torch.equal(development.targets, confirmatory.targets)
+    assert torch.equal(development.visibility_mask, confirmatory.visibility_mask)
+    assert development.digest != confirmatory.digest
+
+
 def test_exp282_partial_observability_rejects_invalid_visibility_or_stream():
     from nolane_ai.experiments.exp282_partial_observability import Exp282PartialObservabilityGenerator
 

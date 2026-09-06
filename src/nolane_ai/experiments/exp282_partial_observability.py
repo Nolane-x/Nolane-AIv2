@@ -45,12 +45,13 @@ def _batch_digest(metadata: dict[str, Any], *, observations: torch.Tensor, targe
 
 
 class Exp282PartialObservabilityGenerator:
-    """Deterministic synthetic partial-observability worlds for EXP-282 development.
+    """Deterministic synthetic partial-observability worlds for EXP-282.
 
     The latent world is derived from the `environment` stream so the same
     replicate has the same target under training and held-out observation
     streams. Observation masks/noise are independently derived from either
-    `augmentation` or `evaluation`.
+    `augmentation` or `evaluation`. `scope` changes evidence metadata and
+    therefore the batch digest, but never changes generated tensors.
     """
 
     def __init__(self, *, root_seed: str) -> None:
@@ -69,6 +70,7 @@ class Exp282PartialObservabilityGenerator:
         visibility_rate: float,
         noise_std: float,
         rng_stream: str,
+        scope: str = "synthetic-exp282-partial-observability-development",
         device: str | torch.device = "cpu",
     ) -> Exp282PartialObservabilityBatch:
         if replicate < 0:
@@ -81,6 +83,8 @@ class Exp282PartialObservabilityGenerator:
             raise ValueError("noise_std must be non-negative")
         if rng_stream not in {"augmentation", "evaluation"}:
             raise ValueError("rng_stream must be augmentation or evaluation")
+        if not scope:
+            raise ValueError("scope must be non-empty")
 
         latent_seed = derive_stream_seed(self.root_seed, "EXP-282", replicate, "environment")
         observation_seed = derive_stream_seed(self.root_seed, "EXP-282", replicate, rng_stream)
@@ -119,7 +123,7 @@ class Exp282PartialObservabilityGenerator:
         observations = noise + visibility_mask[..., None].to(torch.float32) * signal
 
         metadata: dict[str, Any] = {
-            "scope": "synthetic-exp282-partial-observability-development",
+            "scope": scope,
             "root_seed": self.root_seed,
             "replicate": replicate,
             "rng_stream": rng_stream,
