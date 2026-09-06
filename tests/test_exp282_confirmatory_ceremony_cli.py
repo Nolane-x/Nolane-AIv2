@@ -39,13 +39,9 @@ def _artifacts(tmp_path: Path):
     paths = {
         "execution": tmp_path / "execution.json",
         "prep": tmp_path / "prep.json",
-        "authorization": tmp_path / "authorization.json",
-        "reconstruction": tmp_path / "reconstruction.json",
     }
     _write_json(paths["execution"], execution)
     _write_json(paths["prep"], prep)
-    _write_json(paths["authorization"], authorization)
-    _write_json(paths["reconstruction"], reconstruction)
     return digest, protocol, prep, execution, authorization, reconstruction, paths
 
 
@@ -62,10 +58,6 @@ def _seal_command(tmp_path: Path, output: Path) -> list[str]:
         str(paths["execution"]),
         "--prep",
         str(paths["prep"]),
-        "--authorization",
-        str(paths["authorization"]),
-        "--reconstruction",
-        str(paths["reconstruction"]),
         "--output",
         str(output),
     ]
@@ -96,6 +88,8 @@ def test_seal_cli_writes_self_validating_unexecuted_seal(tmp_path: Path):
     assert seal["status"] == "CEREMONY_SEALED_NOT_EXECUTED"
     assert seal["confirmatory_data_consumed"] is False
     assert seal["challenge_materialized"] is False
+    assert seal["authorities"]["execution_authorization"]["status"] == "AUTHORIZED_NOT_EXECUTED"
+    assert seal["authorities"]["reconstruction_authorization"]["status"] == "RECONSTRUCTION_AUTHORIZED_NOT_EXECUTED"
     assert validate_exp282_confirmatory_ceremony_seal(seal) == []
 
 
