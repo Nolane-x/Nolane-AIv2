@@ -47,14 +47,14 @@ All three arms share the same trainable module inventory and exact target parame
 
 - surface-event projection;
 - variable-state projection;
-- recurrent branch core;
+- recurrent refinement core;
 - propagation/message-passing transform;
 - route/residual-uncertainty scorer;
 - decision head;
 - verifier-confidence head;
 - capacity reserve for exact budget closure.
 
-The three arms receive identical initial functional state. Arm behavior differs only by which computation gates are executed.
+The three arms receive identical initial functional state. Arm behavior differs by the semantic role assigned to shared functional blocks and by whether hybrid routing conditionally executes its branch phase.
 
 ### 3.2 Arm semantics
 
@@ -62,14 +62,14 @@ The three arms receive identical initial functional state. Arm behavior differs 
 
 1. consumes surface events, variable states and compiled incidence;
 2. performs propagation/message passing;
-3. does not execute recurrent branch refinement;
+3. reclaims the recurrent functional block as iterative propagation refinement, never as branch search;
 4. emits per-variable logits and verifier confidence.
 
 `branch_only`:
 
 1. consumes surface events and variable states;
 2. **must not receive compiled incidence**;
-3. executes recurrent branch refinement;
+3. reclaims the propagation transform as a branch preconditioner, then executes recurrent branch refinement;
 4. emits per-variable logits and verifier confidence.
 
 `hybrid`:
@@ -87,12 +87,12 @@ The route threshold is an engineering configuration frozen in the development ar
 Use predeclared synthetic structure-dense strata, all generated from the same deterministic EXP-279 lineage machinery:
 
 - `PROPAGATION_FIT` — each component is strongly anchored and propagation has direct structural support;
-- `BRANCH_FIT` — surface evidence is sufficient but incidence-guided propagation is deliberately weak/ambiguous, requiring recurrent branch refinement;
+- `BRANCH_FIT` — surface evidence is sufficient while structural sharing provides less leverage, emphasizing recurrent branch refinement;
 - `MIXED_RESIDUAL` — a mix of directly propagatable and residual-uncertainty components, intended to exercise conditional routing.
 
 Each evaluation replicate records its stratum. Training may draw balanced augmentation batches across all three strata. Development evaluation uses the `evaluation` RNG stream and a deterministic blocked ordering with all three strata represented.
 
-No stratum label is an oracle solution label; it describes generator geometry only.
+No stratum label is an oracle solution label; it describes generator geometry only. The incidence artifact remains truthful in every stratum.
 
 ## 5. Information separation
 
@@ -103,21 +103,28 @@ The same underlying world facts are serialized in two representations:
 
 `branch_only` must have no forward argument or hidden path by which incidence is delivered. The paired artifact records an information receipt stating exactly which arms received incidence.
 
-## 6. Parameter reclaim and resource matching
+## 6. Active parameter reclaim and resource matching
 
-All three arm objects have exact equal total and functional trainable parameter counts.
+All three arm objects have exact equal total and functional trainable parameter counts. The frozen phrase **“reclaimed parameters assigned to simpler rivals”** is interpreted strictly: simpler arms may not satisfy the match merely by carrying dormant functional modules.
 
-Because simpler arms skip modules at runtime, unused capacity is **not silently deleted**. The audit records:
+Every non-reserve functional parameter must have an explicit active semantic assignment in each arm:
 
+- `propagation_only` reuses the recurrent block as iterative propagation refinement and the route scorer as a propagation-confidence gate;
+- `branch_only` reuses the propagation transform as a branch preconditioner and the route scorer as a branch-confidence gate;
+- `hybrid` uses the propagation transform for propagation, the route scorer for residual uncertainty, and the recurrent block for conditional branch refinement.
+
+The audit records:
+
+- exact total parameter equality;
 - exact functional parameter equality;
-- the full shared parameter envelope;
+- exact **active functional parameter** equality;
+- a per-arm reclaimed-parameter assignment receipt;
 - each arm's executed-compute ledger;
-- reclaimed/idle functional capacity by arm;
 - one shared declared `max_accounted_flops_per_episode` ceiling.
 
-Idle/reclaimed parameters remain part of the matched parameter envelope but are excluded from executed FLOP counts. This satisfies the frozen contract without pretending unused modules were executed.
+Capacity-reserve tensors exist only to close the exact parameter budget and are excluded from functional/active counts and optimizer groups. No functional parameter may be counted as reclaimed merely because it is present but unused.
 
-Hardware profiler FLOPs are not claimed. The ledger is analytical scalar arithmetic accounting for the declared neural geometry.
+Hardware profiler FLOPs are not claimed. The ledger is analytical scalar arithmetic accounting for the declared neural geometry. Conditional hybrid branch compute is charged according to the recorded route mask, while the shared resource ceiling is the maximum fully-routed episode cost.
 
 ## 7. Deterministic paired worlds
 
@@ -175,7 +182,8 @@ Validator must reject, even after an attacker recomputes the top-level digest:
 - missing/duplicated batch digests;
 - missing structure-fit strata;
 - branch-only incidence receipt;
-- parameter mismatch;
+- parameter or active-functional-parameter mismatch;
+- missing reclaimed-parameter assignment;
 - exceeded compute ceiling;
 - route threshold/receipt inconsistency;
 - aggregate values inconsistent with raw rows.
@@ -187,7 +195,7 @@ Extend the existing Stage-A neural arm registry with optional:
 - `exp279_pair_audit`;
 - `exp279_execution_artifact`.
 
-A valid pair audit may clear implementation blockers for the three EXP-279 development arms. A valid paired execution may advance the development status to `PAIRED_ROUTING_DEV_READY`.
+A valid triplet audit may clear implementation blockers for the three EXP-279 development arms. A valid paired execution may advance the development status to `PAIRED_ROUTING_DEV_READY`.
 
 `match_court` remains `BLOCKED`. Remaining blockers must explicitly include confirmatory sample-size/analysis freeze, confirmatory-open execution and post-freeze challenge evidence.
 
@@ -213,7 +221,7 @@ Bump package to `0.12.0` only after the full EXP-279 development lane is green.
 Implementation is complete only when:
 
 1. clean TDD RED evidence exists before production modules;
-2. exact parameter equality and shared-compute ceiling tests pass;
+2. exact total/functional/**active-functional** parameter equality and shared-compute ceiling tests pass;
 3. deterministic generator and strata tests pass twice;
 4. paired runner and tamper validator tests pass;
 5. neural registry integration tests pass;
