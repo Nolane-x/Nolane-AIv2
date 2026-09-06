@@ -115,3 +115,26 @@ python scripts/train_stage_a_pilot.py \
 The trainer excludes every `capacity_reserve` tensor from optimizer groups. Checkpoint manifests bind protocol, source tree, model config, curriculum, RNG lineage and tensor-file SHA-256. Training-smoke checkpoints are structurally capped at `EV-E2 / UNVERIFIED`; they cannot self-promote to neural evidence.
 
 The default non-`--tiny` runner instantiates the exact 16M pilot on CPU. This is an execution substrate, not a capability claim or a substitute for frozen EV-E3 experiments.
+
+## EXP-277 matched neural DEVELOPMENT lane
+
+Package `0.11.0` adds an executable matched-neural development lane for the frozen `EXP-277` oracle-structure headroom gate. It intentionally remains **EV-E2 / UNVERIFIED**: the lane measures development behavior and closes execution provenance, but it does not consume confirmatory-open data or execute the frozen scientific promotion rule.
+
+Run the CPU-safe development smoke:
+
+```bash
+python scripts/run_exp277_paired_dev.py \
+  --tiny \
+  --train-replicates 2 \
+  --eval-replicates 2 \
+  --batch-size 2 \
+  --timesteps 3 \
+  --variables 4 \
+  --constraints 2 \
+  --output /tmp/nlm-exp277-paired.json \
+  --registry-output /tmp/nlm-exp277-registry.json
+```
+
+The two arms share functional initialization and exact parameter count. `arcs_branch` receives only the surface event/variable representation; `oracle_cbrf` additionally receives the ground-truth constraint↔variable incidence artifact. Both are charged by an explicit analytical accounted-FLOP ledger under one declared per-episode ceiling and run on the exact same paired world lineage. The CLI requires the canonical frozen Stage-A protocol digest and refuses to overwrite either output before any experiment execution.
+
+The resulting registry state is `PAIRED_STRUCTURE_DENSE_DEV_READY` with `match_court=BLOCKED`. Remaining confirmatory sample-size/analysis freeze, confirmatory-open execution, and post-freeze challenge evidence are deliberately not manufactured by this development lane.
