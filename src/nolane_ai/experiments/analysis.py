@@ -23,11 +23,11 @@ class EffectSummary:
 
 
 _COMPARISONS: dict[str, tuple[str, str, str, str]] = {
-    "EXP-277": ("verified_utility_per_accounted_operation_proxy", "arcs_branch", "oracle_cbrf", "relative_gain"),
-    "EXP-282": ("grounded_decision_accuracy", "recurrent_hidden", "explicit_belief", "absolute_gain"),
-    "EXP-286": ("accounted_reasoning_operation_proxy_to_verified_resolution", "chronological_failure", "oracle_conflict_core", "relative_reduction"),
-    "EXP-289": ("repeat_dead_end_rate", "no_nogood", "local_nogood", "relative_reduction"),
-    "EXP-297": ("semantic_fidelity_balanced_accuracy", "compile_only", "fidelity_court", "absolute_gain"),
+    "EXP-277": ("verified_utility_per_accounted_operation_proxy", "branch_proxy", "oracle_constraint_proxy", "relative_gain"),
+    "EXP-282": ("grounded_decision_accuracy", "recurrent_evidence_proxy", "explicit_bayes_proxy", "absolute_gain"),
+    "EXP-286": ("accounted_reasoning_operation_proxy_to_verified_resolution", "chronological_proxy", "oracle_conflict_priority_proxy", "relative_reduction"),
+    "EXP-289": ("repeat_dead_end_rate", "no_nogood_proxy", "local_nogood_proxy", "relative_reduction"),
+    "EXP-297": ("semantic_fidelity_balanced_accuracy", "compile_validity_proxy", "exact_fidelity_proxy", "absolute_gain"),
 }
 
 
@@ -57,10 +57,10 @@ def _exp279_effects(bundle: StageASmokeBundle) -> tuple[list[float], str, str, s
     effects: list[float] = []
     for replicate in sorted(paired):
         arms = paired[replicate]
-        best_simple = max(float(arms["propagation_only"][metric]), float(arms["branch_only"][metric]))
-        candidate = float(arms["hybrid"][metric])
+        best_simple = max(float(arms["propagation_proxy"][metric]), float(arms["branch_proxy"][metric]))
+        candidate = float(arms["hybrid_proxy"][metric])
         effects.append(_effect(best_simple, candidate, "relative_gain"))
-    return effects, metric, "best_simple", "hybrid"
+    return effects, metric, "best_simple_proxy", "hybrid_proxy"
 
 
 def _bootstrap_mean_ci(values: list[float], *, samples: int, seed_material: str) -> tuple[float, float]:
