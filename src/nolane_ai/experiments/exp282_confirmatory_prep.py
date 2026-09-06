@@ -51,6 +51,12 @@ def _pilot_effects(execution_artifact: dict[str, Any]) -> list[float]:
         raise ValueError("confirmatory prep requires EV-E2 / UNVERIFIED development evidence")
     if execution_artifact.get("confirmatory_ready") is not False:
         raise ValueError("development artifact cannot already claim confirmatory readiness")
+    checkpoint = execution_artifact.get("checkpoint") or {}
+    if checkpoint.get("schema") != "NLM-EXP-282-PAIRED-CHECKPOINT-V1":
+        raise ValueError("EXP-282 paired pilot checkpoint is missing or invalid")
+    if checkpoint.get("state_policy") != "functional-only" or not checkpoint.get("checkpoint_sha256"):
+        raise ValueError("EXP-282 paired pilot checkpoint identity is incomplete")
+
     resource = execution_artifact.get("resource_match") or {}
     if resource.get("parameter_match") is not True or resource.get("observation_history_match") is not True:
         raise ValueError("EXP-282 paired pilot parameter/observation match is not closed")
@@ -156,7 +162,7 @@ def validate_exp282_confirmatory_prep(payload: dict[str, Any]) -> list[str]:
         errors.append("EXP-282 compute guard drift")
 
     lineage = payload.get("lineage") or {}
-    for key in ("protocol_digest", "execution_artifact_digest", "arm_registry_digest", "analysis_code_digest"):
+    for key in ("protocol_digest", "execution_artifact_digest", "arm_registry_digest", "analysis_code_digest", "paired_checkpoint_sha256"):
         if not lineage.get(key):
             errors.append(f"missing confirmatory prep lineage {key}")
 
@@ -356,6 +362,7 @@ def build_exp282_confirmatory_prep(
             "execution_artifact_digest": execution_digest,
             "arm_registry_digest": arm_registry.get("registry_digest"),
             "analysis_code_digest": analysis_code_digest,
+            "paired_checkpoint_sha256": execution_artifact["checkpoint"]["checkpoint_sha256"],
         },
         "remaining_blockers": blockers,
         "prep_digest": "",

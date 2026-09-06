@@ -35,6 +35,7 @@ def _execution(effects, *, brier=0.0):
         "protocol_digest": "p" * 64,
         "code_digest": "c" * 64,
         "artifact_digest": "a" * 64,
+        "checkpoint": {"schema": "NLM-EXP-282-PAIRED-CHECKPOINT-V1", "checkpoint_sha256": "k" * 64, "state_policy": "functional-only"},
         "resource_match": {"parameter_match": True, "observation_history_match": True, "accounted_flop_match": True, "relative_accounted_flop_difference": 0.0},
         "training": {"rng_stream": "augmentation", "start_replicate": 0, "replicates": 3, "batch_digests": ["train-0", "train-1", "train-2"]},
         "evaluation": {"rng_stream": "evaluation", "start_replicate": 1000, "replicates": len(raw), "per_replicate": raw},
@@ -93,6 +94,7 @@ def test_confirmatory_prep_freezes_numeric_analysis_and_sample_size_when_power_i
     assert payload["sample_size_freeze"]["method"] == "paired-normal-approximation-from-pilot-sd-v1"
     assert payload["pilot_summary"]["n"] == 32
     assert payload["pilot_summary"]["paired_sd"] > 0
+    assert payload["lineage"]["paired_checkpoint_sha256"] == "k" * 64
     assert payload["remaining_blockers"] == [
         "confirmatory-open execution has not consumed any reserved confirmatory data",
         "post-freeze challenge beacon and independent replication remain open",
