@@ -68,6 +68,7 @@ jobs:
           tests/test_exp282_confirmatory_analysis_cli.py
           tests/test_exp282_ceremony_import.py
           tests/test_exp282_confirmatory_ceremony.py
+          tests/test_exp282_confirmatory_ceremony_cli.py
       - run: python scripts/audit_model.py > /tmp/model-audit.json
       - run: python scripts/audit_stage_a_pilot.py > /tmp/stage-a-pilot-audit.json
       - run: >-
