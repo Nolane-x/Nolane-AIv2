@@ -14,3 +14,12 @@ def test_stage_a_smoke_is_deterministic_for_same_seed():
     a = run_stage_a_smoke(replicates=2, root_seed="same")
     b = run_stage_a_smoke(replicates=2, root_seed="same")
     assert a.raw_per_replicate_metrics == b.raw_per_replicate_metrics
+
+
+def test_smoke_arms_are_explicitly_labeled_as_proxies_for_protocol_arms():
+    bundle = run_stage_a_smoke(replicates=1, root_seed="proxy-boundary")
+    for row in bundle.raw_per_replicate_metrics:
+        assert row["implementation_tier"] == "EV-E2_ALGORITHMIC_PROXY"
+        assert row["protocol_arm_id"]
+        assert row["arm"].endswith("_proxy")
+        assert row["arm"] != row["protocol_arm_id"]
