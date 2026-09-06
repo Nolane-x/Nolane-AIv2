@@ -27,11 +27,11 @@ A dependency-light structured substrate implements:
 - episode-local nogood storage;
 - explicit binary belief-state updates and a recurrent evidence baseline;
 - bounded exact semantic-equivalence checking for compile-valid fidelity traps;
-- paired open-seed runners for `EXP-277`, `EXP-279`, `EXP-282`, `EXP-286`, `EXP-289`, and `EXP-297`;
+- paired open-seed proxy runners for `EXP-277`, `EXP-279`, `EXP-282`, `EXP-286`, `EXP-289`, and `EXP-297`, with every smoke arm separated from its `protocol_arm_id`;
 - deterministic paired-effect/bootstrap summaries over an explicitly labeled abstract operation proxy;
 - EV-E2 Evidence Packet generation locked to the frozen protocol digest and source-tree digest.
 
-This lane measures whether the *mechanisms have headroom*. It cannot promote a neural claim by itself.
+This lane measures whether cheap algorithmic proxies expose mechanism headroom. Every raw arm is marked `EV-E2_ALGORITHMIC_PROXY`; it is not a claim that the frozen protocol arm (for example full V0.15 ARCS) has been implemented. It cannot promote a neural claim by itself.
 
 ### 2. Exact-100M neural candidate lane
 
@@ -89,3 +89,29 @@ CI has a dependency-light core lane plus a separate PyTorch model lane. The mode
 - Post-freeze challenge randomness remains unavailable until code/config/evaluator/analysis freeze.
 - A negative gate is allowed to delete a subsystem.
 - `capacity_reserve` must not be counted as implemented capability.
+
+## Stage-A neural pilot (16M wind tunnel)
+
+The next execution layer is an exact **16,000,000 parameter** neural pilot for the first six Stage-A gates. It deliberately keeps only problem binding, recurrent deliberation, constraint-belief reasoning, conflict scoring, semantic fidelity, verifier support and explicit reserve capacity.
+
+Audit the real 16M parameter topology without allocating storage:
+
+```bash
+python scripts/audit_stage_a_pilot.py
+```
+
+Run a tiny CPU training smoke that exercises the same optimizer/curriculum/checkpoint contracts:
+
+```bash
+python scripts/train_stage_a_pilot.py \
+  --tiny \
+  --steps 2 \
+  --batch-size 4 \
+  --variables 4 \
+  --constraints 3 \
+  --output-dir /tmp/nlm-stage-a-pilot
+```
+
+The trainer excludes every `capacity_reserve` tensor from optimizer groups. Checkpoint manifests bind protocol, source tree, model config, curriculum, RNG lineage and tensor-file SHA-256. Training-smoke checkpoints are structurally capped at `EV-E2 / UNVERIFIED`; they cannot self-promote to neural evidence.
+
+The default non-`--tiny` runner instantiates the exact 16M pilot on CPU. This is an execution substrate, not a capability claim or a substitute for frozen EV-E3 experiments.
