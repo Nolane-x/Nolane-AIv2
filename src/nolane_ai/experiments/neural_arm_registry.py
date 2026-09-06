@@ -27,7 +27,7 @@ _EXPECTED_ARMS: dict[str, tuple[tuple[str, str], ...]] = {
 
 _ARM_IMPLEMENTATION: dict[tuple[str, str], dict[str, Any]] = {
     ("EXP-277", "arcs_branch"): {
-        "implementation_id": "neural_arcs_full_v0_15",
+        "implementation_id": "exp277_matched_arcs_dev_v1",
         "implementation_status": "BLOCKED",
         "implementation_tier": "NOT_IMPLEMENTED_FULL_PROTOCOL_ARM",
         "required_regions": ["recurrent_deliberation_core", "verifier_proof_counterexample_heads"],
@@ -36,7 +36,7 @@ _ARM_IMPLEMENTATION: dict[tuple[str, str], dict[str, Any]] = {
         ],
     },
     ("EXP-277", "oracle_cbrf"): {
-        "implementation_id": "neural_oracle_cbrf_v1",
+        "implementation_id": "exp277_matched_oracle_cbrf_dev_v1",
         "implementation_status": "BLOCKED",
         "implementation_tier": "ORACLE_NEURAL_ARM_NOT_WIRED",
         "required_regions": ["constraint_belief_fabric", "verifier_proof_counterexample_heads"],
