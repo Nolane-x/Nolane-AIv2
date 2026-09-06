@@ -53,6 +53,12 @@ jobs:
           tests/test_multiseed_heldout.py
           tests/test_multiseed_cli.py
           tests/test_neural_arm_registry.py
+          tests/test_exp277_neural_import.py
+          tests/test_matched_cbrf_arms.py
+          tests/test_exp277_structure_dense.py
+          tests/test_exp277_paired_runner.py
+          tests/test_exp277_registry_integration.py
+          tests/test_exp277_paired_cli.py
           tests/test_matched_belief_arms.py
           tests/test_exp282_compute_ledger.py
           tests/test_exp282_partial_observability.py
@@ -100,6 +106,17 @@ jobs:
           --constraints 2
           --bootstrap-samples 50
           --output /tmp/nlm-stage-a-multiseed.json
+      - run: >-
+          python scripts/run_exp277_paired_dev.py
+          --tiny
+          --train-replicates 1
+          --eval-replicates 2
+          --batch-size 2
+          --timesteps 3
+          --variables 4
+          --constraints 2
+          --output /tmp/nlm-exp277-paired.json
+          --registry-output /tmp/nlm-exp277-neural-arm-registry.json
       - run: >-
           python scripts/run_exp282_paired_dev.py
           --tiny
