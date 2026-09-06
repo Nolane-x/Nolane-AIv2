@@ -66,6 +66,7 @@ jobs:
           tests/test_exp279_registry_integration.py
           tests/test_exp279_paired_cli.py
           tests/test_exp286_neural_import.py
+          tests/test_matched_conflict_arms.py
           tests/test_matched_belief_arms.py
           tests/test_exp282_compute_ledger.py
           tests/test_exp282_partial_observability.py
