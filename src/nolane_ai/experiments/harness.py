@@ -52,11 +52,19 @@ def _result_metrics(result: SearchResult) -> dict[str, float | int]:
     }
 
 
-def _record(experiment_id: str, replicate: int, arm: str, metrics: dict[str, Any]) -> dict[str, Any]:
+def _record(
+    experiment_id: str,
+    replicate: int,
+    arm: str,
+    protocol_arm_id: str,
+    metrics: dict[str, Any],
+) -> dict[str, Any]:
     return {
         "experiment_id": experiment_id,
         "replicate": replicate,
         "arm": arm,
+        "protocol_arm_id": protocol_arm_id,
+        "implementation_tier": "EV-E2_ALGORITHMIC_PROXY",
         "metrics": metrics,
     }
 
@@ -66,8 +74,8 @@ def _run_exp277(replicate: int, seed: int) -> list[dict[str, Any]]:
     branch = solve_branch(problem)
     oracle = solve_hybrid(problem)
     return [
-        _record("EXP-277", replicate, "arcs_branch", _result_metrics(branch)),
-        _record("EXP-277", replicate, "oracle_cbrf", _result_metrics(oracle)),
+        _record("EXP-277", replicate, "branch_proxy", "arcs_branch", _result_metrics(branch)),
+        _record("EXP-277", replicate, "oracle_constraint_proxy", "oracle_cbrf", _result_metrics(oracle)),
     ]
 
 
@@ -93,9 +101,9 @@ def _run_exp279(replicate: int, seed: int) -> list[dict[str, Any]]:
         "verified_utility_per_accounted_operation_proxy"
     )
     return [
-        _record("EXP-279", replicate, "propagation_only", propagation_metrics),
-        _record("EXP-279", replicate, "branch_only", branch_metrics),
-        _record("EXP-279", replicate, "hybrid", hybrid_metrics),
+        _record("EXP-279", replicate, "propagation_proxy", "propagation_only", propagation_metrics),
+        _record("EXP-279", replicate, "branch_proxy", "branch_only", branch_metrics),
+        _record("EXP-279", replicate, "hybrid_proxy", "hybrid", hybrid_metrics),
     ]
 
 
@@ -130,8 +138,8 @@ def _belief_batch(seed: int, *, episodes: int = 48, observations_per_episode: in
 def _run_exp282(replicate: int, seed: int) -> list[dict[str, Any]]:
     batch = _belief_batch(seed)
     return [
-        _record("EXP-282", replicate, "recurrent_hidden", batch["recurrent_hidden"]),
-        _record("EXP-282", replicate, "explicit_belief", batch["explicit_belief"]),
+        _record("EXP-282", replicate, "recurrent_evidence_proxy", "recurrent_hidden", batch["recurrent_hidden"]),
+        _record("EXP-282", replicate, "explicit_bayes_proxy", "explicit_belief", batch["explicit_belief"]),
     ]
 
 
@@ -144,8 +152,8 @@ def _run_exp286(replicate: int, seed: int) -> list[dict[str, Any]]:
     oracle_metrics = _result_metrics(oracle)
     oracle_metrics["accounted_reasoning_operation_proxy_to_verified_resolution"] = oracle_metrics["accounted_operations"]
     return [
-        _record("EXP-286", replicate, "chronological_failure", chrono_metrics),
-        _record("EXP-286", replicate, "oracle_conflict_core", oracle_metrics),
+        _record("EXP-286", replicate, "chronological_proxy", "chronological_failure", chrono_metrics),
+        _record("EXP-286", replicate, "oracle_conflict_priority_proxy", "oracle_conflict_core", oracle_metrics),
     ]
 
 
@@ -192,8 +200,8 @@ def _run_exp289(replicate: int, seed: int) -> list[dict[str, Any]]:
         "ground_truth_valid_solutions": len(valid_solutions),
     }
     return [
-        _record("EXP-289", replicate, "no_nogood", no_metrics),
-        _record("EXP-289", replicate, "local_nogood", local_metrics),
+        _record("EXP-289", replicate, "no_nogood_proxy", "no_nogood", no_metrics),
+        _record("EXP-289", replicate, "local_nogood_proxy", "local_nogood", local_metrics),
     ]
 
 
@@ -224,8 +232,8 @@ def _run_exp297(replicate: int, seed: int) -> list[dict[str, Any]]:
         "accounted_operations": 18,
     }
     return [
-        _record("EXP-297", replicate, "compile_only", compile_metrics),
-        _record("EXP-297", replicate, "fidelity_court", court_metrics),
+        _record("EXP-297", replicate, "compile_validity_proxy", "compile_only", compile_metrics),
+        _record("EXP-297", replicate, "exact_fidelity_proxy", "fidelity_court", court_metrics),
     ]
 
 
