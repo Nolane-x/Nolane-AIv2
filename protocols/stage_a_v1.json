@@ -1,0 +1,160 @@
+{
+  "protocol_id": "NLM-REASONING-STAGE-A-CONFIRMATORY-V1",
+  "status": "FROZEN_V1",
+  "frozen_on": "2026-09-06",
+  "source_revision": "NLM-V0.16.1",
+  "epistemic_status": "EV-E2_MAX_UNTIL_NEURAL_RUNS",
+  "note": "MESI values and sample-size rules below are V1 engineering commitments introduced for execution; they are not empirical results from V0.16.1.",
+  "result_states": [
+    "PROMOTE_TO_NEXT_STAGE",
+    "HOLD_UNSTABLE",
+    "PRACTICALLY_EQUIVALENT_USE_SIMPLER_RIVAL",
+    "KILL_SUBSYSTEM",
+    "INVALID_RUN",
+    "UNVERIFIED"
+  ],
+  "rng": {
+    "root_seed": "20260906",
+    "open_replicate_indices_per_experiment": 32,
+    "streams": ["model_init", "data_order", "environment", "intervention", "augmentation", "replay_sampling", "controller_noise", "evaluation"],
+    "challenge": "derive only after protocol/code/config/evaluator/analysis freeze from a future public beacon"
+  },
+  "global_sample_size_plan": {
+    "pilot_open_replicates": 32,
+    "confirmatory_min_n": 32,
+    "confirmatory_max_n": 128,
+    "power_target": 0.90,
+    "familywise_alpha": 0.05,
+    "method": "paired/blocked variance estimated from pilot; freeze n before confirmatory-open; prefer simulation power for heavy-tail or multimodal outcomes",
+    "pilot_data_reuse": "pilot observations are development evidence and are not reclassified as post-freeze challenge evidence"
+  },
+  "experiments": [
+    {
+      "experiment_id": "EXP-277",
+      "hypothesis_id": "H-CBRF-01",
+      "question": "Does oracle constraint/factor representation create material headroom over V0.15 ARCS at matched compute?",
+      "arms": [
+        {"id": "arcs_branch", "description": "V0.15 ARCS recurrent-depth + branch bank + verifier court"},
+        {"id": "oracle_cbrf", "description": "same substrate with ground-truth constraint/factor representation"}
+      ],
+      "primary_endpoint": {"metric": "verified_utility_per_accounted_flop", "direction": "higher"},
+      "protected_endpoints": [
+        {"metric": "verified_solution_rate", "floor": "oracle_cbrf >= arcs_branch - 0.005"},
+        {"metric": "wall_energy_per_episode", "floor": "report-only at Stage-A; cannot be hidden from cost ledger"}
+      ],
+      "mesi": {"type": "relative_gain", "value": 0.10, "unit": "fraction", "justification": "complexity burden: oracle structure must expose at least 10% matched-cost headroom to justify compiler work"},
+      "sample_size_plan": {"power_target": 0.90, "min_n": 32, "max_n": 128, "paired": true, "freeze_rule": "pilot variance + MESI, alpha allocated by multiplicity family"},
+      "analysis_method": "paired effect with bootstrap confidence interval; report mean, median, sign consistency and divergence rate",
+      "multiplicity_family": "CBRF_HEADROOM",
+      "resource_match": {"parameter_budget": "matched active parameter count", "inference_budget": "same max accounted FLOPs per episode", "world_pairing": "same world lineage and replicate index"},
+      "failure_policy": {"scientific_failure_kept": true, "rerun_only": "predeclared infrastructure failure before first model update/inference step"},
+      "challenge_generator": {"lane": "POST_FREEZE_CHALLENGE", "seed_rule": "SHA256(protocol_digest|beacon|experiment|stream|replicate)"},
+      "decision_rule": {"promote_if": "lower CI bound of relative primary gain >= 0.10 and all protected floors pass", "kill_if": "upper CI bound < 0.10 or practical equivalence favors ARCS"}
+    },
+    {
+      "experiment_id": "EXP-279",
+      "hypothesis_id": "H-CBRF-03",
+      "question": "Propagation-only vs branch-only vs hybrid: when does each win?",
+      "arms": [
+        {"id": "propagation_only", "description": "constraint propagation without branch search"},
+        {"id": "branch_only", "description": "ARCS branch search without CBRF propagation"},
+        {"id": "hybrid", "description": "propagation followed by branch search when residual uncertainty remains"}
+      ],
+      "primary_endpoint": {"metric": "verified_utility_per_accounted_flop_on_structure_dense_stratum", "direction": "higher"},
+      "protected_endpoints": [{"metric": "verified_solution_rate", "floor": "hybrid >= best_simple - 0.01"}],
+      "mesi": {"type": "relative_gain", "value": 0.08, "unit": "fraction", "justification": "hybrid control overhead must buy at least 8% matched-cost value"},
+      "sample_size_plan": {"power_target": 0.90, "min_n": 32, "max_n": 128, "paired": true, "freeze_rule": "pilot blocked variance by structure-fit stratum"},
+      "analysis_method": "blocked paired contrasts; Holm-adjusted familywise comparisons against best simpler arm",
+      "multiplicity_family": "PROPAGATION_ROUTING",
+      "resource_match": {"parameter_budget": "reclaimed parameters assigned to simpler rivals", "inference_budget": "equal max accounted FLOPs", "structure_fit": "predeclared strata"},
+      "failure_policy": {"scientific_failure_kept": true, "rerun_only": "predeclared infrastructure failure"},
+      "challenge_generator": {"lane": "POST_FREEZE_CHALLENGE", "seed_rule": "future beacon after freeze"},
+      "decision_rule": {"promote_if": "hybrid exceeds best simpler arm by >=8% with noninferior solution rate", "kill_if": "branch-only or propagation-only is practically equivalent or superior"}
+    },
+    {
+      "experiment_id": "EXP-282",
+      "hypothesis_id": "H-BELIEF-01",
+      "question": "Does explicit belief state beat recurrent hidden state under partial observability?",
+      "arms": [
+        {"id": "recurrent_hidden", "description": "matched recurrent state without explicit belief representation"},
+        {"id": "explicit_belief", "description": "explicit calibrated belief state over hidden world variables"}
+      ],
+      "primary_endpoint": {"metric": "grounded_decision_accuracy", "direction": "higher"},
+      "protected_endpoints": [
+        {"metric": "brier_score", "floor": "explicit_belief <= recurrent_hidden + 0.02"},
+        {"metric": "accounted_flops", "floor": "difference <= 0.05 relative unless included in primary cost normalization"}
+      ],
+      "mesi": {"type": "absolute_gain", "value": 0.03, "unit": "accuracy_fraction", "justification": "explicit state must buy at least 3 percentage points under matched partial observability"},
+      "sample_size_plan": {"power_target": 0.90, "min_n": 32, "max_n": 128, "paired": true, "freeze_rule": "pilot paired accuracy variance"},
+      "analysis_method": "paired accuracy difference with bootstrap CI plus calibration guard",
+      "multiplicity_family": "BELIEF_STATE",
+      "resource_match": {"parameter_budget": "equal state/controller parameters", "observation_history": "identical", "compute_budget": "matched"},
+      "failure_policy": {"scientific_failure_kept": true, "rerun_only": "predeclared infrastructure failure"},
+      "challenge_generator": {"lane": "POST_FREEZE_CHALLENGE", "seed_rule": "future beacon after freeze"},
+      "decision_rule": {"promote_if": "lower CI bound accuracy gain >=0.03 and calibration/compute guards pass", "kill_if": "gain below MESI or hidden state is practically equivalent"}
+    },
+    {
+      "experiment_id": "EXP-286",
+      "hypothesis_id": "H-CONFLICT-01",
+      "question": "How much reasoning value comes from oracle unsat/minimal conflict cores?",
+      "arms": [
+        {"id": "chronological_failure", "description": "no conflict core; chronological rollback"},
+        {"id": "oracle_conflict_core", "description": "ground-truth conflict core supplied at contradiction"}
+      ],
+      "primary_endpoint": {"metric": "accounted_reasoning_flops_to_verified_solution", "direction": "lower"},
+      "protected_endpoints": [{"metric": "verified_solution_rate", "floor": "oracle_conflict_core >= chronological_failure - 0.005"}],
+      "mesi": {"type": "relative_reduction", "value": 0.15, "unit": "fraction", "justification": "conflict machinery needs at least 15% oracle search-cost headroom before learned localization is justified"},
+      "sample_size_plan": {"power_target": 0.90, "min_n": 32, "max_n": 128, "paired": true, "freeze_rule": "pilot log-cost paired variance with robust backup"},
+      "analysis_method": "paired log-cost ratio and bootstrap CI; failures included as censored/scientific outcomes per frozen rule",
+      "multiplicity_family": "CONFLICT_VALUE",
+      "resource_match": {"parameter_budget": "oracle metadata is information, not free neural parameters; oracle-info receipt reported", "episode_budget": "same max FLOPs"},
+      "failure_policy": {"scientific_failure_kept": true, "rerun_only": "predeclared infrastructure failure"},
+      "challenge_generator": {"lane": "POST_FREEZE_CHALLENGE", "seed_rule": "future beacon after freeze"},
+      "decision_rule": {"promote_if": "lower CI bound on FLOP reduction >=0.15 with protected floor", "kill_if": "oracle conflict cores do not clear 15% or reduce completeness"}
+    },
+    {
+      "experiment_id": "EXP-289",
+      "hypothesis_id": "H-CONFLICT-01",
+      "question": "Do episode-local nogoods reduce repeat dead ends without over-pruning?",
+      "arms": [
+        {"id": "no_nogood", "description": "hybrid reasoner without episode-local learned nogoods"},
+        {"id": "local_nogood", "description": "same reasoner with episode-local nogood store and scoped applicability"}
+      ],
+      "primary_endpoint": {"metric": "repeat_dead_end_rate", "direction": "lower"},
+      "protected_endpoints": [
+        {"metric": "valid_state_overprune_rate", "floor": "<=0.005"},
+        {"metric": "verified_solution_rate", "floor": "local_nogood >= no_nogood - 0.01"}
+      ],
+      "mesi": {"type": "relative_reduction", "value": 0.25, "unit": "fraction", "justification": "maintenance is only worthwhile if logically equivalent repeated dead ends fall by at least 25%"},
+      "sample_size_plan": {"power_target": 0.90, "min_n": 32, "max_n": 128, "paired": true, "freeze_rule": "pilot paired RDER variance; beta-binomial/bootstrap if bounded-rate assumptions fail"},
+      "analysis_method": "paired relative RDER reduction with bootstrap CI and explicit over-prune safety bound",
+      "multiplicity_family": "LOCAL_NOGOOD",
+      "resource_match": {"parameter_budget": "matched", "memory_cost": "nogood storage/retrieval charged to accounted cost", "episode_budget": "matched"},
+      "failure_policy": {"scientific_failure_kept": true, "rerun_only": "predeclared infrastructure failure"},
+      "challenge_generator": {"lane": "POST_FREEZE_CHALLENGE", "seed_rule": "future beacon after freeze"},
+      "decision_rule": {"promote_if": "lower CI bound RDER reduction >=0.25 and overprune/solution guards pass", "kill_if": "over-prune >0.5% or reduction below MESI"}
+    },
+    {
+      "experiment_id": "EXP-297",
+      "hypothesis_id": "H-FIDELITY-01",
+      "question": "Can Encoding Fidelity Court reject compile-valid but semantically wrong formalizations?",
+      "arms": [
+        {"id": "compile_only", "description": "formal compile/proof validity without semantic-fidelity court"},
+        {"id": "fidelity_court", "description": "compile-valid formalization plus bidirectional semantic fidelity checks"}
+      ],
+      "primary_endpoint": {"metric": "semantic_fidelity_balanced_accuracy", "direction": "higher"},
+      "protected_endpoints": [
+        {"metric": "wrong_formalization_authority_rate", "floor": "<=0.05"},
+        {"metric": "faithful_formalization_rejection_rate", "floor": "<=0.10"}
+      ],
+      "mesi": {"type": "absolute_gain", "value": 0.10, "unit": "balanced_accuracy_fraction", "justification": "formal authority complexity must improve semantic discrimination by at least 10 points over compile-only"},
+      "sample_size_plan": {"power_target": 0.90, "min_n": 32, "max_n": 128, "paired": true, "freeze_rule": "pilot paired trap-family variance; stratify by semantic trap type"},
+      "analysis_method": "paired balanced-accuracy difference with Wilson/bootstrap safety intervals for wrong-authority rate",
+      "multiplicity_family": "ENCODING_FIDELITY",
+      "resource_match": {"formal_backend": "identical solver/compiler", "candidate_inputs": "same paired formalization candidates", "verification_cost": "fully charged"},
+      "failure_policy": {"scientific_failure_kept": true, "rerun_only": "predeclared infrastructure failure"},
+      "challenge_generator": {"lane": "POST_FREEZE_CHALLENGE", "seed_rule": "future beacon after freeze; hidden semantic traps unavailable during tuning"},
+      "decision_rule": {"promote_if": "lower CI bound balanced-accuracy gain >=0.10 and wrong-authority <=5%", "kill_if": "semantic safety floor fails; formal authority remains restricted"}
+    }
+  ]
+}
