@@ -43,6 +43,9 @@ jobs:
           tests/test_curriculum.py
           tests/test_pilot_trainer.py
           tests/test_pilot_cli.py
+          tests/test_neural_evaluation.py
+          tests/test_neural_eval_cli.py
+          tests/test_heldout_artifact.py
       - run: python scripts/audit_model.py > /tmp/model-audit.json
       - run: python scripts/audit_stage_a_pilot.py > /tmp/stage-a-pilot-audit.json
       - run: >-
@@ -53,4 +56,14 @@ jobs:
           --variables 3
           --constraints 2
           --output-dir /tmp/nlm-stage-a-pilot
+      - run: >-
+          python scripts/evaluate_stage_a_pilot.py
+          --tiny
+          --train-steps 2
+          --eval-batches 2
+          --batch-size 2
+          --variables 3
+          --constraints 2
+          --eval-start-replicate 100
+          --output /tmp/nlm-stage-a-heldout.json
       - run: python -m compileall -q src scripts

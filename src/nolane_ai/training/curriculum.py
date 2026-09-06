@@ -68,15 +68,18 @@ class StageACurriculum:
         constraints: int,
         d_model: int,
         device: str | torch.device = "cpu",
+        rng_stream: str = "augmentation",
     ) -> CurriculumBatch:
         if replicate < 0:
             raise ValueError("replicate must be non-negative")
         if min(batch_size, variables, constraints, d_model) <= 0:
             raise ValueError("batch_size, variables, constraints and d_model must be positive")
+        if rng_stream not in {"augmentation", "evaluation"}:
+            raise ValueError("rng_stream must be augmentation or evaluation")
 
-        reasoning_seed = derive_stream_seed(self.root_seed, "EXP-277", replicate, "augmentation")
-        belief_seed = derive_stream_seed(self.root_seed, "EXP-282", replicate, "augmentation")
-        fidelity_seed = derive_stream_seed(self.root_seed, "EXP-297", replicate, "augmentation")
+        reasoning_seed = derive_stream_seed(self.root_seed, "EXP-277", replicate, rng_stream)
+        belief_seed = derive_stream_seed(self.root_seed, "EXP-282", replicate, rng_stream)
+        fidelity_seed = derive_stream_seed(self.root_seed, "EXP-297", replicate, rng_stream)
 
         reasoning_generator = torch.Generator(device="cpu").manual_seed(reasoning_seed)
         belief_generator = torch.Generator(device="cpu").manual_seed(belief_seed)
@@ -143,6 +146,7 @@ class StageACurriculum:
         )
         metadata: dict[str, Any] = {
             "scope": "synthetic-stage-a-development-curriculum",
+            "rng_stream": rng_stream,
             "root_seed": self.root_seed,
             "replicate": replicate,
             "batch_size": batch_size,
