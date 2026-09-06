@@ -1,11 +1,20 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from pathlib import Path
 from typing import Any
 
 from nolane_ai.protocol.evidence import canonical_sha256
-from nolane_ai.protocol.identity import require_canonical_stage_a_v1_digest
+from nolane_ai.protocol.identity import file_sha256, require_canonical_stage_a_v1_digest
+from .exp282_confirmatory_analysis import (
+    build_exp282_confirmatory_analysis,
+    validate_exp282_confirmatory_analysis,
+)
 from .exp282_confirmatory_execution_court import validate_exp282_confirmatory_execution_authorization
+from .exp282_confirmatory_executor import (
+    execute_exp282_confirmatory_open,
+    validate_exp282_confirmatory_open_raw,
+)
 from .exp282_confirmatory_prep import validate_exp282_confirmatory_prep
 from .exp282_paired_runner import validate_exp282_paired_development
 from .exp282_reconstruction_court import validate_exp282_confirmatory_reconstruction
@@ -17,6 +26,12 @@ RESULT_SCHEMA = "NLM-EXP-282-CONFIRMATORY-CEREMONY-RESULT-V1"
 def _seal_digest(payload: dict[str, Any]) -> str:
     clean = dict(payload)
     clean.pop("ceremony_seal_digest", None)
+    return canonical_sha256(clean)
+
+
+def _result_digest(payload: dict[str, Any]) -> str:
+    clean = dict(payload)
+    clean.pop("ceremony_result_digest", None)
     return canonical_sha256(clean)
 
 
@@ -318,4 +333,156 @@ def seal_exp282_confirmatory_ceremony(
     errors = validate_exp282_confirmatory_ceremony_seal(payload)
     if errors:
         raise RuntimeError("invalid EXP-282 ceremony seal: " + "; ".join(errors))
+    return payload
+
+
+def validate_exp282_confirmatory_ceremony_result(payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if payload.get("schema") != RESULT_SCHEMA:
+        errors.append("invalid EXP-282 ceremony result schema")
+    if payload.get("status") != "CEREMONY_EXECUTED_AND_ANALYZED":
+        errors.append("ceremony result status drift")
+    if payload.get("confirmatory_data_consumed") is not True:
+        errors.append("ceremony result must record consumed confirmatory data")
+    if payload.get("challenge_materialized") is not False:
+        errors.append("ceremony result cannot materialize challenge randomness")
+
+    artifacts = payload.get("artifacts") or {}
+    seal = artifacts.get("seal") or {}
+    raw = artifacts.get("raw") or {}
+    analysis = artifacts.get("analysis") or {}
+    seal_errors = validate_exp282_confirmatory_ceremony_seal(seal) if isinstance(seal, dict) else ["seal is not an object"]
+    raw_errors = validate_exp282_confirmatory_open_raw(raw) if isinstance(raw, dict) else ["raw is not an object"]
+    analysis_errors = validate_exp282_confirmatory_analysis(analysis) if isinstance(analysis, dict) else ["analysis is not an object"]
+    if seal_errors:
+        errors.append("embedded ceremony seal is invalid: " + "; ".join(seal_errors))
+    if raw_errors:
+        errors.append("embedded raw artifact is invalid: " + "; ".join(raw_errors))
+    if analysis_errors:
+        errors.append("embedded analysis artifact is invalid: " + "; ".join(analysis_errors))
+
+    lineage = payload.get("lineage") or {}
+    if not seal_errors and seal.get("ceremony_seal_digest") != lineage.get("ceremony_seal_digest"):
+        errors.append("ceremony result seal digest lineage mismatch")
+    if not raw_errors and raw.get("artifact_digest") != lineage.get("raw_artifact_digest"):
+        errors.append("ceremony result raw digest lineage mismatch")
+    if not analysis_errors and analysis.get("analysis_digest") != lineage.get("analysis_digest"):
+        errors.append("ceremony result analysis digest lineage mismatch")
+
+    if not seal_errors and not raw_errors:
+        if raw.get("confirmatory_n") != seal.get("confirmatory_n"):
+            errors.append("ceremony result raw confirmatory n mismatch")
+        if raw.get("reserved_replicate_ids") != seal.get("reserved_replicate_ids"):
+            errors.append("ceremony result raw reserved lineage mismatch")
+        raw_lineage = raw.get("lineage") or {}
+        seal_lineage = seal.get("lineage") or {}
+        for key in ("protocol_digest", "paired_execution_artifact_digest", "reconstruction_digest", "paired_checkpoint_sha256", "execution_contract_digest"):
+            if raw_lineage.get(key) != seal_lineage.get(key):
+                errors.append(f"ceremony result raw/seal {key} mismatch")
+    if not seal_errors and not analysis_errors:
+        if analysis.get("confirmatory_n") != seal.get("confirmatory_n"):
+            errors.append("ceremony result analysis confirmatory n mismatch")
+        if analysis.get("reserved_replicate_ids") != seal.get("reserved_replicate_ids"):
+            errors.append("ceremony result analysis reserved lineage mismatch")
+        if analysis.get("decision") != payload.get("decision"):
+            errors.append("ceremony result decision does not match Analysis Court")
+        if analysis.get("evidence_level") != payload.get("evidence_level"):
+            errors.append("ceremony result evidence level does not match Analysis Court")
+
+    if payload.get("ceremony_result_digest") not in (None, "") and payload.get("ceremony_result_digest") != _result_digest(payload):
+        errors.append("ceremony result digest mismatch")
+    return errors
+
+
+def execute_exp282_confirmatory_ceremony(
+    *,
+    protocol: dict[str, Any],
+    protocol_digest: str,
+    ceremony_seal: dict[str, Any],
+    paired_execution_artifact: dict[str, Any],
+    checkpoint_path: str | Path,
+    ceremony_code_digest: str,
+) -> dict[str, Any]:
+    require_canonical_stage_a_v1_digest(protocol_digest)
+    seal_errors = validate_exp282_confirmatory_ceremony_seal(ceremony_seal)
+    if seal_errors:
+        raise ValueError("invalid confirmatory ceremony seal: " + "; ".join(seal_errors))
+    seal_lineage = ceremony_seal.get("lineage") or {}
+    if ceremony_code_digest != seal_lineage.get("ceremony_code_digest"):
+        raise ValueError("current ceremony code digest does not match sealed source tree")
+    if protocol_digest != seal_lineage.get("protocol_digest"):
+        raise ValueError("ceremony protocol digest does not match seal")
+
+    paired_errors = validate_exp282_paired_development(paired_execution_artifact)
+    if paired_errors:
+        raise ValueError("invalid paired execution artifact: " + "; ".join(paired_errors))
+    if paired_execution_artifact.get("artifact_digest") != seal_lineage.get("paired_execution_artifact_digest"):
+        raise ValueError("paired execution artifact digest does not match ceremony seal")
+
+    checkpoint_path = Path(checkpoint_path)
+    actual_checkpoint_sha = file_sha256(checkpoint_path)
+    if actual_checkpoint_sha != seal_lineage.get("paired_checkpoint_sha256"):
+        raise ValueError("ceremony checkpoint SHA mismatch")
+
+    authorities = ceremony_seal["authorities"]
+    prep = deepcopy(authorities["prep"])
+    reconstruction = deepcopy(authorities["reconstruction_authorization"])
+    raw = execute_exp282_confirmatory_open(
+        protocol=protocol,
+        protocol_digest=protocol_digest,
+        paired_execution_artifact=paired_execution_artifact,
+        reconstruction_authorization=reconstruction,
+        checkpoint_path=checkpoint_path,
+        executor_code_digest=ceremony_code_digest,
+    )
+    raw_errors = validate_exp282_confirmatory_open_raw(raw)
+    if raw_errors:
+        raise RuntimeError("invalid raw artifact returned by sealed executor: " + "; ".join(raw_errors))
+    if raw.get("challenge_materialized") is not False:
+        raise RuntimeError("sealed executor materialized challenge randomness")
+
+    analysis = build_exp282_confirmatory_analysis(
+        protocol=protocol,
+        protocol_digest=protocol_digest,
+        prep_artifact=prep,
+        paired_execution_artifact=paired_execution_artifact,
+        reconstruction_authorization=reconstruction,
+        raw_artifact=raw,
+        analysis_code_digest=ceremony_code_digest,
+    )
+    analysis_errors = validate_exp282_confirmatory_analysis(analysis)
+    if analysis_errors:
+        raise RuntimeError("invalid Analysis Court artifact: " + "; ".join(analysis_errors))
+
+    payload: dict[str, Any] = {
+        "schema": RESULT_SCHEMA,
+        "evidence_level": analysis["evidence_level"],
+        "decision": analysis["decision"],
+        "status": "CEREMONY_EXECUTED_AND_ANALYZED",
+        "scope": "exp282-confirmatory-open-two-phase-result",
+        "confirmatory_data_consumed": True,
+        "challenge_materialized": False,
+        "confirmatory_n": ceremony_seal["confirmatory_n"],
+        "reserved_replicate_ids": list(ceremony_seal["reserved_replicate_ids"]),
+        "artifacts": {
+            "seal": deepcopy(ceremony_seal),
+            "raw": deepcopy(raw),
+            "analysis": deepcopy(analysis),
+        },
+        "lineage": {
+            "protocol_digest": protocol_digest,
+            "ceremony_seal_digest": ceremony_seal["ceremony_seal_digest"],
+            "paired_execution_artifact_digest": paired_execution_artifact["artifact_digest"],
+            "raw_artifact_digest": raw["artifact_digest"],
+            "analysis_digest": analysis["analysis_digest"],
+            "paired_checkpoint_sha256": actual_checkpoint_sha,
+            "ceremony_code_digest": ceremony_code_digest,
+        },
+        "remaining_blockers": list(analysis.get("remaining_blockers") or []),
+        "ceremony_result_digest": "",
+    }
+    payload["ceremony_result_digest"] = _result_digest(payload)
+    errors = validate_exp282_confirmatory_ceremony_result(payload)
+    if errors:
+        raise RuntimeError("invalid EXP-282 ceremony result: " + "; ".join(errors))
     return payload
