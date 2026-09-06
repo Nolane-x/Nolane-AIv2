@@ -48,6 +48,12 @@ jobs:
           tests/test_heldout_artifact.py
           tests/test_multiseed_heldout.py
           tests/test_multiseed_cli.py
+          tests/test_neural_arm_registry.py
+          tests/test_matched_belief_arms.py
+          tests/test_exp282_compute_ledger.py
+          tests/test_exp282_partial_observability.py
+          tests/test_exp282_paired_runner.py
+          tests/test_exp282_paired_cli.py
       - run: python scripts/audit_model.py > /tmp/model-audit.json
       - run: python scripts/audit_stage_a_pilot.py > /tmp/stage-a-pilot-audit.json
       - run: >-
@@ -79,4 +85,14 @@ jobs:
           --constraints 2
           --bootstrap-samples 50
           --output /tmp/nlm-stage-a-multiseed.json
+      - run: >-
+          python scripts/run_exp282_paired_dev.py
+          --tiny
+          --train-replicates 1
+          --eval-replicates 2
+          --batch-size 2
+          --timesteps 3
+          --variables 2
+          --output /tmp/nlm-exp282-paired.json
+          --registry-output /tmp/nlm-neural-arm-registry.json
       - run: python -m compileall -q src scripts
