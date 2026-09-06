@@ -7,6 +7,7 @@ from typing import Any
 
 from nolane_ai.protocol.evidence import validate_evidence_packet
 from nolane_ai.protocol.identity import file_sha256, source_tree_digest
+from nolane_ai.protocol.schema import ProtocolValidationError, load_and_validate_protocol
 
 from .analysis import build_smoke_evidence_packet, summarize_bundle
 from .harness import run_stage_a_smoke
@@ -27,8 +28,12 @@ def execute_stage_a(
     expected_digest = digest_path.read_text(encoding="utf-8").strip()
     if actual_digest != expected_digest:
         raise RuntimeError(f"protocol digest mismatch: expected {expected_digest!r}, got {actual_digest}")
+    try:
+        spec = load_and_validate_protocol(protocol_path)
+    except ProtocolValidationError as error:
+        raise RuntimeError(f"protocol validation failed: {error}") from error
     raw = json.loads(protocol_path.read_text(encoding="utf-8"))
-    if raw.get("protocol_id") != "NLM-REASONING-STAGE-A-CONFIRMATORY-V1" or raw.get("status") != "FROZEN_V1":
+    if spec.protocol_id != "NLM-REASONING-STAGE-A-CONFIRMATORY-V1" or spec.status != "FROZEN_V1":
         raise RuntimeError("runner requires the frozen Stage-A v1 protocol")
     if root_seed is None:
         root_seed = str(raw.get("rng", {}).get("root_seed", "20260906"))
