@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 from typing import Any
 
 import torch
 from torch.nn import functional as F
 
 from nolane_ai.protocol.evidence import canonical_sha256
+from nolane_ai.protocol.identity import file_sha256
 from nolane_ai.protocol.seeds import derive_stream_seed
 from nolane_ai.training.optimizer import build_functional_optimizer, functional_trainable_named_parameters
 from nolane_ai.training.tensor_bytes import tensor_byteorder, tensor_raw_bytes
@@ -83,6 +85,29 @@ def validate_exp282_paired_development(payload: dict[str, Any]) -> list[str]:
         if any(not digest for digest in digests) or len(set(digests)) != len(digests):
             errors.append("EXP-282 evaluation batch digests must be non-empty and unique")
 
+    checkpoint = payload.get("checkpoint")
+    if checkpoint is not None:
+        if checkpoint.get("schema") != "NLM-EXP-282-PAIRED-CHECKPOINT-V1":
+            errors.append("EXP-282 checkpoint schema drift")
+        if checkpoint.get("state_policy") != "functional-only":
+            errors.append("EXP-282 checkpoint state policy drift")
+        if not checkpoint.get("checkpoint_sha256"):
+            errors.append("EXP-282 checkpoint digest is missing")
+        contract = checkpoint.get("execution_contract") or {}
+        if checkpoint.get("execution_contract_digest") != canonical_sha256(contract):
+            errors.append("EXP-282 checkpoint execution contract digest mismatch")
+        if contract.get("root_seed") != payload.get("root_seed"):
+            errors.append("EXP-282 checkpoint root-seed contract mismatch")
+        if contract.get("world_geometry") != payload.get("world_geometry"):
+            errors.append("EXP-282 checkpoint world-geometry contract mismatch")
+        if contract.get("arm_geometry") != payload.get("arm_geometry"):
+            errors.append("EXP-282 checkpoint arm-geometry contract mismatch")
+        final_state = payload.get("final_state") or {}
+        if checkpoint.get("recurrent_hidden_final_digest") != final_state.get("recurrent_hidden_digest"):
+            errors.append("EXP-282 recurrent checkpoint/final-state digest mismatch")
+        if checkpoint.get("explicit_belief_final_digest") != final_state.get("explicit_belief_digest"):
+            errors.append("EXP-282 explicit checkpoint/final-state digest mismatch")
+
     primary = payload.get("primary_endpoint") or {}
     protected = payload.get("protected_endpoints") or {}
     if primary.get("metric") != "grounded_decision_accuracy":
@@ -133,6 +158,14 @@ def _build_seeded_pair(
     return recurrent, explicit, seed
 
 
+def _functional_state_dict(model: torch.nn.Module) -> dict[str, torch.Tensor]:
+    return {
+        name: tensor.detach().cpu().clone()
+        for name, tensor in model.state_dict().items()
+        if "capacity_reserve" not in name
+    }
+
+
 def _evaluate_arm(logits: torch.Tensor, targets: torch.Tensor) -> dict[str, float]:
     probabilities = torch.softmax(logits, dim=-1)[..., 1]
     predictions = logits.argmax(dim=-1)
@@ -175,6 +208,7 @@ def run_exp282_paired_development(
     weight_decay: float,
     protocol_digest: str,
     code_digest: str,
+    checkpoint_path: str | Path | None = None,
 ) -> dict[str, Any]:
     if not root_seed:
         raise ValueError("root_seed is required")
@@ -277,6 +311,62 @@ def run_exp282_paired_development(
 
     mean_accuracy_gain = sum(row["explicit_minus_recurrent_accuracy"] for row in per_replicate) / eval_replicates
     mean_brier_difference = sum(row["explicit_minus_recurrent_brier"] for row in per_replicate) / eval_replicates
+    final_state = {
+        "recurrent_hidden_digest": _functional_state_digest(recurrent),
+        "explicit_belief_digest": _functional_state_digest(explicit),
+    }
+    arm_geometry = {
+        "d_model": d_model,
+        "hidden_size": hidden_size,
+        "target_parameters": target_parameters,
+    }
+    world_geometry = {
+        "batch_size": batch_size,
+        "timesteps": timesteps,
+        "variables": variables,
+        "d_model": d_model,
+        "visibility_rate": visibility_rate,
+        "noise_std": noise_std,
+    }
+    execution_contract = {
+        "root_seed": root_seed,
+        "arm_geometry": arm_geometry,
+        "world_geometry": world_geometry,
+    }
+    execution_contract_digest = canonical_sha256(execution_contract)
+    checkpoint_info: dict[str, Any] | None = None
+    if checkpoint_path is not None:
+        checkpoint_path = Path(checkpoint_path)
+        checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint_payload = {
+            "schema": "NLM-EXP-282-PAIRED-TENSORS-V1",
+            "protocol_digest": protocol_digest,
+            "code_digest": code_digest,
+            "model_init_seed": model_init_seed,
+            "state_policy": "functional-only",
+            "execution_contract": execution_contract,
+            "execution_contract_digest": execution_contract_digest,
+            "final_state": final_state,
+            "training_lineage": {
+                "rng_stream": "augmentation",
+                "start_replicate": 0,
+                "replicates": train_replicates,
+                "batch_digests": training_digests,
+            },
+            "recurrent_hidden_state": _functional_state_dict(recurrent),
+            "explicit_belief_state": _functional_state_dict(explicit),
+        }
+        torch.save(checkpoint_payload, checkpoint_path)
+        checkpoint_info = {
+            "schema": "NLM-EXP-282-PAIRED-CHECKPOINT-V1",
+            "checkpoint_sha256": file_sha256(checkpoint_path),
+            "state_policy": "functional-only",
+            "execution_contract": execution_contract,
+            "execution_contract_digest": execution_contract_digest,
+            "recurrent_hidden_final_digest": final_state["recurrent_hidden_digest"],
+            "explicit_belief_final_digest": final_state["explicit_belief_digest"],
+        }
+
     payload: dict[str, Any] = {
         "schema": SCHEMA,
         "evidence_level": "EV-E2",
@@ -292,10 +382,9 @@ def run_exp282_paired_development(
             "explicit_belief_digest": initial_explicit,
             "functional_digest_match": initial_recurrent == initial_explicit,
         },
-        "final_state": {
-            "recurrent_hidden_digest": _functional_state_digest(recurrent),
-            "explicit_belief_digest": _functional_state_digest(explicit),
-        },
+        "final_state": final_state,
+        "checkpoint": checkpoint_info,
+        "arm_geometry": arm_geometry,
         "resource_match": {
             "parameter_match": pair_audit["parameter_match"],
             "observation_history_match": pair_audit["observation_history_match"],
@@ -332,14 +421,7 @@ def run_exp282_paired_development(
                 "mean_brier_difference": mean_brier_difference,
             },
         },
-        "world_geometry": {
-            "batch_size": batch_size,
-            "timesteps": timesteps,
-            "variables": variables,
-            "d_model": d_model,
-            "visibility_rate": visibility_rate,
-            "noise_std": noise_std,
-        },
+        "world_geometry": world_geometry,
         "remaining_blockers": [
             "development worlds remain synthetic and cannot establish EV-E3 by themselves",
             "confirmatory sample size, paired analysis freeze, and post-freeze challenge execution are not closed",

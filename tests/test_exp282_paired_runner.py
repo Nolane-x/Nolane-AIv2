@@ -156,3 +156,38 @@ def test_exp282_paired_runner_records_training_lineage_and_rejects_train_eval_ov
             protocol_digest="p",
             code_digest="c",
         )
+
+
+def test_exp282_paired_runner_writes_functional_checkpoint_bound_to_artifact(tmp_path):
+    from nolane_ai.experiments.exp282_paired_runner import run_exp282_paired_development
+    from nolane_ai.protocol.identity import file_sha256
+
+    checkpoint = tmp_path / "exp282-pair.pt"
+    result = run_exp282_paired_development(
+        root_seed="checkpointed",
+        d_model=8,
+        hidden_size=6,
+        target_parameters=5_000,
+        train_replicates=2,
+        eval_replicates=2,
+        eval_start_replicate=100,
+        batch_size=2,
+        timesteps=3,
+        variables=2,
+        visibility_rate=0.5,
+        noise_std=0.25,
+        lr=1e-3,
+        weight_decay=0.0,
+        protocol_digest="p" * 64,
+        code_digest="c" * 64,
+        checkpoint_path=checkpoint,
+    )
+    assert checkpoint.exists()
+    assert result["checkpoint"]["schema"] == "NLM-EXP-282-PAIRED-CHECKPOINT-V1"
+    assert result["checkpoint"]["checkpoint_sha256"] == file_sha256(checkpoint)
+    payload = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    assert payload["schema"] == "NLM-EXP-282-PAIRED-TENSORS-V1"
+    assert payload["final_state"] == result["final_state"]
+    for arm_state in (payload["recurrent_hidden_state"], payload["explicit_belief_state"]):
+        assert arm_state
+        assert all("capacity_reserve" not in key for key in arm_state)

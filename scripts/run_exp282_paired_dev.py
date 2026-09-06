@@ -41,6 +41,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weight-decay", type=float, default=0.0)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--registry-output", type=Path, required=True)
+    parser.add_argument("--checkpoint-output", type=Path, default=None)
     return parser.parse_args()
 
 
@@ -67,6 +68,8 @@ def main() -> int:
         hidden_size = args.hidden_size
         target_parameters = args.target_parameters
 
+    checkpoint_output = args.checkpoint_output or args.output.with_suffix(".pt")
+
     execution = run_exp282_paired_development(
         root_seed=args.root_seed,
         d_model=d_model,
@@ -84,6 +87,7 @@ def main() -> int:
         weight_decay=args.weight_decay,
         protocol_digest=protocol_digest,
         code_digest=code_digest,
+        checkpoint_path=checkpoint_output,
     )
 
     recurrent, explicit = build_matched_belief_arm_pair(
@@ -116,6 +120,7 @@ def main() -> int:
         "evidence_level": execution["evidence_level"],
         "decision": execution["decision"],
         "execution_digest": execution["artifact_digest"],
+        "checkpoint_sha256": execution["checkpoint"]["checkpoint_sha256"],
         "registry_digest": registry["registry_digest"],
         "match_court": registry["experiments"]["EXP-282"]["match_court"],
         "development_match_status": registry["experiments"]["EXP-282"]["development_match_status"],
