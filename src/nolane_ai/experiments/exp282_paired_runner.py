@@ -62,7 +62,10 @@ def validate_exp282_paired_development(payload: dict[str, Any]) -> list[str]:
     if evaluation.get("rng_stream") != "evaluation":
         errors.append("EXP-282 evaluation stream must be evaluation")
     train_count = int(training.get("replicates", 0) or 0)
+    train_start = int(training.get("start_replicate", -1))
     train_digests = training.get("batch_digests") or []
+    if train_start != 0:
+        errors.append("EXP-282 training replicate lineage must start at 0")
     if train_count <= 0 or len(train_digests) != train_count:
         errors.append("EXP-282 training replicate count does not match batch lineage")
     eval_count = int(evaluation.get("replicates", 0) or 0)
@@ -71,6 +74,8 @@ def validate_exp282_paired_development(payload: dict[str, Any]) -> list[str]:
         errors.append("EXP-282 evaluation replicate count does not match raw lineage")
     if raw:
         start = int(evaluation.get("start_replicate", -1))
+        if train_count > 0 and train_start >= 0 and start < train_start + train_count and start + eval_count > train_start:
+            errors.append("EXP-282 training and evaluation replicate lineages overlap")
         indexes = [row.get("replicate") for row in raw]
         if indexes != list(range(start, start + len(raw))):
             errors.append("EXP-282 evaluation replicate lineage is reordered or incomplete")
@@ -188,6 +193,8 @@ def run_exp282_paired_development(
         raise ValueError("execution counts and dimensions must be positive")
     if eval_start_replicate < 0:
         raise ValueError("eval_start_replicate must be non-negative")
+    if eval_start_replicate < train_replicates:
+        raise ValueError("training and evaluation replicate lineages must be disjoint")
     if lr <= 0.0 or weight_decay < 0.0:
         raise ValueError("optimizer hyperparameters are invalid")
 
@@ -307,6 +314,7 @@ def run_exp282_paired_development(
         },
         "training": {
             "rng_stream": "augmentation",
+            "start_replicate": 0,
             "replicates": train_replicates,
             "batch_digests": training_digests,
             "optimizer": {"type": "AdamW", "lr": lr, "weight_decay": weight_decay},
