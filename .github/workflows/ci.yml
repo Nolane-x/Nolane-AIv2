@@ -59,6 +59,12 @@ jobs:
           tests/test_exp277_paired_runner.py
           tests/test_exp277_registry_integration.py
           tests/test_exp277_paired_cli.py
+          tests/test_exp279_neural_import.py
+          tests/test_matched_routing_arms.py
+          tests/test_exp279_routing_worlds.py
+          tests/test_exp279_paired_runner.py
+          tests/test_exp279_registry_integration.py
+          tests/test_exp279_paired_cli.py
           tests/test_matched_belief_arms.py
           tests/test_exp282_compute_ledger.py
           tests/test_exp282_partial_observability.py
@@ -117,6 +123,18 @@ jobs:
           --constraints 2
           --output /tmp/nlm-exp277-paired.json
           --registry-output /tmp/nlm-exp277-neural-arm-registry.json
+      - run: >-
+          python scripts/run_exp279_paired_dev.py
+          --tiny
+          --train-replicates 3
+          --eval-replicates 3
+          --batch-size 2
+          --timesteps 3
+          --variables 4
+          --constraints 2
+          --route-threshold 0.5
+          --output /tmp/nlm-exp279-paired.json
+          --registry-output /tmp/nlm-exp279-neural-arm-registry.json
       - run: >-
           python scripts/run_exp282_paired_dev.py
           --tiny
