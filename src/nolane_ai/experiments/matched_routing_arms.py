@@ -92,7 +92,6 @@ class _MatchedExp279ArmBase(nn.Module):
     def _residual_uncertainty(self, hidden: torch.Tensor) -> torch.Tensor:
         routing_logits = self.routing_head(hidden).squeeze(-1)
         routing_probability = torch.sigmoid(routing_logits)
-        # Mean distance from a confident binary routing state, scaled to [0, 1].
         entropy_proxy = 1.0 - (routing_probability - 0.5).abs().mul(2.0)
         return entropy_proxy.mean(dim=-1).clamp(0.0, 1.0)
 
@@ -123,17 +122,23 @@ class PropagationOnlyArm(_MatchedExp279ArmBase):
         events, variables = self._validate_common(surface_events, variable_states)
         incidence = self._validate_incidence(incidence, variables)
         propagated = self._propagate(variables, incidence)
-        # Reclaim the branch-controller envelope as a surface-summary transform without branch search.
-        surface_summary = events.mean(dim=1, keepdim=True).expand(-1, variables.shape[1], -1)
-        reclaimed = torch.tanh(self.reclaimed_projection(surface_summary))
-        mixed = variables + propagated + torch.sigmoid(self.mix_gate) * reclaimed
+
+        # The simpler arm is not allowed to park branch-controller capacity in an
+        # excluded reserve. Reclaim it as a one-step surface-summary transform;
+        # this activates the GRU parameters without granting multi-step branch-search semantics.
+        summary_event = events.mean(dim=1, keepdim=True)
+        reclaimed_branch = self._branch_context(summary_event).unsqueeze(1)
+        reclaimed_surface = torch.tanh(
+            self.reclaimed_projection(reclaimed_branch.expand(-1, variables.shape[1], -1))
+        )
+        mixed = variables + propagated + torch.sigmoid(self.mix_gate) * reclaimed_surface
         residual = self._residual_uncertainty(mixed)
         route_mask = torch.zeros(mixed.shape[0], dtype=torch.bool, device=mixed.device)
         return self._heads(
             mixed,
             residual_uncertainty=residual,
             route_mask=route_mask,
-            semantics="constraint_propagation_no_branch_search_with_reclaimed_branch_capacity",
+            semantics="constraint_propagation_no_branch_search_with_one_step_reclaimed_branch_capacity",
         )
 
 
@@ -145,7 +150,7 @@ class BranchOnlyArm(_MatchedExp279ArmBase):
     ) -> Exp279ArmOutput:
         events, variables = self._validate_common(surface_events, variable_states)
         branch_context = self._branch_context(events).unsqueeze(1)
-        # Reclaim the propagation transform as an incidence-free variable-local transform.
+        # Reclaim the propagation envelope as an incidence-free variable-local transform.
         reclaimed = torch.tanh(self.propagation_projection(variables))
         reclaimed = torch.tanh(self.reclaimed_projection(reclaimed))
         mixed = variables + branch_context + torch.sigmoid(self.mix_gate) * reclaimed
@@ -173,15 +178,26 @@ class HybridRoutingArm(_MatchedExp279ArmBase):
         residual = self._residual_uncertainty(propagation_state)
         route_mask = residual > self.route_threshold
 
-        branch_context = self._branch_context(events).unsqueeze(1).expand(-1, variables.shape[1], -1)
         reclaimed = torch.tanh(self.reclaimed_projection(propagation_state))
-        branch_state = propagation_state + torch.sigmoid(self.mix_gate) * (branch_context + reclaimed)
-        mixed = torch.where(route_mask[:, None, None], branch_state, propagation_state + reclaimed)
+        stop_state = propagation_state + reclaimed
+        mixed = stop_state
+
+        # Crucially, branch recurrence executes only for routed episodes. This binds
+        # real execution semantics to the stop-vs-branch accounted-cost receipt.
+        if bool(route_mask.any().item()):
+            routed_indices = route_mask.nonzero(as_tuple=False).squeeze(-1)
+            routed_context = self._branch_context(events.index_select(0, routed_indices))
+            routed_context = routed_context.unsqueeze(1).expand(-1, variables.shape[1], -1)
+            routed_state = propagation_state.index_select(0, routed_indices)
+            routed_reclaimed = reclaimed.index_select(0, routed_indices)
+            branch_state = routed_state + torch.sigmoid(self.mix_gate) * (routed_context + routed_reclaimed)
+            mixed = mixed.index_copy(0, routed_indices, branch_state)
+
         return self._heads(
             mixed,
             residual_uncertainty=residual,
             route_mask=route_mask,
-            semantics="propagation_then_branch_on_residual_uncertainty",
+            semantics="propagation_then_branch_only_for_routed_residual_uncertainty",
         )
 
 
@@ -273,13 +289,14 @@ def _compute_ledgers(
         + (constraints + variables) * h
     )
     branch = _gru_flops(timesteps, h) + variables * h
-    reclaimed = variables * _linear_flops(h, h)
+    reclaimed_projection = variables * _linear_flops(h, h)
+    reclaimed_branch_summary = _gru_flops(1, h) + h
     routing = variables * _linear_flops(h, 1)
 
-    propagation_total = shared + propagation + reclaimed + routing
-    branch_total = shared + branch + 2 * reclaimed + routing
-    hybrid_stop = shared + propagation + reclaimed + routing
-    hybrid_branch = shared + propagation + branch + reclaimed + routing
+    propagation_total = shared + propagation + reclaimed_branch_summary + reclaimed_projection + routing
+    branch_total = shared + branch + 2 * reclaimed_projection + routing
+    hybrid_stop = shared + propagation + reclaimed_projection + routing
+    hybrid_branch = hybrid_stop + branch
 
     def ledger(arm_id: str, total: int, components: dict[str, int]) -> dict[str, Any]:
         return {
@@ -302,18 +319,36 @@ def _compute_ledgers(
         "propagation_only": ledger(
             "propagation_only",
             propagation_total,
-            {"shared": shared, "propagation": propagation, "reclaimed_capacity": reclaimed, "routing_statistic": routing},
+            {
+                "shared": shared,
+                "propagation": propagation,
+                "reclaimed_branch_summary": reclaimed_branch_summary,
+                "reclaimed_projection": reclaimed_projection,
+                "routing_statistic": routing,
+            },
         ),
         "branch_only": ledger(
             "branch_only",
             branch_total,
-            {"shared": shared, "branch": branch, "reclaimed_capacity": 2 * reclaimed, "routing_statistic": routing},
+            {
+                "shared": shared,
+                "branch": branch,
+                "reclaimed_capacity": 2 * reclaimed_projection,
+                "routing_statistic": routing,
+            },
         ),
         "hybrid": ledger(
             "hybrid",
             hybrid_branch,
-            {"shared": shared, "propagation": propagation, "branch_max": branch, "reclaimed_capacity": reclaimed, "routing": routing},
-        ) | {
+            {
+                "shared": shared,
+                "propagation": propagation,
+                "branch_max": branch,
+                "reclaimed_capacity": reclaimed_projection,
+                "routing": routing,
+            },
+        )
+        | {
             "stop_accounted_flops_per_episode": int(hybrid_stop),
             "branch_accounted_flops_per_episode": int(hybrid_branch),
         },
@@ -368,12 +403,13 @@ def audit_matched_exp279_arm_triplet(
         "optimizer_visible_parameter_match": optimizer_match,
         "reclaimed_parameter_assignment_closed": True,
         "reclaimed_parameter_assignment": {
-            "propagation_only": "branch-controller envelope reclaimed as incidence-free surface-summary transform",
-            "branch_only": "propagation envelope reclaimed as variable-local incidence-free transform",
-            "hybrid": "propagation and branch envelopes both used under predeclared residual routing",
+            "propagation_only": "multi-step branch search withheld; branch-controller envelope reclaimed as one-step surface-summary transform",
+            "branch_only": "compiled incidence withheld; propagation envelope reclaimed as variable-local transform",
+            "hybrid": "propagation and routed branch envelopes both used under predeclared residual routing",
         },
         "inactive_excluded_reclaimed_parameters": 0,
         "structure_fit_strata": list(STRATA),
+        "route_threshold": float(hybrid.route_threshold),
         "declared_max_accounted_flops_per_episode": declared,
         "compute_budget_closed": True,
         "compute_ledger": ledgers,
