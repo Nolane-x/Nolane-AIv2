@@ -124,6 +124,18 @@ jobs:
           --output /tmp/nlm-exp277-paired.json
           --registry-output /tmp/nlm-exp277-neural-arm-registry.json
       - run: >-
+          python scripts/run_exp279_paired_dev.py
+          --tiny
+          --train-replicates 3
+          --eval-replicates 3
+          --batch-size 2
+          --timesteps 3
+          --variables 4
+          --constraints 2
+          --route-threshold 0.5
+          --output /tmp/nlm-exp279-paired.json
+          --registry-output /tmp/nlm-exp279-neural-arm-registry.json
+      - run: >-
           python scripts/run_exp282_paired_dev.py
           --tiny
           --train-replicates 1
