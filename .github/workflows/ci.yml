@@ -46,6 +46,8 @@ jobs:
           tests/test_neural_evaluation.py
           tests/test_neural_eval_cli.py
           tests/test_heldout_artifact.py
+          tests/test_multiseed_heldout.py
+          tests/test_multiseed_cli.py
       - run: python scripts/audit_model.py > /tmp/model-audit.json
       - run: python scripts/audit_stage_a_pilot.py > /tmp/stage-a-pilot-audit.json
       - run: >-
@@ -66,4 +68,15 @@ jobs:
           --constraints 2
           --eval-start-replicate 100
           --output /tmp/nlm-stage-a-heldout.json
+      - run: >-
+          python scripts/run_multiseed_heldout.py
+          --tiny
+          --seeds 2
+          --train-steps 1
+          --eval-batches 1
+          --batch-size 2
+          --variables 2
+          --constraints 2
+          --bootstrap-samples 50
+          --output /tmp/nlm-stage-a-multiseed.json
       - run: python -m compileall -q src scripts
