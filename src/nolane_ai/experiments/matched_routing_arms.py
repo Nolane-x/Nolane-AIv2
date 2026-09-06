@@ -264,7 +264,6 @@ def _shared_flops(arm: _MatchedExp279ArmBase, *, timesteps: int, variables: int)
         timesteps * _linear_flops(d, h)
         + variables * _linear_flops(d, h)
         + variables * (_linear_flops(h, 2) + _linear_flops(h, 1) + 1)
-        + variables * _linear_flops(h, 1)
     )
 
 
