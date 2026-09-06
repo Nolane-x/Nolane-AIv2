@@ -107,8 +107,8 @@ assert audit["active_functional_parameter_match"] is True
 assert audit["optimizer_visible_parameter_match"] is True
 assert audit["oracle_information_separation"] is True
 assert audit["compute_budget_closed"] is True
-assert audit["chronological_failure"]["reserved_parameters"] == 0
-assert audit["oracle_conflict_core"]["reserved_parameters"] == 0
+assert audit["chronological_failure"]["reserved_parameters"] == audit["oracle_conflict_core"]["reserved_parameters"]
+assert audit["chronological_failure"]["optimizer_visible_parameters"] == audit["oracle_conflict_core"]["optimizer_visible_parameters"]
 ```
 
 Also test identical state dictionaries after construction, both arms requiring rank-3 surface/variable inputs, chronological rejecting a real oracle-core mask, oracle rejecting a core mask before `contradiction_observed=True`, and both producing matching rollback-logit shapes.
@@ -132,7 +132,7 @@ self.mix_gate = nn.Parameter(torch.zeros(()))
 finalize_region_budget(self, target_parameters, device=device, frozen=False)
 ```
 
-Use `functional_trainable_named_parameters` for optimizer-visible accounting. If `capacity_reserve` exists because target closure requires it, it must be excluded from the claimed active/optimizer-visible count in the same established repo semantics; no arm-specific reserve is permitted and both reserve counts must be identical. Tests should assert no asymmetry, not assume an impossible zero reserve if target closure uses one.
+Use `functional_trainable_named_parameters` for optimizer-visible accounting. If `capacity_reserve` exists because target closure requires it, it must be excluded from the claimed active/optimizer-visible count in the same established repo semantics; no arm-specific reserve is permitted and both reserve counts must be identical. Tests assert symmetry, not zero reserve.
 
 - [ ] **Step 4: Implement information semantics**
 
