@@ -138,3 +138,27 @@ python scripts/run_exp277_paired_dev.py \
 The two arms share functional initialization and exact parameter count. `arcs_branch` receives only the surface event/variable representation; `oracle_cbrf` additionally receives the ground-truth constraint↔variable incidence artifact. Both are charged by an explicit analytical accounted-FLOP ledger under one declared per-episode ceiling and run on the exact same paired world lineage. The CLI requires the canonical frozen Stage-A protocol digest and refuses to overwrite either output before any experiment execution.
 
 The resulting registry state is `PAIRED_STRUCTURE_DENSE_DEV_READY` with `match_court=BLOCKED`. Remaining confirmatory sample-size/analysis freeze, confirmatory-open execution, and post-freeze challenge evidence are deliberately not manufactured by this development lane.
+
+## EXP-279 matched neural routing DEVELOPMENT lane
+
+Package `0.12.0` adds a three-arm neural development lane for the frozen `EXP-279` propagation-routing gate. It compares `propagation_only`, `branch_only`, and `hybrid` on paired deterministic worlds spanning the predeclared `PROPAGATION_FIT`, `BRANCH_FIT`, and `MIXED_RESIDUAL` structure-fit strata.
+
+Run the CPU-safe development smoke:
+
+```bash
+python scripts/run_exp279_paired_dev.py \
+  --tiny \
+  --train-replicates 3 \
+  --eval-replicates 3 \
+  --batch-size 2 \
+  --timesteps 3 \
+  --variables 4 \
+  --constraints 2 \
+  --route-threshold 0.5 \
+  --output /tmp/nlm-exp279-paired.json \
+  --registry-output /tmp/nlm-exp279-registry.json
+```
+
+All three arms share one matched parameter envelope. `branch_only` is structurally denied the compiled constraint↔variable incidence artifact, while `propagation_only` and `hybrid` receive it. Simpler arms reclaim otherwise idle functional capacity rather than hiding it in excluded reserve. The hybrid executes branch recurrence only for episodes whose residual uncertainty crosses the frozen development threshold, and its cost receipt charges the observed routed fraction between pre-accounted stop and branch paths under one common maximum FLOP ceiling.
+
+This lane remains **EV-E2 / UNVERIFIED**. It reports descriptive paired development aggregates only; it does not run the frozen blocked/Holm confirmatory analysis, does not consume confirmatory-open observations, and does not materialize post-freeze challenge randomness. The Neural Arm Registry can record `PAIRED_ROUTING_DEV_READY`, but `match_court` remains `BLOCKED` until confirmatory sample-size/analysis freeze, confirmatory-open execution, and post-freeze challenge evidence are actually completed.
