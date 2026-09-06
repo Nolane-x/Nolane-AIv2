@@ -60,6 +60,8 @@ jobs:
           tests/test_exp282_reconstruction_court.py
           tests/test_exp282_confirmatory_executor.py
           tests/test_exp282_confirmatory_executor_cli.py
+          tests/test_exp282_confirmatory_analysis.py
+          tests/test_exp282_confirmatory_analysis_cli.py
       - run: python scripts/audit_model.py > /tmp/model-audit.json
       - run: python scripts/audit_stage_a_pilot.py > /tmp/stage-a-pilot-audit.json
       - run: >-

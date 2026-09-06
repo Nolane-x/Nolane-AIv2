@@ -17,6 +17,11 @@ def require_frozen_stage_a_v1_sha256(digest: str) -> None:
         )
 
 
+def require_canonical_stage_a_v1_digest(digest: str) -> None:
+    """Semantic alias for callers that validate a supplied protocol digest."""
+    require_frozen_stage_a_v1_sha256(digest)
+
+
 def source_tree_digest(root: str | Path) -> str:
     root = Path(root)
     files: list[Path] = []
