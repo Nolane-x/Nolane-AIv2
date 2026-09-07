@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from hashlib import sha256
+import math
 from typing import Any
 
 import torch
@@ -15,6 +17,10 @@ from nolane_ai.protocol.seeds import derive_stream_seed
 from nolane_ai.reasoning.fidelity import FidelityCourt, compile_valid
 
 SCHEMA = "NLM-EXP-297-PAIRED-DEV-EVAL-V1"
+MEASUREMENT_BOUNDARY = (
+    "EV-E2_ANALYTICAL_NEURAL_FLOPS_PLUS_EXACT_SEMANTIC_OPERATIONS_"
+    "NOT_HARDWARE_PROFILED_FLOPS"
+)
 FALSE_FLAGS = (
     "confirmatory_ready",
     "confirmatory_data_consumed",
@@ -86,8 +92,8 @@ def run_exp297_paired_development(
 ) -> dict[str, Any]:
     if eval_replicates <= 0 or eval_start_replicate < 0:
         raise ValueError("invalid EXP-297 replicate geometry")
-    if max_exact_assignments <= 0:
-        raise ValueError("max_exact_assignments must be positive")
+    if min(d_model, hidden_size, target_parameters, max_exact_assignments) <= 0:
+        raise ValueError("invalid EXP-297 model/verification geometry")
 
     model_seed = derive_stream_seed(root_seed, "EXP-297", 0, "model_init")
     torch.manual_seed(model_seed)
@@ -179,10 +185,7 @@ def run_exp297_paired_development(
         },
         "resource_match": {"pair_audit": pair_audit},
         "evaluation": {"raw_candidates": raw, "aggregate": aggregate},
-        "measurement_boundary": (
-            "EV-E2_ANALYTICAL_NEURAL_FLOPS_PLUS_EXACT_SEMANTIC_OPERATIONS_"
-            "NOT_HARDWARE_PROFILED_FLOPS"
-        ),
+        "measurement_boundary": MEASUREMENT_BOUNDARY,
         "confirmatory_ready": False,
         "confirmatory_data_consumed": False,
         "challenge_seed_materialized": False,
@@ -193,6 +196,14 @@ def run_exp297_paired_development(
     }
     payload["artifact_digest"] = _digest(payload)
     return payload
+
+
+def _score_is_unit_interval(value: Any) -> bool:
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        return False
+    return math.isfinite(score) and 0.0 <= score <= 1.0
 
 
 def validate_exp297_execution(payload: dict[str, Any]) -> list[str]:
@@ -208,17 +219,65 @@ def validate_exp297_execution(payload: dict[str, Any]) -> list[str]:
     for flag in FALSE_FLAGS:
         if payload.get(flag) is not False:
             errors.append(f"EXP-297 forbidden flag enabled: {flag}")
+    if payload.get("measurement_boundary") != MEASUREMENT_BOUNDARY:
+        errors.append("EXP-297 measurement boundary mismatch")
     if payload.get("artifact_digest") != _digest(payload):
         errors.append("EXP-297 artifact digest mismatch")
+    if not isinstance(payload.get("protocol_digest"), str) or not payload.get("protocol_digest"):
+        errors.append("EXP-297 protocol digest missing")
+    if not isinstance(payload.get("code_digest"), str) or not payload.get("code_digest"):
+        errors.append("EXP-297 code digest missing")
 
     config = payload.get("config") or {}
     try:
         eval_replicates = int(config["eval_replicates"])
         eval_start = int(config["eval_start_replicate"])
+        d_model = int(config["d_model"])
+        hidden_size = int(config["hidden_size"])
+        target_parameters = int(config["target_parameters"])
         max_exact = int(config["max_exact_assignments"])
     except (KeyError, TypeError, ValueError):
         errors.append("EXP-297 invalid config")
         return errors
+    if (
+        eval_replicates <= 0
+        or eval_start < 0
+        or min(d_model, hidden_size, target_parameters, max_exact) <= 0
+    ):
+        errors.append("EXP-297 invalid config geometry")
+        return errors
+
+    root_seed = payload.get("root_seed")
+    if not isinstance(root_seed, str):
+        errors.append("EXP-297 root seed invalid")
+        return errors
+    expected_model_seed = derive_stream_seed(root_seed, "EXP-297", 0, "model_init")
+    if payload.get("model_init_seed") != expected_model_seed:
+        errors.append("EXP-297 model-init seed mismatch")
+
+    try:
+        with torch.random.fork_rng(devices=[]):
+            torch.manual_seed(expected_model_seed)
+            expected_compile_arm, expected_fidelity_arm = build_matched_fidelity_arms(
+                d_model=d_model,
+                hidden_size=hidden_size,
+                target_parameters=target_parameters,
+            )
+            expected_pair = audit_matched_fidelity_arms(
+                expected_compile_arm,
+                expected_fidelity_arm,
+            )
+    except (RuntimeError, TypeError, ValueError) as exc:
+        errors.append(f"EXP-297 matched arm reconstruction failed: {type(exc).__name__}")
+        return errors
+
+    observed_pair = (payload.get("resource_match") or {}).get("pair_audit") or {}
+    if observed_pair != expected_pair:
+        errors.append("EXP-297 matched neural pair audit reconstruction mismatch")
+    expected_neural_flops = {
+        arm_id: int(expected_pair["compute_ledger"][arm_id]["neural_accounted_flops"])
+        for arm_id in ("compile_only", "fidelity_court")
+    }
 
     rows = (payload.get("evaluation") or {}).get("raw_candidates")
     if not isinstance(rows, list):
@@ -226,7 +285,6 @@ def validate_exp297_execution(payload: dict[str, Any]) -> list[str]:
         return errors
 
     expected_rows: list[tuple[Any, Any, Any, int, int]] = []
-    root_seed = str(payload.get("root_seed", ""))
     court = FidelityCourt(max_exact_assignments=max_exact)
     for offset in range(eval_replicates):
         replicate = eval_start + offset
@@ -299,19 +357,22 @@ def validate_exp297_execution(payload: dict[str, Any]) -> list[str]:
         )
         if fidelity_data.get("authority_granted") is not expected_fidelity_authority:
             errors.append("EXP-297 fidelity authority mismatch")
-        if int(compile_data.get("semantic_verification_operations", -1)) != 0:
-            errors.append("EXP-297 compile-only semantic cost mismatch")
-        if (
-            int(fidelity_data.get("semantic_verification_operations", -1))
-            != receipt.semantic_verification_operations
-        ):
-            errors.append("EXP-297 fidelity semantic cost mismatch")
 
-        for arm_data, semantic_ops in (
-            (compile_data, 0),
-            (fidelity_data, receipt.semantic_verification_operations),
+        expected_receipt_semantics = {
+            "compile_only": "canonical_null_fidelity_receipt",
+            "fidelity_court": "observed_public_fidelity_receipt",
+        }
+        for arm_id, arm_data, semantic_ops in (
+            ("compile_only", compile_data, 0),
+            ("fidelity_court", fidelity_data, receipt.semantic_verification_operations),
         ):
+            if arm_data.get("receipt_semantics") != expected_receipt_semantics[arm_id]:
+                errors.append(f"EXP-297 {arm_id} receipt semantics mismatch")
             neural = int(arm_data.get("neural_accounted_flops", -1))
+            if neural != expected_neural_flops[arm_id]:
+                errors.append(f"EXP-297 {arm_id} neural cost mismatch")
+            if int(arm_data.get("semantic_verification_operations", -1)) != semantic_ops:
+                errors.append(f"EXP-297 {arm_id} semantic cost mismatch")
             if (
                 arm_data.get("hardware_profiler_flops_claimed") is not False
                 or int(arm_data.get("compile_validation_operations", -1)) != 1
@@ -319,9 +380,23 @@ def validate_exp297_execution(payload: dict[str, Any]) -> list[str]:
                 errors.append("EXP-297 cost boundary mismatch")
             if (
                 int(arm_data.get("total_accounted_cost_proxy", -1))
-                != neural + 1 + semantic_ops
+                != expected_neural_flops[arm_id] + 1 + semantic_ops
             ):
                 errors.append("EXP-297 total accounted cost mismatch")
+            for score_key in ("fidelity_score", "authority_score", "verifier_score"):
+                if not _score_is_unit_interval(arm_data.get(score_key)):
+                    errors.append(f"EXP-297 {arm_id} {score_key} invalid")
+
+            expected_observable_digest = sha256(
+                (
+                    batch.source_digest
+                    + case.candidate_digest
+                    + expected_receipt_semantics[arm_id]
+                    + str(bool(compiled))
+                ).encode("utf-8")
+            ).hexdigest()
+            if arm_data.get("arm_observable_digest") != expected_observable_digest:
+                errors.append(f"EXP-297 {arm_id} observable digest mismatch")
 
     expected_aggregate = {
         "compile_only": _arm_metrics(rows, "compile_only"),
@@ -330,21 +405,4 @@ def validate_exp297_execution(payload: dict[str, Any]) -> list[str]:
     observed_aggregate = (payload.get("evaluation") or {}).get("aggregate")
     if observed_aggregate != expected_aggregate:
         errors.append("EXP-297 aggregate reconstruction mismatch")
-
-    pair = (payload.get("resource_match") or {}).get("pair_audit") or {}
-    required_pair = (
-        pair.get("schema") == "NLM-EXP-297-MATCHED-FIDELITY-ARMS-DEV-V1",
-        pair.get("evidence_level") == "EV-E2",
-        pair.get("decision") == "UNVERIFIED",
-        pair.get("parameter_match") is True,
-        pair.get("functional_parameter_match") is True,
-        pair.get("active_functional_parameter_match") is True,
-        pair.get("optimizer_visible_parameter_match") is True,
-        pair.get("initialization_match") is True,
-        pair.get("neural_accounted_flops_match") is True,
-        pair.get("label_information_consumed") is False,
-        pair.get("hidden_trap_family_consumed") is False,
-    )
-    if not all(required_pair):
-        errors.append("EXP-297 matched neural pair audit invalid")
     return errors
