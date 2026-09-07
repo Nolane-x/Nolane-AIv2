@@ -268,9 +268,11 @@ def _parameter_audit(arm: nn.Module) -> dict[str, int]:
 def _state_digest(arm: nn.Module) -> str:
     digest = sha256()
     for name, tensor in arm.state_dict().items():
+        contiguous = tensor.detach().cpu().contiguous()
         digest.update(name.encode("utf-8"))
-        digest.update(str(tuple(tensor.shape)).encode("ascii"))
-        digest.update(tensor.detach().cpu().contiguous().numpy().tobytes())
+        digest.update(str(tuple(contiguous.shape)).encode("ascii"))
+        digest.update(str(contiguous.dtype).encode("ascii"))
+        digest.update(bytes(contiguous.untyped_storage()))
     return digest.hexdigest()
 
 
