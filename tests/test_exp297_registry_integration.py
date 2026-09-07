@@ -2,6 +2,10 @@ import json
 from copy import deepcopy
 from pathlib import Path
 
+import pytest
+
+pytest.importorskip("torch")
+
 from nolane_ai.experiments.exp297_paired_runner import run_exp297_paired_development
 from nolane_ai.experiments.exp297_registry import (
     extend_neural_arm_registry_with_exp297,
