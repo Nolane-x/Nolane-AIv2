@@ -154,6 +154,28 @@ def test_registry_accepts_exp286_pair_only_without_claiming_paired_execution_rea
     ]
 
 
+def test_registry_rejects_exp286_pair_receipt_drift_without_execution_artifact() -> None:
+    from nolane_ai.experiments.neural_arm_registry import build_neural_arm_registry
+
+    pair_audit = _execution()["resource_match"]["pair_audit"]
+    mutations = (
+        ("artifact", "synthetic_fake_core"),
+        ("ground_truth", False),
+        ("delivered_to", ["chronological_failure", "oracle_conflict_core"]),
+        ("withheld_from", []),
+    )
+    for field, value in mutations:
+        bad_pair = deepcopy(pair_audit)
+        bad_pair["oracle_information_receipt"][field] = value
+        with pytest.raises(ValueError, match="EXP-286 matched pair audit"):
+            build_neural_arm_registry(
+                protocol=_protocol(),
+                protocol_digest="p" * 64,
+                model_audit=_model_audit(),
+                exp286_pair_audit=bad_pair,
+            )
+
+
 def test_registry_rejects_tampered_exp286_pair_or_execution_artifact() -> None:
     from nolane_ai.experiments.neural_arm_registry import build_neural_arm_registry
 
