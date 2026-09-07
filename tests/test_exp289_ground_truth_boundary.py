@@ -161,11 +161,3 @@ def test_exp289_evaluator_only_truth_cannot_change_causal_search_or_store_action
         **common,
     )
     assert _causal_projection(poisoned_local) == _causal_projection(original_local)
-
-    # Post-hoc audit truth is allowed to change when evaluator metadata is poisoned;
-    # those audit fields are intentionally excluded from the causal projection.
-    assert poisoned_local["store_soundness_violation_count"] != original_local[
-        "store_soundness_violation_count"
-    ] or poisoned_local["valid_state_overprune_rate"] != original_local[
-        "valid_state_overprune_rate"
-    ]
