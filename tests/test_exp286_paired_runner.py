@@ -43,6 +43,7 @@ def test_exp286_paired_runner_closes_development_boundary_and_lineage() -> None:
     assert artifact["decision"] == "UNVERIFIED"
     assert artifact["confirmatory_ready"] is False
     assert artifact["confirmatory_data_consumed"] is False
+    assert artifact["challenge_seed_materialized"] is False
     assert artifact["challenge_materialized"] is False
     assert artifact["decision_rule_executed"] is False
     assert artifact["protocol_id"] == "NLM-REASONING-STAGE-A-CONFIRMATORY-V1"
@@ -240,6 +241,10 @@ def test_exp286_validator_rejects_rehashed_semantic_tamper() -> None:
 
     bad = deepcopy(original)
     bad["confirmatory_data_consumed"] = True
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    bad["challenge_seed_materialized"] = True
     mutations.append(bad)
 
     for payload in mutations:
