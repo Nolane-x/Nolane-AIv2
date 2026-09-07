@@ -1,5 +1,5 @@
 from nolane_ai.experiments.exp297_fidelity_worlds import EXPECTED_STRATA, generate_fidelity_world
-from nolane_ai.reasoning.fidelity import compile_valid
+from nolane_ai.reasoning.fidelity import FidelityCourt, compile_valid
 
 
 def test_exp297_generator_is_deterministic_balanced_and_multistratum():
@@ -24,6 +24,18 @@ def test_exp297_generator_is_deterministic_balanced_and_multistratum():
         assert {case.is_faithful for case in cases} == {True, False}
     assert all(compile_valid(case.candidate) for case in first.candidates)
     assert len({case.candidate_digest for case in first.candidates}) == len(first.candidates)
+
+
+def test_construction_provenance_matches_exact_semantics_across_seeded_traps():
+    court = FidelityCourt(max_exact_assignments=4096)
+    for seed in (1, 2, 3, 8, 21, 297001):
+        batch = generate_fidelity_world(seed)
+        for case in batch.candidates:
+            assert court.accept(batch.source, case.candidate) is case.is_faithful, (
+                seed,
+                case.stratum,
+                case.candidate_id,
+            )
 
 
 def test_arm_view_excludes_evaluator_truth_and_trap_family():
