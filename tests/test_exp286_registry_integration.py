@@ -6,55 +6,8 @@ import pytest
 
 pytest.importorskip("torch")
 
-from nolane_ai.model.audit import audit_model
-from nolane_ai.model.config import NLMConfig
-from nolane_ai.model.nlm import NolaneLivingModel
-
-
-def _protocol():
-    return {
-        "protocol_id": "NLM-REASONING-STAGE-A-CONFIRMATORY-V1",
-        "status": "FROZEN_V1",
-        "experiments": [
-            {
-                "experiment_id": "EXP-277",
-                "arms": [
-                    {"id": "arcs_branch", "description": "V0.15 ARCS recurrent-depth + branch bank + verifier court"},
-                    {"id": "oracle_cbrf", "description": "same substrate with ground-truth constraint/factor representation"},
-                ],
-                "resource_match": {"parameter_budget": "matched active parameter count", "inference_budget": "same max accounted FLOPs per episode", "world_pairing": "same world lineage and replicate index"},
-            },
-            {
-                "experiment_id": "EXP-279",
-                "arms": [
-                    {"id": "propagation_only", "description": "constraint propagation without branch search"},
-                    {"id": "branch_only", "description": "ARCS branch search without CBRF propagation"},
-                    {"id": "hybrid", "description": "propagation followed by branch search when residual uncertainty remains"},
-                ],
-                "resource_match": {"parameter_budget": "reclaimed parameters assigned to simpler rivals", "inference_budget": "equal max accounted FLOPs", "structure_fit": "predeclared strata"},
-            },
-            {
-                "experiment_id": "EXP-282",
-                "arms": [
-                    {"id": "recurrent_hidden", "description": "matched recurrent state without explicit belief representation"},
-                    {"id": "explicit_belief", "description": "explicit calibrated belief state over hidden world variables"},
-                ],
-                "resource_match": {"parameter_budget": "equal state/controller parameters", "observation_history": "identical", "compute_budget": "matched"},
-            },
-            {
-                "experiment_id": "EXP-286",
-                "arms": [
-                    {"id": "chronological_failure", "description": "no conflict core; chronological rollback"},
-                    {"id": "oracle_conflict_core", "description": "ground-truth conflict core supplied at contradiction"},
-                ],
-                "resource_match": {"parameter_budget": "oracle metadata is information, not free neural parameters; oracle-info receipt reported", "episode_budget": "same max FLOPs"},
-            },
-        ],
-    }
-
-
-def _model_audit():
-    return audit_model(NolaneLivingModel(NLMConfig.stage_a_pilot_16m(), device="meta"))
+from tests.test_neural_arm_registry import _audit as _model_audit
+from tests.test_neural_arm_registry import _protocol_subset as _protocol
 
 
 def _execution():
