@@ -78,6 +78,13 @@ jobs:
           tests/test_exp289_ground_truth_boundary.py
           tests/test_exp289_registry_integration.py
           tests/test_exp289_paired_cli.py
+          tests/test_exp297_fidelity_court.py
+          tests/test_exp297_fidelity_worlds.py
+          tests/test_matched_fidelity_arms.py
+          tests/test_exp297_paired_runner.py
+          tests/test_exp297_ground_truth_boundary.py
+          tests/test_exp297_registry_integration.py
+          tests/test_exp297_paired_cli.py
           tests/test_matched_belief_arms.py
           tests/test_exp282_compute_ledger.py
           tests/test_exp282_partial_observability.py
@@ -173,6 +180,13 @@ jobs:
           --max-search-steps 12
           --output /tmp/nlm-exp289-paired.json
           --registry-output /tmp/nlm-exp289-neural-arm-registry.json
+      - run: >-
+          python scripts/run_exp297_paired_dev.py
+          --tiny
+          --eval-replicates 1
+          --eval-start-replicate 1000
+          --output /tmp/nlm-exp297-paired.json
+          --registry-output /tmp/nlm-exp297-neural-arm-registry.json
       - run: >-
           python scripts/run_exp282_paired_dev.py
           --tiny
