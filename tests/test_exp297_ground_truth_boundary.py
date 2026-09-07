@@ -1,3 +1,7 @@
+import pytest
+
+pytest.importorskip("torch")
+
 from nolane_ai.experiments.exp297_fidelity_worlds import generate_fidelity_world
 from nolane_ai.experiments.exp297_paired_runner import run_exp297_paired_development
 
