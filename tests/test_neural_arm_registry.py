@@ -47,6 +47,14 @@ def _protocol_subset():
                 ],
                 "resource_match": {"parameter_budget": "oracle metadata is information, not free neural parameters; oracle-info receipt reported", "episode_budget": "same max FLOPs"},
             },
+            {
+                "experiment_id": "EXP-289",
+                "arms": [
+                    {"id": "no_nogood", "description": "hybrid reasoner without episode-local learned nogoods"},
+                    {"id": "local_nogood", "description": "same reasoner with episode-local nogood store and scoped applicability"},
+                ],
+                "resource_match": {"parameter_budget": "matched", "memory_cost": "nogood storage/retrieval charged to accounted cost", "episode_budget": "matched"},
+            },
         ],
     }
 
@@ -62,12 +70,14 @@ def test_registry_matches_frozen_arm_ids_and_refuses_false_readiness():
     assert artifact["evidence_level"] == "EV-E2"
     assert artifact["decision"] == "UNVERIFIED"
     assert artifact["pilot_total_parameters"] == 16_000_000
-    assert set(artifact["experiments"]) == {"EXP-277", "EXP-279", "EXP-282", "EXP-286"}
+    assert set(artifact["experiments"]) == {"EXP-277", "EXP-279", "EXP-282", "EXP-286", "EXP-289"}
     assert all(item["match_court"] == "BLOCKED" for item in artifact["experiments"].values())
     assert artifact["experiments"]["EXP-282"]["arms"]["explicit_belief"]["implementation_status"] == "DEVELOPMENT_COMPONENT_PRESENT"
     assert artifact["experiments"]["EXP-282"]["arms"]["recurrent_hidden"]["implementation_status"] == "BLOCKED"
     assert artifact["experiments"]["EXP-286"]["arms"]["chronological_failure"]["implementation_status"] == "BLOCKED"
     assert artifact["experiments"]["EXP-286"]["arms"]["oracle_conflict_core"]["implementation_status"] == "DEVELOPMENT_COMPONENT_PRESENT"
+    assert artifact["experiments"]["EXP-289"]["arms"]["no_nogood"]["implementation_status"] == "BLOCKED"
+    assert artifact["experiments"]["EXP-289"]["arms"]["local_nogood"]["implementation_status"] == "DEVELOPMENT_COMPONENT_PRESENT"
     assert validate_neural_arm_registry(artifact) == []
 
 
