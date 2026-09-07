@@ -40,6 +40,12 @@ _INFORMATION_RECEIPT = {
     "future_conflict_core_leakage": False,
     "solution_leakage": False,
 }
+_REMAINING_BLOCKERS = [
+    "confirmatory sample-size and paired log-cost/bootstrap analysis freeze remain open",
+    "confirmatory-open execution remains unrun",
+    "post-freeze challenge randomness remains unmaterialized",
+    "learned ConflictCoreRegion localization remains unvalidated",
+]
 
 
 def _artifact_digest(payload: dict[str, Any]) -> str:
@@ -455,14 +461,12 @@ def validate_exp286_paired_development(payload: dict[str, Any]) -> list[str]:
         errors.append("EXP-286 multiplicity family drift")
     if payload.get("information_receipt") != _INFORMATION_RECEIPT:
         errors.append("EXP-286 contradiction-time oracle information receipt drift")
-
-    initial = payload.get("initial_state") or {}
-    digests = [
-        initial.get("chronological_failure_digest"),
-        initial.get("oracle_conflict_core_digest"),
-    ]
-    if initial.get("functional_digest_match") is not True or None in digests or len(set(digests)) != 1:
-        errors.append("EXP-286 matched arms must share identical functional initialization")
+    if payload.get("analysis_method_boundary") != ANALYSIS_BOUNDARY:
+        errors.append("EXP-286 top-level DEVELOPMENT analysis boundary drift")
+    if payload.get("learned_conflict_localizer_validated") is not False:
+        errors.append("EXP-286 DEVELOPMENT cannot validate learned conflict localization")
+    if payload.get("remaining_blockers") != _REMAINING_BLOCKERS:
+        errors.append("EXP-286 remaining confirmatory blockers drift")
 
     resource = payload.get("resource_match") or {}
     for key in (
@@ -487,27 +491,100 @@ def validate_exp286_paired_development(payload: dict[str, Any]) -> list[str]:
         errors.append("EXP-286 common compute ceiling drift")
 
     config = payload.get("execution_config") or {}
+    config_valid = True
     try:
         root_seed = str(config["root_seed"])
+        d_model = int(config["d_model"])
+        hidden_size = int(config["hidden_size"])
+        target_parameters = int(config["target_parameters"])
         batch_size = int(config["batch_size"])
         timesteps = int(config["timesteps"])
         variables = int(config["variables"])
         decoys = int(config["decoys"])
-        d_model = int(config["d_model"])
-        noise_std = float(config["noise_std"])
         max_search_steps = int(config["max_search_steps"])
+        noise_std = float(config["noise_std"])
+        lr = float(config["lr"])
+        weight_decay = float(config["weight_decay"])
     except (KeyError, TypeError, ValueError):
         root_seed = ""
-        batch_size = timesteps = variables = decoys = d_model = max_search_steps = 0
+        d_model = hidden_size = target_parameters = 0
+        batch_size = timesteps = variables = decoys = max_search_steps = 0
         noise_std = -1.0
-        errors.append("EXP-286 execution geometry is incomplete")
-    generator = Exp286ConflictGenerator(root_seed=root_seed) if root_seed else None
+        lr = 0.0
+        weight_decay = -1.0
+        config_valid = False
+    if (
+        not root_seed
+        or min(
+            d_model,
+            hidden_size,
+            target_parameters,
+            batch_size,
+            timesteps,
+            variables,
+            max_search_steps,
+        )
+        <= 0
+        or variables < 2
+        or decoys < 0
+        or decoys > variables - 2
+        or noise_std < 0.0
+        or lr <= 0.0
+        or weight_decay < 0.0
+    ):
+        config_valid = False
+    if not config_valid:
+        errors.append("EXP-286 execution geometry is incomplete or invalid")
+
+    initial = payload.get("initial_state") or {}
+    digests = [
+        initial.get("chronological_failure_digest"),
+        initial.get("oracle_conflict_core_digest"),
+    ]
+    if initial.get("functional_digest_match") is not True or None in digests or len(set(digests)) != 1:
+        errors.append("EXP-286 matched arms must share identical functional initialization")
+
+    generator = Exp286ConflictGenerator(root_seed=root_seed) if config_valid else None
+    if config_valid and declared_ceiling > 0:
+        try:
+            expected_chronological, expected_oracle, expected_model_init_seed = _build_seeded_pair(
+                root_seed=root_seed,
+                d_model=d_model,
+                hidden_size=hidden_size,
+                target_parameters=target_parameters,
+            )
+            expected_initial = {
+                "chronological_failure_digest": _functional_state_digest(expected_chronological),
+                "oracle_conflict_core_digest": _functional_state_digest(expected_oracle),
+            }
+            expected_initial["functional_digest_match"] = len(set(expected_initial.values())) == 1
+            if int(payload.get("model_init_seed", -1)) != int(expected_model_init_seed):
+                errors.append("EXP-286 model-init seed does not regenerate from sealed lineage")
+            if initial != expected_initial:
+                errors.append("EXP-286 initial-state digests do not regenerate from sealed lineage")
+            expected_pair_audit = audit_matched_exp286_arm_pair(
+                expected_chronological,
+                expected_oracle,
+                timesteps=timesteps,
+                variables=variables,
+                max_search_steps=max_search_steps,
+                max_accounted_flops_per_episode=declared_ceiling,
+            )
+            if pair_audit != expected_pair_audit:
+                errors.append("EXP-286 matched pair audit does not independently regenerate")
+        except (RuntimeError, TypeError, ValueError):
+            errors.append("EXP-286 sealed initial/resource lineage cannot be independently regenerated")
 
     training = payload.get("training") or {}
     if training.get("rng_stream") != "augmentation":
         errors.append("EXP-286 training stream must be augmentation")
-    train_start = int(training.get("start_replicate", -1))
-    train_count = int(training.get("replicates", 0) or 0)
+    try:
+        train_start = int(training.get("start_replicate", -1))
+        train_count = int(training.get("replicates", 0) or 0)
+    except (TypeError, ValueError):
+        train_start = -1
+        train_count = 0
+        errors.append("EXP-286 training replicate lineage is malformed")
     train_digests = list(training.get("paired_batch_digests") or [])
     if train_start != 0:
         errors.append("EXP-286 training replicate lineage must start at 0")
@@ -532,8 +609,13 @@ def validate_exp286_paired_development(payload: dict[str, Any]) -> list[str]:
     evaluation = payload.get("evaluation") or {}
     if evaluation.get("rng_stream") != "evaluation":
         errors.append("EXP-286 evaluation stream must be evaluation")
-    eval_start = int(evaluation.get("start_replicate", -1))
-    eval_count = int(evaluation.get("replicates", 0) or 0)
+    try:
+        eval_start = int(evaluation.get("start_replicate", -1))
+        eval_count = int(evaluation.get("replicates", 0) or 0)
+    except (TypeError, ValueError):
+        eval_start = -1
+        eval_count = 0
+        errors.append("EXP-286 evaluation replicate lineage is malformed")
     rows = list(evaluation.get("per_replicate") or [])
     if eval_count <= 0 or len(rows) != eval_count:
         errors.append("EXP-286 evaluation replicate count does not match raw lineage")
@@ -557,17 +639,20 @@ def validate_exp286_paired_development(payload: dict[str, Any]) -> list[str]:
             errors.append("EXP-286 solution leakage is forbidden")
         regenerated = None
         if generator is not None:
-            regenerated = generator.make_batch(
-                replicate=eval_start + row_offset,
-                batch_size=batch_size,
-                timesteps=timesteps,
-                variables=variables,
-                decoys=decoys,
-                d_model=d_model,
-                noise_std=noise_std,
-                rng_stream="evaluation",
-            )
-            if row.get("paired_batch_digest") != regenerated.digest:
+            try:
+                regenerated = generator.make_batch(
+                    replicate=eval_start + row_offset,
+                    batch_size=batch_size,
+                    timesteps=timesteps,
+                    variables=variables,
+                    decoys=decoys,
+                    d_model=d_model,
+                    noise_std=noise_std,
+                    rng_stream="evaluation",
+                )
+            except (RuntimeError, TypeError, ValueError):
+                errors.append("EXP-286 evaluation world cannot regenerate from sealed lineage")
+            if regenerated is not None and row.get("paired_batch_digest") != regenerated.digest:
                 errors.append("EXP-286 evaluation world digest does not regenerate from sealed lineage")
 
         for arm_id in ARM_ORDER:
@@ -580,9 +665,15 @@ def validate_exp286_paired_development(payload: dict[str, Any]) -> list[str]:
                 continue
             episode_costs: list[float] = []
             solved_flags: list[bool] = []
+            episode_steps: list[int] = []
+            episode_visited: list[list[int]] = []
+            episode_digests: list[str] = []
             total_contradictions = 0
             total_deliveries = 0
+            total_censored = 0
             for episode_index, episode_result in enumerate(episodes):
+                if int(episode_result.get("episode_index", -1)) != episode_index:
+                    errors.append(f"EXP-286 {arm_id} episode index receipt mismatch")
                 receipts = list(episode_result.get("step_receipts") or [])
                 if not receipts or len(receipts) > max_search_steps:
                     errors.append(f"EXP-286 {arm_id} search-step receipt count is invalid")
@@ -590,10 +681,24 @@ def validate_exp286_paired_development(payload: dict[str, Any]) -> list[str]:
                     errors.append(f"EXP-286 {arm_id} search-step receipts are reordered")
                 if any(int(item.get("charged_accounted_flops", -1)) != per_step for item in receipts):
                     errors.append(f"EXP-286 {arm_id} per-step accounted FLOPs drift from matched audit")
+
+                visited = [int(item.get("variable", -1)) for item in receipts]
+                if list(episode_result.get("visited_variables") or []) != visited:
+                    errors.append(f"EXP-286 {arm_id} episode visited-variable receipt mismatch")
+                if int(episode_result.get("search_steps", -1)) != len(receipts):
+                    errors.append(f"EXP-286 {arm_id} episode search-step count mismatch")
+
                 contradictions = sum(bool(item.get("contradiction_observed")) for item in receipts)
                 deliveries = sum(bool(item.get("conflict_core_delivered")) for item in receipts)
+                if int(episode_result.get("contradiction_count", -1)) != contradictions:
+                    errors.append(f"EXP-286 {arm_id} episode contradiction-count receipt mismatch")
+                if int(episode_result.get("conflict_core_delivery_count", -1)) != deliveries:
+                    errors.append(f"EXP-286 {arm_id} episode conflict-core delivery-count mismatch")
+                if episode_result.get("conflict_core_precontradiction_delivery") is not False:
+                    errors.append(f"EXP-286 {arm_id} episode claims pre-contradiction core delivery")
                 total_contradictions += contradictions
                 total_deliveries += deliveries
+
                 if arm_id == "chronological_failure" and deliveries:
                     errors.append("EXP-286 chronological baseline received forbidden conflict-core information")
                 if any(
@@ -601,27 +706,63 @@ def validate_exp286_paired_development(payload: dict[str, Any]) -> list[str]:
                     for item in receipts
                 ):
                     errors.append("EXP-286 oracle conflict core was delivered before a current contradiction")
-                if arm_id == "oracle_conflict_core" and deliveries > contradictions:
-                    errors.append("EXP-286 oracle conflict-core delivery count exceeds current contradictions")
+                if arm_id == "oracle_conflict_core" and deliveries != contradictions:
+                    errors.append("EXP-286 oracle conflict-core delivery must match current contradictions")
 
-                actual_cost = len(receipts) * per_step
-                solved = bool(episode_result.get("verified_solution"))
-                candidate = list(episode_result.get("candidate_solution") or [])
-                if regenerated is not None and len(candidate) == variables:
+                expected_target: list[int] | None = None
+                expected_bad_value: int | None = None
+                expected_conflict_variable: int | None = None
+                if regenerated is not None:
                     expected_target = [
                         int(value)
                         for value in regenerated.solution_targets[episode_index].detach().cpu().tolist()
                     ]
+                    episode_meta = regenerated.metadata["episodes"][episode_index]
+                    expected_bad_value = int(episode_meta["bad_branch_value"])
+                    expected_conflict_variable = int(episode_meta["conflict_variable"])
+                    seen_conflict = False
+                    for receipt in receipts:
+                        variable = int(receipt.get("variable", -1))
+                        if not 0 <= variable < variables:
+                            errors.append(f"EXP-286 {arm_id} receipt variable is outside world geometry")
+                            continue
+                        if int(receipt.get("external_target_value", -1)) != expected_target[variable]:
+                            errors.append(f"EXP-286 {arm_id} external target receipt drift")
+                        expected_contradiction = variable == expected_conflict_variable and not seen_conflict
+                        if expected_contradiction:
+                            seen_conflict = True
+                        if bool(receipt.get("contradiction_observed")) != expected_contradiction:
+                            errors.append(f"EXP-286 {arm_id} contradiction event drift from regenerated world")
+                        expected_delivery = expected_contradiction and arm_id == "oracle_conflict_core"
+                        if bool(receipt.get("conflict_core_delivered")) != expected_delivery:
+                            errors.append(f"EXP-286 {arm_id} conflict-core delivery drift from regenerated world")
+                        expected_assigned = (
+                            expected_bad_value if expected_contradiction else expected_target[variable]
+                        )
+                        if int(receipt.get("assigned_value", -1)) != expected_assigned:
+                            errors.append(f"EXP-286 {arm_id} assignment receipt drift from regenerated world")
+
+                actual_cost = len(receipts) * per_step
+                if int(episode_result.get("actual_executed_flops_before_censoring", -1)) != actual_cost:
+                    errors.append(f"EXP-286 {arm_id} actual executed-FLOP receipt mismatch")
+                solved = bool(episode_result.get("verified_solution"))
+                candidate = list(episode_result.get("candidate_solution") or [])
+                if len(candidate) != variables:
+                    errors.append(f"EXP-286 {arm_id} candidate solution geometry mismatch")
+                    independently_verified = False
+                elif expected_target is not None:
                     independently_verified = candidate == expected_target
-                    if solved != independently_verified:
-                        errors.append(f"EXP-286 {arm_id} external solution-verification flag is inconsistent")
-                    expected_digest = (
-                        _target_digest(eval_start + row_offset, episode_index, expected_target)
-                        if independently_verified
-                        else ""
-                    )
-                    if episode_result.get("verified_solution_digest", "") != expected_digest:
-                        errors.append(f"EXP-286 {arm_id} verified solution digest mismatch")
+                else:
+                    independently_verified = solved
+                if expected_target is not None and solved != independently_verified:
+                    errors.append(f"EXP-286 {arm_id} external solution-verification flag is inconsistent")
+                expected_digest = (
+                    _target_digest(eval_start + row_offset, episode_index, expected_target)
+                    if independently_verified and expected_target is not None
+                    else ""
+                )
+                if expected_target is not None and episode_result.get("verified_solution_digest", "") != expected_digest:
+                    errors.append(f"EXP-286 {arm_id} verified solution digest mismatch")
                 if bool(episode_result.get("external_solution_verified")) != solved:
                     errors.append(f"EXP-286 {arm_id} external verifier receipt mismatch")
 
@@ -635,8 +776,13 @@ def validate_exp286_paired_development(payload: dict[str, Any]) -> list[str]:
                     errors.append(f"EXP-286 {arm_id} unresolved episode must be retained as censored")
                 if actual_cost > declared_ceiling:
                     errors.append(f"EXP-286 {arm_id} actual path exceeds common compute ceiling")
+
                 episode_costs.append(float(expected_charged))
                 solved_flags.append(solved)
+                episode_steps.append(len(receipts))
+                episode_visited.append(visited)
+                episode_digests.append(str(episode_result.get("verified_solution_digest", "")))
+                total_censored += int(not solved)
 
             expected_rate = sum(float(flag) for flag in solved_flags) / len(solved_flags)
             expected_cost = sum(episode_costs) / len(episode_costs)
@@ -644,19 +790,29 @@ def validate_exp286_paired_development(payload: dict[str, Any]) -> list[str]:
                 errors.append(f"EXP-286 {arm_id} verified solution rate drift")
             if abs(float(metrics.get(PRIMARY_METRIC, 0.0)) - expected_cost) > 1e-9:
                 errors.append(f"EXP-286 {arm_id} primary cost aggregate drift")
+            if int(metrics.get("search_steps", -1)) != max(episode_steps):
+                errors.append(f"EXP-286 {arm_id} row search-step receipt mismatch")
+            if metrics.get("visited_variables") != episode_visited:
+                errors.append(f"EXP-286 {arm_id} row visited-variable receipt mismatch")
             if int(metrics.get("contradiction_count", -1)) != total_contradictions:
                 errors.append(f"EXP-286 {arm_id} contradiction-count receipt mismatch")
             if int(metrics.get("conflict_core_delivery_count", -1)) != total_deliveries:
                 errors.append(f"EXP-286 {arm_id} conflict-core delivery-count receipt mismatch")
             if metrics.get("conflict_core_precontradiction_delivery") is not False:
                 errors.append(f"EXP-286 {arm_id} claims forbidden pre-contradiction conflict-core delivery")
-            if arm_id == "chronological_failure" and metrics.get("conflict_core_received") is not False:
-                errors.append("EXP-286 chronological baseline conflict-core receipt drift")
+            expected_received = arm_id == "oracle_conflict_core" and total_deliveries > 0
+            if metrics.get("conflict_core_received") is not expected_received:
+                errors.append(f"EXP-286 {arm_id} conflict-core receipt summary mismatch")
             expected_all_solved = expected_rate == 1.0
             if metrics.get("censored_at_max_flops") is not (not expected_all_solved):
                 errors.append(f"EXP-286 {arm_id} row censoring flag mismatch")
+            if int(metrics.get("censored_episode_count", -1)) != total_censored:
+                errors.append(f"EXP-286 {arm_id} censored episode-count receipt mismatch")
             if bool(metrics.get("external_solution_verified")) != expected_all_solved:
                 errors.append(f"EXP-286 {arm_id} row external verification flag mismatch")
+            expected_row_digest = canonical_sha256(episode_digests) if expected_all_solved else ""
+            if metrics.get("verified_solution_digest", "") != expected_row_digest:
+                errors.append(f"EXP-286 {arm_id} row verified-solution digest mismatch")
 
     aggregate = evaluation.get("aggregate") or {}
     if rows:
@@ -913,12 +1069,7 @@ def run_exp286_paired_development(
             "aggregate": _aggregate_rows(rows),
         },
         "learned_conflict_localizer_validated": False,
-        "remaining_blockers": [
-            "confirmatory sample-size and paired log-cost/bootstrap analysis freeze remain open",
-            "confirmatory-open execution remains unrun",
-            "post-freeze challenge randomness remains unmaterialized",
-            "learned ConflictCoreRegion localization remains unvalidated",
-        ],
+        "remaining_blockers": list(_REMAINING_BLOCKERS),
         "artifact_digest": "",
     }
     payload["artifact_digest"] = _artifact_digest(payload)
