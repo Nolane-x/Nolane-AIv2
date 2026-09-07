@@ -97,6 +97,8 @@ def test_registry_accepts_exp286_pair_and_execution_but_keeps_match_court_blocke
         exp286_execution_artifact=execution,
     )
     exp286 = registry["experiments"]["EXP-286"]
+    evidence = exp286["paired_execution_evidence"]
+    aggregate = execution["evaluation"]["aggregate"]
     assert exp286["development_match_status"] == "PAIRED_CONFLICT_HEADROOM_DEV_READY"
     assert exp286["match_court"] == "BLOCKED"
     assert exp286["arms"]["chronological_failure"]["implementation_status"] == "IMPLEMENTED"
@@ -106,13 +108,23 @@ def test_registry_accepts_exp286_pair_and_execution_but_keeps_match_court_blocke
     assert exp286["resource_match_evidence"]["optimizer_visible_parameter_match"] is True
     assert exp286["resource_match_evidence"]["compute_budget_closed"] is True
     assert exp286["resource_match_evidence"]["oracle_information_separation"] is True
-    assert exp286["paired_execution_evidence"]["artifact_digest"] == execution["artifact_digest"]
-    assert exp286["paired_execution_evidence"]["training_replicates"] == 2
-    assert exp286["paired_execution_evidence"]["evaluation_replicates"] == 3
-    assert exp286["paired_execution_evidence"]["learned_conflict_localizer_validated"] is False
-    assert exp286["paired_execution_evidence"]["descriptive_relative_flop_reduction"] == pytest.approx(
-        execution["evaluation"]["aggregate"]["descriptive_relative_flop_reduction"]
+    assert evidence["artifact_digest"] == execution["artifact_digest"]
+    assert evidence["code_digest"] == execution["code_digest"]
+    assert evidence["training_replicates"] == 2
+    assert evidence["evaluation_replicates"] == 3
+    assert evidence["learned_conflict_localizer_validated"] is False
+    assert evidence["descriptive_relative_flop_reduction"] == pytest.approx(
+        aggregate["descriptive_relative_flop_reduction"]
     )
+    assert evidence["oracle_minus_chronological_verified_solution_rate"] == pytest.approx(
+        aggregate["oracle_minus_chronological_verified_solution_rate"]
+    )
+    assert evidence["chronological_censored_episode_count"] == aggregate[
+        "chronological_censored_episode_count"
+    ]
+    assert evidence["oracle_censored_episode_count"] == aggregate[
+        "oracle_censored_episode_count"
+    ]
     assert exp286["blockers"] == [
         "EXP-286: confirmatory sample-size/paired-log-cost analysis freeze remains open",
         "EXP-286: confirmatory-open execution remains unrun",
@@ -167,3 +179,76 @@ def test_registry_rejects_tampered_exp286_pair_or_execution_artifact() -> None:
             exp286_pair_audit=pair_audit,
             exp286_execution_artifact=bad_execution,
         )
+
+
+def test_registry_rejects_exp286_execution_without_pair_audit() -> None:
+    from nolane_ai.experiments.neural_arm_registry import build_neural_arm_registry
+
+    with pytest.raises(ValueError, match="requires matched pair audit"):
+        build_neural_arm_registry(
+            protocol=_protocol(),
+            protocol_digest="p" * 64,
+            model_audit=_model_audit(),
+            exp286_execution_artifact=_execution(),
+        )
+
+
+def test_registry_rejects_exp286_execution_with_wrong_protocol_digest() -> None:
+    from nolane_ai.experiments.exp286_paired_runner import _artifact_digest
+    from nolane_ai.experiments.neural_arm_registry import build_neural_arm_registry
+
+    execution = _execution()
+    pair_audit = execution["resource_match"]["pair_audit"]
+    wrong_protocol = deepcopy(execution)
+    wrong_protocol["protocol_digest"] = "q" * 64
+    wrong_protocol["artifact_digest"] = _artifact_digest(wrong_protocol)
+    with pytest.raises(ValueError, match="protocol digest mismatch"):
+        build_neural_arm_registry(
+            protocol=_protocol(),
+            protocol_digest="p" * 64,
+            model_audit=_model_audit(),
+            exp286_pair_audit=pair_audit,
+            exp286_execution_artifact=wrong_protocol,
+        )
+
+
+def test_registry_rejects_exp286_execution_claiming_learned_localizer_validation() -> None:
+    from nolane_ai.experiments.exp286_paired_runner import _artifact_digest
+    from nolane_ai.experiments.neural_arm_registry import build_neural_arm_registry
+
+    execution = _execution()
+    pair_audit = execution["resource_match"]["pair_audit"]
+    overclaim = deepcopy(execution)
+    overclaim["learned_conflict_localizer_validated"] = True
+    overclaim["artifact_digest"] = _artifact_digest(overclaim)
+    with pytest.raises(ValueError, match="learned conflict localizer"):
+        build_neural_arm_registry(
+            protocol=_protocol(),
+            protocol_digest="p" * 64,
+            model_audit=_model_audit(),
+            exp286_pair_audit=pair_audit,
+            exp286_execution_artifact=overclaim,
+        )
+
+
+def test_registry_validator_rejects_manual_exp286_localizer_promotion_after_rehash() -> None:
+    from nolane_ai.experiments.neural_arm_registry import (
+        _digest,
+        build_neural_arm_registry,
+        validate_neural_arm_registry,
+    )
+
+    execution = _execution()
+    registry = build_neural_arm_registry(
+        protocol=_protocol(),
+        protocol_digest="p" * 64,
+        model_audit=_model_audit(),
+        exp286_pair_audit=execution["resource_match"]["pair_audit"],
+        exp286_execution_artifact=execution,
+    )
+    registry["experiments"]["EXP-286"]["paired_execution_evidence"][
+        "learned_conflict_localizer_validated"
+    ] = True
+    registry["registry_digest"] = _digest(registry)
+    errors = validate_neural_arm_registry(registry)
+    assert "EXP-286 development evidence cannot validate a learned conflict localizer" in errors
