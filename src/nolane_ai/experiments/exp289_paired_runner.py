@@ -23,6 +23,7 @@ from nolane_ai.experiments.matched_nogood_arms import (
     build_matched_exp289_arm_pair,
 )
 from nolane_ai.protocol.seeds import derive_stream_seed
+from nolane_ai.reasoning.cps import CanonicalProblemState
 from nolane_ai.training.optimizer import (
     build_functional_optimizer,
     functional_trainable_named_parameters,
@@ -320,6 +321,24 @@ def _step_surface(batch: Exp289NogoodBatch, episode_index: int, step_index: int)
     ]
 
 
+def _observed_public_contradiction(
+    problem: CanonicalProblemState,
+    assignment: dict[str, int],
+) -> bool:
+    """Return whether the currently reached partial assignment violates a public constraint.
+
+    TableConstraint.is_satisfied deliberately treats incomplete scopes as not yet
+    contradictory. This keeps evaluator-only valid-solution metadata out of the
+    causal action/insertion path while still allowing the environment's public CSP
+    semantics to report a contradiction once its scope has actually been reached.
+    """
+
+    return any(
+        not constraint.is_satisfied(assignment)
+        for constraint in problem.constraints
+    )
+
+
 def _run_episode(
     *,
     arm_name: str,
@@ -347,7 +366,6 @@ def _run_episode(
         for item in manifest
     }
     problem = problem_from_exp289_episode(episode_metadata)
-
     repeated_dead_end_reentries = 0
     prevented_repeat_count = 0
     unique_dead_ends: set[str] = set()
@@ -480,10 +498,12 @@ def _run_episode(
                         )
                         continue
 
-                    target_value = int(
-                        batch.solution_targets[episode_index, variable_index].item()
+                    candidate_assignment = dict(assignment)
+                    candidate_assignment[variable_name] = value
+                    dead_end_observed = _observed_public_contradiction(
+                        problem,
+                        candidate_assignment,
                     )
-                    dead_end_observed = value != target_value
                     if dead_end_observed:
                         raw_dead_end_signatures.append(canonical_string)
                         unique_dead_ends.add(canonical_string)
