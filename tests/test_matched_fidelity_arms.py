@@ -1,4 +1,6 @@
-import torch
+import pytest
+
+torch = pytest.importorskip("torch")
 
 from nolane_ai.experiments.exp297_fidelity_worlds import generate_fidelity_world
 from nolane_ai.experiments.matched_fidelity_arms import (
