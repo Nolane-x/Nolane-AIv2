@@ -33,6 +33,14 @@ def _rehash(payload):
     payload["artifact_digest"] = canonical_sha256(clean)
 
 
+def _wrong_index(artifact):
+    return next(
+        index
+        for index, row in enumerate(artifact["evaluation"]["raw_candidates"])
+        if not row["is_faithful"]
+    )
+
+
 def test_exp297_runner_reconstructs_endpoints_from_raw_candidate_decisions():
     artifact = _tiny()
     assert artifact["schema"] == "NLM-EXP-297-PAIRED-DEV-EVAL-V1"
@@ -58,8 +66,9 @@ def test_exp297_runner_reconstructs_endpoints_from_raw_candidate_decisions():
     assert aggregate["fidelity_court"]["faithful_formalization_rejection_rate"] == 0.0
 
 
-def test_exp297_validator_rejects_rehashed_truth_witness_authority_cost_and_order_tampering():
+def test_exp297_validator_rejects_rehashed_provenance_witness_authority_and_lineage_tampering():
     artifact = _tiny(eval_replicates=1)
+    wrong_index = _wrong_index(artifact)
     mutations = []
 
     changed = deepcopy(artifact)
@@ -67,15 +76,30 @@ def test_exp297_validator_rejects_rehashed_truth_witness_authority_cost_and_orde
     mutations.append(changed)
 
     changed = deepcopy(artifact)
-    changed["evaluation"]["raw_candidates"][1]["court_receipt"]["decision"] = "court_accept"
+    changed["evaluation"]["raw_candidates"][0]["stratum"] = "forged_trap_family"
     mutations.append(changed)
 
     changed = deepcopy(artifact)
-    changed["evaluation"]["raw_candidates"][1]["arms"]["fidelity_court"]["authority_granted"] = True
+    changed["evaluation"]["raw_candidates"][wrong_index]["court_receipt"]["witness"] = None
     mutations.append(changed)
 
     changed = deepcopy(artifact)
-    changed["evaluation"]["raw_candidates"][1]["arms"]["fidelity_court"]["semantic_verification_operations"] = 0
+    witness = changed["evaluation"]["raw_candidates"][wrong_index]["court_receipt"]["witness"]
+    assert witness is not None
+    first_name = next(iter(witness["assignment"]))
+    witness["assignment"][first_name] = 999
+    mutations.append(changed)
+
+    changed = deepcopy(artifact)
+    changed["evaluation"]["raw_candidates"][wrong_index]["arms"]["fidelity_court"]["authority_granted"] = True
+    mutations.append(changed)
+
+    changed = deepcopy(artifact)
+    changed["evaluation"]["raw_candidates"][wrong_index]["arms"]["fidelity_court"]["semantic_verification_operations"] = 0
+    mutations.append(changed)
+
+    changed = deepcopy(artifact)
+    changed["evaluation"]["raw_candidates"][0]["candidate_digest"] = "0" * 64
     mutations.append(changed)
 
     changed = deepcopy(artifact)
@@ -83,10 +107,21 @@ def test_exp297_validator_rejects_rehashed_truth_witness_authority_cost_and_orde
     rows[0], rows[1] = rows[1], rows[0]
     mutations.append(changed)
 
+    changed = deepcopy(artifact)
+    changed["evaluation"]["raw_candidates"].pop()
+    mutations.append(changed)
+
+    changed = deepcopy(artifact)
+    changed["confirmatory_ready"] = True
+    mutations.append(changed)
+
+    changed = deepcopy(artifact)
+    changed["semantic_authority_promoted"] = True
+    mutations.append(changed)
+
     for changed in mutations:
         _rehash(changed)
-        errors = validate_exp297_execution(changed)
-        assert errors
+        assert validate_exp297_execution(changed)
 
 
 def test_exp297_validator_reconstructs_neural_cost_instead_of_trusting_self_consistent_ledger():
@@ -100,7 +135,7 @@ def test_exp297_validator_reconstructs_neural_cost_instead_of_trusting_self_cons
     assert validate_exp297_execution(changed)
 
 
-def test_exp297_inconclusive_verification_fails_closed():
+def test_exp297_inconclusive_verification_fails_closed_and_cannot_be_rehashed_to_accept():
     artifact = _tiny(eval_replicates=1, max_exact_assignments=8)
     rows = artifact["evaluation"]["raw_candidates"]
     faithful_rows = [row for row in rows if row["is_faithful"]]
@@ -109,3 +144,9 @@ def test_exp297_inconclusive_verification_fails_closed():
     assert all(not row["arms"]["fidelity_court"]["authority_granted"] for row in faithful_rows)
     assert artifact["evaluation"]["aggregate"]["fidelity_court"]["faithful_formalization_rejection_rate"] == 1.0
     assert validate_exp297_execution(artifact) == []
+
+    changed = deepcopy(artifact)
+    changed["evaluation"]["raw_candidates"][0]["court_receipt"]["decision"] = "court_accept"
+    changed["evaluation"]["raw_candidates"][0]["arms"]["fidelity_court"]["authority_granted"] = True
+    _rehash(changed)
+    assert validate_exp297_execution(changed)
