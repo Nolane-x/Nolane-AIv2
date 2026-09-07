@@ -250,3 +250,75 @@ def test_exp286_validator_rejects_rehashed_semantic_tamper() -> None:
     for payload in mutations:
         payload["artifact_digest"] = _artifact_digest(payload)
         assert validate_exp286_paired_development(payload)
+
+
+def test_exp286_validator_recomputes_critical_resource_and_episode_receipts_after_rehash() -> None:
+    from nolane_ai.experiments.exp286_paired_runner import _artifact_digest, validate_exp286_paired_development
+    from nolane_ai.protocol.evidence import canonical_sha256
+
+    original = _run()
+    mutations = []
+
+    bad = deepcopy(original)
+    bad["initial_state"]["chronological_failure_digest"] = "f" * 64
+    bad["initial_state"]["oracle_conflict_core_digest"] = "f" * 64
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    bad["model_init_seed"] += 1
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    bad_pair = bad["resource_match"]["pair_audit"]
+    bad_pair["chronological_failure"]["total_parameters"] += 1
+    bad["resource_match"]["pair_audit_digest"] = canonical_sha256(bad_pair)
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    episode = bad["evaluation"]["per_replicate"][0]["chronological_failure"]["episodes"][0]
+    episode["actual_executed_flops_before_censoring"] += 1
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    episode = bad["evaluation"]["per_replicate"][0]["chronological_failure"]["episodes"][0]
+    episode["search_steps"] += 1
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    episode = bad["evaluation"]["per_replicate"][0]["chronological_failure"]["episodes"][0]
+    episode["contradiction_count"] += 1
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    episode = bad["evaluation"]["per_replicate"][0]["chronological_failure"]["episodes"][0]
+    episode["candidate_solution"] = []
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    receipt = bad["evaluation"]["per_replicate"][0]["chronological_failure"]["episodes"][0][
+        "step_receipts"
+    ][0]
+    receipt["external_target_value"] = 1 - int(receipt["external_target_value"])
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    bad["evaluation"]["per_replicate"][0]["chronological_failure"][
+        "censored_episode_count"
+    ] += 1
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    bad["analysis_method_boundary"] = "confirmatory inference executed"
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    bad["learned_conflict_localizer_validated"] = True
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    bad["remaining_blockers"] = []
+    mutations.append(bad)
+
+    for payload in mutations:
+        payload["artifact_digest"] = _artifact_digest(payload)
+        assert validate_exp286_paired_development(payload)
