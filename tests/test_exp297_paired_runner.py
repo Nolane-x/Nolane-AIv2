@@ -1,5 +1,9 @@
 from copy import deepcopy
 
+import pytest
+
+pytest.importorskip("torch")
+
 from nolane_ai.experiments.exp297_paired_runner import (
     run_exp297_paired_development,
     validate_exp297_execution,
