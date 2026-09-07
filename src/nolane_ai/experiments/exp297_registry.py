@@ -28,6 +28,12 @@ def _registry_digest(payload: dict[str, Any]) -> str:
     return canonical_sha256(clean)
 
 
+def _execution_evidence_digest(evidence: dict[str, Any]) -> str:
+    clean = deepcopy(evidence)
+    clean.pop("evidence_binding_digest", None)
+    return canonical_sha256(clean)
+
+
 def _protocol_exp297(protocol: dict[str, Any]) -> dict[str, Any]:
     matches = [
         item
@@ -156,6 +162,13 @@ def extend_neural_arm_registry_with_exp297(
         execution_evidence = {
             "execution_digest": exp297_execution_artifact["artifact_digest"],
             "pair_audit_digest": canonical_sha256(exp297_pair_audit),
+            "execution_identity": {
+                "protocol_digest": exp297_execution_artifact["protocol_digest"],
+                "code_digest": exp297_execution_artifact["code_digest"],
+                "root_seed": exp297_execution_artifact["root_seed"],
+                "model_init_seed": exp297_execution_artifact["model_init_seed"],
+                "config": deepcopy(exp297_execution_artifact["config"]),
+            },
             "descriptive_aggregate": deepcopy(aggregate),
             "confirmatory_ready": False,
             "confirmatory_data_consumed": False,
@@ -164,7 +177,11 @@ def extend_neural_arm_registry_with_exp297(
             "decision_rule_executed": False,
             "hidden_trap_family_consumed": False,
             "semantic_authority_promoted": False,
+            "evidence_binding_digest": "",
         }
+        execution_evidence["evidence_binding_digest"] = _execution_evidence_digest(
+            execution_evidence
+        )
 
     payload = deepcopy(base_registry)
     if "EXP-297" in (payload.get("experiments") or {}):
@@ -250,14 +267,21 @@ def validate_exp297_neural_arm_registry(payload: dict[str, Any]) -> list[str]:
         ):
             if evidence.get(key) is not True:
                 errors.append(f"EXP-297 registry resource evidence {key} is not closed")
-        if not evidence.get("pair_audit_digest"):
-            errors.append("EXP-297 pair audit digest missing")
+        pair_digest = evidence.get("pair_audit_digest")
+        if (
+            not isinstance(pair_digest, str)
+            or len(pair_digest) != 64
+            or any(character not in "0123456789abcdef" for character in pair_digest)
+        ):
+            errors.append("EXP-297 pair audit digest invalid")
 
     execution = item.get("paired_execution_evidence")
     if status == EXECUTION_STATUS:
         if not isinstance(execution, dict):
             errors.append("EXP-297 paired execution evidence missing")
         else:
+            if execution.get("evidence_binding_digest") != _execution_evidence_digest(execution):
+                errors.append("EXP-297 execution evidence binding digest mismatch")
             if execution.get("pair_audit_digest") != evidence.get("pair_audit_digest"):
                 errors.append("EXP-297 execution/pair digest binding mismatch")
             execution_digest = execution.get("execution_digest")
@@ -267,6 +291,10 @@ def validate_exp297_neural_arm_registry(payload: dict[str, Any]) -> list[str]:
                 or any(character not in "0123456789abcdef" for character in execution_digest)
             ):
                 errors.append("EXP-297 execution digest invalid")
+            identity = execution.get("execution_identity") or {}
+            for field in ("protocol_digest", "code_digest", "root_seed", "model_init_seed", "config"):
+                if field not in identity:
+                    errors.append(f"EXP-297 execution identity missing {field}")
             for flag in (
                 "confirmatory_ready",
                 "confirmatory_data_consumed",
