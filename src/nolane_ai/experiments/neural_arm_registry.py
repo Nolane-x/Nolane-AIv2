@@ -296,6 +296,13 @@ def _validate_execution(
     if pair_audit is None:
         label = "matched triplet audit" if experiment_id == "EXP-279" else "matched pair audit"
         raise ValueError(f"{experiment_id} paired execution artifact requires {label}")
+    if (
+        experiment_id == "EXP-286"
+        and execution_artifact.get("learned_conflict_localizer_validated") not in (None, False)
+    ):
+        raise ValueError(
+            "EXP-286 paired execution artifact cannot claim learned conflict localizer validation"
+        )
 
     if experiment_id == "EXP-277":
         from .exp277_paired_runner import validate_exp277_paired_development as validator
@@ -584,6 +591,12 @@ def build_neural_arm_registry(
                     ),
                     "oracle_minus_chronological_verified_solution_rate": float(
                         aggregate["oracle_minus_chronological_verified_solution_rate"]
+                    ),
+                    "chronological_censored_episode_count": int(
+                        aggregate["chronological_censored_episode_count"]
+                    ),
+                    "oracle_censored_episode_count": int(
+                        aggregate["oracle_censored_episode_count"]
                     ),
                     "learned_conflict_localizer_validated": False,
                 }
