@@ -4,6 +4,7 @@ from nolane_ai.experiments.exp297_paired_runner import (
     run_exp297_paired_development,
     validate_exp297_execution,
 )
+from nolane_ai.protocol.evidence import canonical_sha256
 
 
 def _tiny(**overrides):
@@ -20,6 +21,12 @@ def _tiny(**overrides):
     )
     kwargs.update(overrides)
     return run_exp297_paired_development(**kwargs)
+
+
+def _rehash(payload):
+    clean = deepcopy(payload)
+    clean.pop("artifact_digest", None)
+    payload["artifact_digest"] = canonical_sha256(clean)
 
 
 def test_exp297_runner_reconstructs_endpoints_from_raw_candidate_decisions():
@@ -73,7 +80,7 @@ def test_exp297_validator_rejects_rehashed_truth_witness_authority_cost_and_orde
     mutations.append(changed)
 
     for changed in mutations:
-        changed["artifact_digest"] = ""
+        _rehash(changed)
         errors = validate_exp297_execution(changed)
         assert errors
 
