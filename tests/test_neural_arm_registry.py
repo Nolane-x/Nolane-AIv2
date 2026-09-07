@@ -39,6 +39,14 @@ def _protocol_subset():
                 ],
                 "resource_match": {"parameter_budget": "equal state/controller parameters", "observation_history": "identical", "compute_budget": "matched"},
             },
+            {
+                "experiment_id": "EXP-286",
+                "arms": [
+                    {"id": "chronological_failure", "description": "no conflict core; chronological rollback"},
+                    {"id": "oracle_conflict_core", "description": "ground-truth conflict core supplied at contradiction"},
+                ],
+                "resource_match": {"parameter_budget": "oracle metadata is information, not free neural parameters; oracle-info receipt reported", "episode_budget": "same max FLOPs"},
+            },
         ],
     }
 
@@ -54,10 +62,12 @@ def test_registry_matches_frozen_arm_ids_and_refuses_false_readiness():
     assert artifact["evidence_level"] == "EV-E2"
     assert artifact["decision"] == "UNVERIFIED"
     assert artifact["pilot_total_parameters"] == 16_000_000
-    assert set(artifact["experiments"]) == {"EXP-277", "EXP-279", "EXP-282"}
+    assert set(artifact["experiments"]) == {"EXP-277", "EXP-279", "EXP-282", "EXP-286"}
     assert all(item["match_court"] == "BLOCKED" for item in artifact["experiments"].values())
     assert artifact["experiments"]["EXP-282"]["arms"]["explicit_belief"]["implementation_status"] == "DEVELOPMENT_COMPONENT_PRESENT"
     assert artifact["experiments"]["EXP-282"]["arms"]["recurrent_hidden"]["implementation_status"] == "BLOCKED"
+    assert artifact["experiments"]["EXP-286"]["arms"]["chronological_failure"]["implementation_status"] == "BLOCKED"
+    assert artifact["experiments"]["EXP-286"]["arms"]["oracle_conflict_core"]["implementation_status"] == "DEVELOPMENT_COMPONENT_PRESENT"
     assert validate_neural_arm_registry(artifact) == []
 
 
