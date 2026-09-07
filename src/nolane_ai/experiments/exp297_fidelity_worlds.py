@@ -54,7 +54,9 @@ def _base(seed: int) -> tuple[tuple[Variable, ...], tuple[TableConstraint, ...]]
     rng = random.Random(seed)
     domain = (0, 1, 2)
     variables = (Variable("x", domain), Variable("y", domain), Variable("z", domain))
-    shift = rng.randrange(3)
+    # Use a deliberately non-symmetric source relation so swapping bindings is
+    # guaranteed to alter semantics instead of becoming neutral under equality.
+    shift = 1 + rng.randrange(2)
     relation = tuple((x, (x + shift) % 3) for x in domain)
     relation2 = tuple((y, (y + 1) % 3) for y in domain)
     constraints = (
