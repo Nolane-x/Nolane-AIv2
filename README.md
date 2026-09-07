@@ -217,3 +217,26 @@ The frozen primary endpoint is `repeat_dead_end_rate`, lower is better, with a 2
 Memory is not free compute. Canonicalization, insertion, query and exact subset-comparison operations are charged alongside the matched neural compute path, and the validator reconstructs raw cost/censoring receipts under one common ceiling. The CLI verifies the canonical frozen protocol digest before model work, refuses overwrite, validates execution/registry semantics before publication, and writes fully staged JSON artifacts without exposing partial files.
 
 This lane remains **EV-E2 / UNVERIFIED**. It emits `confirmatory_ready=false`, `confirmatory_data_consumed=false`, `challenge_seed_materialized=false`, `challenge_materialized=false`, and `decision_rule_executed=false`. A valid DEVELOPMENT execution can advance the Neural Arm Registry to `PAIRED_LOCAL_NOGOOD_DEV_READY`, but `match_court` remains `BLOCKED`. EXP-289 does **not** validate EXP-290-style learned cross-problem clause transfer and does **not** establish lifelong lemma economy; those are separate future claims and gates.
+
+## EXP-297 Encoding Fidelity Court DEVELOPMENT lane
+
+Package `0.15.0` adds the matched-neural DEVELOPMENT lane for the final frozen Stage-A engineering gate, `EXP-297`. The frozen arms remain `compile_only` and `fidelity_court`, but both execute the same neural comparison substrate: source/candidate encoding, recurrent comparison, `FidelityCourtRegion`, receipt adapter, authority head and verifier head. `compile_only` receives a canonical null-fidelity receipt so it cannot gain a compute advantage by skipping the neural fidelity path.
+
+The deterministic evaluator generates 16 compile-valid candidates per replicate across eight semantic strata: `faithful_equivalent`, `relation_shift`, `constraint_drop`, `constraint_strengthen`, `constraint_weaken`, `variable_binding_swap`, `domain_mapping_error`, and `negation_or_relation_flip`. Each stratum contains both faithful and wrong candidates. Construction provenance supplies evaluator truth, while arm-observable inputs exclude the faithful/wrong label and trap stratum.
+
+The semantic court is fail-closed. It searches for independent bidirectional witnesses: an assignment accepted by the source and rejected by the candidate, or an assignment accepted by the candidate and rejected by the source. A verified divergence returns `court_reject`; exact closure without a witness returns `court_accept`; exceeding the bounded exact-assignment ceiling returns `court_inconclusive`, which never grants semantic authority.
+
+Run the CPU-safe development smoke:
+
+```bash
+python scripts/run_exp297_paired_dev.py \
+  --tiny \
+  --eval-replicates 2 \
+  --eval-start-replicate 1000 \
+  --output /tmp/nlm-exp297-paired.json \
+  --registry-output /tmp/nlm-exp297-registry.json
+```
+
+The artifact schema is `NLM-EXP-297-PAIRED-DEV-EVAL-V1`. Its reconstruction validator regenerates candidate lineage and recomputes compile results, witnesses, authority decisions, semantic verification operations, confusion matrices, balanced accuracy and both protected endpoints from raw per-candidate evidence. Neural accounted FLOPs and symbolic semantic-verification operations are reported separately; neither is mislabeled as hardware-profiler FLOPs.
+
+This lane remains strictly **EV-E2 / UNVERIFIED**. Development outputs keep `confirmatory_ready=false`, `confirmatory_data_consumed=false`, `challenge_seed_materialized=false`, `challenge_materialized=false`, `decision_rule_executed=false`, `hidden_trap_family_consumed=false`, and `semantic_authority_promoted=false`. A valid development execution may record `PAIRED_FIDELITY_COURT_DEV_READY`, but `match_court` remains `BLOCKED`. Descriptive development balanced accuracy—even if numerically high—does not satisfy the frozen `+0.10` confirmatory MESI and does not production-validate semantic authority.
