@@ -51,21 +51,21 @@ Use an experiment-local matched neural hybrid reasoner for both arms. The arms s
 
 The only causal difference is whether exact dead-end states observed during the current episode may be retained in and queried from an **episode-local exact nogood sidecar**.
 
-`local_nogood` may store only dead-end partial assignments that the reasoner has actually reached and that the executor can independently certify inconsistent under the current world. `no_nogood` executes the same memory-adapter/null path and the same accounting hooks but never persists or applies a nogood.
+`local_nogood` may store only dead-end partial assignments that its own search has actually reached. `no_nogood` executes the same memory-adapter/null path and accounting hooks but never persists or applies a nogood.
 
 This isolates the frozen question: **does exact local failure reuse reduce repeated dead-end work enough to justify its memory/lookup cost without pruning valid solution states?**
 
-### Rejected alternative A: direct reuse of EXP-279 routing implementation as the scientific arm
+### Rejected alternative A: direct reuse of EXP-279 scientific-arm authority
 
-EXP-279 established a matched propagation/branch/hybrid routing court, but binding EXP-289 directly to that experiment's implementation would couple two frozen hypotheses and make future changes to one experiment alter the other's provenance. EXP-289 should reuse low-level patterns/utilities, not scientific artifact authority.
+EXP-279 established a matched propagation/branch/hybrid routing court, but binding EXP-289 directly to that experiment's scientific artifact would couple two frozen hypotheses. EXP-289 may reuse low-level utilities and patterns, not EXP-279 evidence authority.
 
 ### Rejected alternative B: neural associative nogood memory
 
-A learned memory would confound three questions: whether nogoods are useful, whether retrieval can learn structural equivalence, and whether approximate retrieval is safe. Those belong to later learned-clause/generalization experiments, especially EXP-290.
+A learned memory would confound whether nogoods are useful, whether retrieval can learn structural equivalence, and whether approximate retrieval is safe. Those questions belong downstream, especially EXP-290.
 
 ### Rejected alternative C: keep only the existing algorithmic proxy
 
-The current Stage-A harness uses `EpisodeNogoodStore` with repeated search calls. That is valuable `EV-E2_ALGORITHMIC_PROXY` smoke evidence but does not close matched neural parameters, deterministic restart opportunities, maintenance-cost accounting, exact over-prune verification, artifact provenance or registry integration.
+The Stage-A harness already uses `EpisodeNogoodStore` with repeated search calls. That is useful `EV-E2_ALGORITHMIC_PROXY` smoke evidence, but it does not close matched neural parameters, deterministic restart opportunities, maintenance-cost accounting, exact over-prune audit, artifact provenance or registry integration.
 
 ## 4. Arm semantics
 
@@ -91,27 +91,28 @@ The baseline:
 - never prunes because of a stored nogood;
 - receives only canonical null memory-response tokens;
 - follows the same bounded restart/search protocol as the local arm;
-- pays the shared neural adapter cost but no real store insertion/match cost beyond a declared null-query accounting floor if needed for symmetric executor control flow.
+- pays the shared neural adapter cost;
+- does not pay fictitious store insertion/subset-match costs that it did not execute.
 
 ### 4.3 `local_nogood`
 
 The treatment arm owns an exact store scoped to one episode.
 
-It may store a nogood only when:
+It may store a nogood only when its **observable search protocol** emits a local logical-dead-end event and:
 
-1. the current partial assignment has been reached through the arm's actual search path;
-2. the executor has observed a genuine dead end under the current world;
+1. the current partial assignment was reached through the arm's actual search path;
+2. the dead-end event is produced by the same constraint/propagation/search semantics available to the arm, not by hidden evaluator truth;
 3. the partial assignment is non-empty;
 4. the assignment is canonicalized deterministically;
-5. the store scope exactly matches the current `episode_digest` and `problem_digest`.
+5. the store scope matches the current `episode_digest` and `problem_digest`.
 
-A stored nogood is an exact conjunction of variable assignments. It matches a later partial state only when the stored assignment is a subset of the current assignment.
+The evaluator must **not gate insertion** using ground-truth solution enumeration, oracle conflict cores or future-path knowledge. Otherwise the treatment arm would receive an unearned oracle safety filter and the over-prune endpoint would become vacuous.
 
-No approximate similarity retrieval is allowed in EXP-289.
+A stored nogood is an exact conjunction of variable assignments. It matches a later partial state only when the stored assignment is a subset of the current assignment. No approximate similarity retrieval is allowed in EXP-289.
 
 ## 5. Episode scope and leakage boundary
 
-Every store must bind to an exact scope receipt:
+Every store binds to an exact scope receipt:
 
 ```json
 {
@@ -121,48 +122,51 @@ Every store must bind to an exact scope receipt:
   "cross_episode_reuse": false,
   "cross_problem_reuse": false,
   "oracle_conflict_core_used": false,
+  "ground_truth_safety_gate_used": false,
   "learned_clause_generalization_claimed": false
 }
 ```
 
 The store is created at episode start and destroyed at episode end.
 
-The semantic validator must reject:
+The semantic validator rejects semantic/provenance drift such as:
 
-- reuse of a nogood from another episode;
-- reuse across problem/world digests;
-- empty/root nogoods;
-- insertion before an observed dead end;
-- oracle conflict-core or future-path information entering the stored key;
+- reuse from another episode or problem digest;
+- empty/root keys where the store policy forbids them;
+- insertion before the arm-observable dead-end event;
+- oracle conflict-core, solution or future-path information entering the key;
+- evaluator ground truth being fed back to gate insertion;
 - any claim that exact episode-local reuse demonstrates structural transfer.
 
-## 6. Soundness rule for stored nogoods
+## 6. Soundness audit without oracle assistance
 
-EXP-289 must separate **search usefulness** from **logical safety**.
+EXP-289 must separate **arm behavior** from **evaluation truth**.
 
-For a canonical partial assignment `N`, the executor may admit it to the store only if the current world independently verifies that no valid complete assignment extends `N`.
+The local arm decides to insert from its observable dead-end event only. After the insertion has happened, an evaluator with generator truth independently asks whether the stored partial assignment has any valid complete extension.
 
-For bounded DEVELOPMENT worlds, the evaluator must be able to enumerate or otherwise deterministically verify the valid completion set.
+For bounded DEVELOPMENT worlds, the evaluator must be able to enumerate or deterministically verify valid completions.
 
-The artifact must retain a store receipt for every insertion:
+Every insertion receipt records:
 
 - canonical nogood key;
 - insertion step/restart index;
-- dead-end evidence digest;
+- arm-observable dead-end evidence digest;
 - scope digests;
-- independent `no_valid_completion=true` result;
-- charged insertion/canonicalization cost.
+- post-hoc evaluator result `has_valid_completion`;
+- charged canonicalization/insertion cost.
 
-The validator must independently regenerate the world and re-check this property rather than trust the stored boolean.
+The `has_valid_completion` result is evaluator-only evidence. It must never be returned to the arm/controller during the episode.
+
+An unsound stored key is a **scientific/safety outcome**, not an infrastructure-invalid artifact. The validator must preserve and correctly recompute such a failure; it must not silently reject/delete the row merely because the experiment performed badly. The validator rejects only false or inconsistent reporting of that failure.
 
 ## 7. Development world and restart generator
 
-Create deterministic globally solvable worlds designed to expose **repeat opportunities** across bounded restarts without giving either arm privileged knowledge.
+Create deterministic globally solvable worlds designed to expose repeat opportunities across bounded restarts without giving either arm privileged knowledge.
 
-Each episode should include:
+Each episode includes:
 
 - a finite-domain CSP/search world with at least one verified solution;
-- multiple decoy regions capable of creating logically identical dead-end partial assignments under different search orders;
+- decoy regions capable of producing logically equivalent dead-end partial assignments under different restart orders;
 - a predeclared bounded restart schedule;
 - deterministic variable/domain order perturbations per restart;
 - evaluator-only canonical dead-end equivalence metadata;
@@ -180,7 +184,7 @@ Allowed DEVELOPMENT streams:
 - `model_init` for shared model initialization;
 - `augmentation` for training/development fitting;
 - `evaluation` for paired development evaluation;
-- optionally `controller_noise` only if a predeclared neural controller-noise path is actually required and applied identically to both arms.
+- `controller_noise` only if a predeclared identical controller-noise path is actually required.
 
 No confirmatory or challenge randomness may be derived.
 
@@ -188,9 +192,18 @@ The same replicate must regenerate byte-identical world tensors, restart schedul
 
 ## 8. Repeat-dead-end opportunity contract
 
-The primary endpoint must not use a denominator that an arm can manipulate by changing its own path.
+The primary endpoint must not use a denominator that either arm can shrink by altering its own path.
 
-For each paired episode, the generator/evaluator freezes a set of canonical **repeat opportunities** before arm execution. An opportunity represents a logically equivalent dead-end state that can be encountered in a later restart under the shared restart schedule.
+For every episode, the generator freezes an evaluator-only **opportunity manifest** before arm execution. The manifest is produced by a deterministic reference traversal that does not use either learned arm or any nogood store. Each item binds:
+
+- restart index;
+- canonical dead-end equivalence key;
+- earlier occurrence index of the same key;
+- world/restart lineage digest.
+
+A manifest item is a repeat opportunity if the canonical reference traversal reaches a dead-end key that already appeared in an earlier restart.
+
+The manifest is never exposed to either arm during execution.
 
 The DEVELOPMENT primary endpoint is:
 
@@ -200,39 +213,45 @@ repeat_dead_end_rate = repeated_dead_end_reentries / predeclared_repeat_opportun
 
 where:
 
-- `predeclared_repeat_opportunities` is arm-independent and regenerated from the paired world/restart schedule;
-- `repeated_dead_end_reentries` counts actual later re-entry into a canonical dead-end equivalence class already established earlier in the episode;
-- preventing a repeat by a sound nogood reduces the numerator but cannot shrink the denominator;
-- if the evaluator finds zero repeat opportunities, the episode remains in raw evidence but is excluded from the RDER denominator under one explicit predeclared rule reported in the artifact; it must not be silently dropped.
+- `predeclared_repeat_opportunities` comes only from the frozen opportunity manifest;
+- `repeated_dead_end_reentries` counts manifest-equivalent repeated states actually entered by the arm instead of being avoided before full dead-end cost;
+- because both arms share neural initialization/policy and exogenous restart lineage, post-hit path divergence is retained as a causal consequence of the memory intervention;
+- preventing a repeat through a sound local-store match lowers the numerator but cannot alter the denominator.
 
-The artifact must also report descriptively:
+If the manifest contains zero repeat opportunities, the episode remains in raw evidence with `rder_defined=false`. It contributes to safety/solution/cost metrics but not to the RDER numerator or denominator. The aggregate must explicitly report how many such episodes exist.
+
+Descriptive receipts also report:
 
 - `prevented_repeat_count`;
 - `nogood_hits`;
 - `unique_dead_end_count`;
 - raw dead-end signatures;
 - per-restart dead-end lineage;
-- opportunity count.
+- opportunity-manifest digest and count.
 
 The frozen confirmatory bootstrap/MESI rule is not executed in DEVELOPMENT.
 
 ## 9. Over-prune safety court
 
-`valid_state_overprune_rate` must be independently auditable.
+`valid_state_overprune_rate` must be independently auditable and must not be made trivially safe by an oracle insertion filter.
 
-For every stored nogood, the evaluator checks it against all bounded valid solutions/valid prefixes available from the generated world.
+Every actual `local_nogood` prune event is checked post hoc against regenerated world truth. A prune is invalid if the pruned partial state has at least one valid complete extension.
 
-A safety violation occurs if a stored nogood would match any state that lies on at least one valid complete solution path.
-
-Development reporting must include:
+The DEVELOPMENT protected metric is defined operationally as:
 
 ```text
-valid_state_overprune_rate = invalidly_pruned_valid_states / evaluated_valid_states
+valid_state_overprune_rate = invalid_nogood_prune_events / max(nogood_prune_events, 1)
 ```
 
-plus raw offending state/nogood digests when nonzero.
+If no nogood prune event occurs, the rate is `0.0` and `nogood_prune_events=0` is reported explicitly; the primary RDER then prevents a no-op memory from looking useful.
 
-The validator must recompute this from regenerated world truth and raw store receipts. It must reject an artifact that edits only the aggregate rate or deletes offending rows after re-hashing.
+The evaluator also reports:
+
+- `store_soundness_violation_count`: stored keys with at least one valid completion;
+- raw offending store/prune/state digests;
+- number of valid solutions/prefixes checked.
+
+A nonzero over-prune or soundness-violation result is valid negative scientific evidence. The semantic validator must recompute and preserve it, not convert it into an invalid-run classification unless provenance itself is corrupted.
 
 The frozen protected floor remains `<=0.005`; DEVELOPMENT records the metric but does not execute the confirmatory promotion/kill rule.
 
@@ -245,25 +264,26 @@ Pairing freezes:
 - restart schedule;
 - exogenous RNG lineage;
 - maximum episode budget;
-- evaluator repeat-opportunity set.
+- evaluator opportunity manifest.
 
-Pairing does **not** require the arms to visit the same later states. Avoiding a dead end because of a sound stored nogood is the intended causal effect.
+Pairing does **not** require post-intervention trajectories to remain identical. Avoiding a dead end because of a stored nogood is the intended causal effect.
 
 For each restart:
 
-1. both arms begin from the same restart initial state/order;
-2. each executes its own search path;
-3. observed dead ends are independently verified;
-4. baseline records but does not persist them;
-5. local arm may insert sound non-empty nogoods;
-6. later local queries may prune states matched by the exact current-episode store;
-7. search continues until verified solution or the shared episode ceiling is exhausted.
+1. both arms receive the same restart initial state/order;
+2. each executes its own matched neural search path;
+3. arm-observable dead-end events are recorded;
+4. baseline records but never persists them;
+5. local arm may insert exact non-empty keys from its observable dead ends;
+6. later local queries may prune exact subset matches in the current episode store;
+7. evaluator truth audits insertion/prune safety only after the arm action and never feeds back into control;
+8. search continues until verified solution or the shared episode ceiling is exhausted.
 
 Scientific/search failures are retained. Selective reruns are forbidden except predeclared infrastructure failures.
 
 ## 11. Parameter and resource matching
 
-The matched-pair audit must report at minimum:
+The matched-pair audit reports at minimum:
 
 - exact total parameters per arm;
 - exact functional trainable parameters per arm;
@@ -283,13 +303,13 @@ The matched-pair audit must report at minimum:
 
 No excluded reserve may hide arm-specific active neural capacity.
 
-The exact symbolic store is experimental information/state, not free neural parameters. Its storage, canonicalization and lookup work must be charged explicitly.
+The symbolic store is experimental state, not free neural parameters. Its canonicalization, storage and lookup work is charged explicitly when executed.
 
 ## 12. Accounted-cost ledger
 
-EXP-289's primary scientific metric is RDER, but resource matching still requires a deterministic accounted-cost court.
+EXP-289's primary endpoint is RDER, but frozen resource matching still requires a deterministic cost court.
 
-The analytical ledger must separate at least:
+The analytical ledger separates at least:
 
 - shared neural encoding FLOPs;
 - propagation/deliberation FLOPs;
@@ -302,15 +322,13 @@ The analytical ledger must separate at least:
 - total `accounted_reasoning_cost`;
 - declared maximum accounted cost per episode.
 
-All actual path-dependent costs must be accumulated from raw step receipts.
-
-No hardware-profiler FLOP claim is permitted.
+All path-dependent cost is accumulated from raw step receipts. No hardware-profiler FLOP claim is permitted.
 
 If an episode exhausts the common budget:
 
-- it is retained as a scientific outcome;
+- it remains a scientific outcome;
 - solution failure is recorded;
-- the cost is censored at the common ceiling;
+- cost is censored at the common ceiling;
 - raw restart/search/store receipts remain present.
 
 ## 13. Training and evaluation
@@ -323,14 +341,14 @@ Training:
 - identical paired initialization;
 - same optimizer family/hyperparameters/update count;
 - no evaluation/confirmatory data mixed into training;
-- exact store semantics remain episode-local during training;
+- exact store semantics remain episode-local;
 - no cross-episode learned memory is introduced.
 
 Development evaluation:
 
 - `evaluation` stream;
 - replicate range disjoint from training;
-- shared paired worlds/restart schedules/opportunity sets;
+- shared paired worlds/restart schedules/opportunity manifests;
 - causal divergence retained and charged;
 - all raw outcomes retained;
 - no selective reruns for scientific failure.
@@ -358,27 +376,28 @@ Required top-level fields include:
 - training lineage;
 - evaluation raw rows;
 - raw per-restart/per-step dead-end/store/query receipts;
-- evaluator opportunity receipts;
+- evaluator opportunity-manifest receipts;
+- post-hoc soundness/over-prune receipts;
 - descriptive aggregates;
 - explicit remaining blockers;
 - canonical artifact self-hash.
 
-The validator must independently regenerate or recompute all critical semantics and reject at least:
+The validator independently regenerates or recomputes critical semantics and rejects at least:
 
 - arm/protocol/endpoint/MESI/protected-floor drift;
 - initial-state or parameter mismatch;
 - training/evaluation lineage overlap;
 - episode/problem scope drift;
 - cross-episode store reuse;
-- empty/root nogoods;
-- store insertion without an observed independently verified dead end;
-- a nogood with at least one valid completion;
+- empty/root insertion contrary to the policy;
+- insertion before an arm-observable dead-end event;
+- evaluator/oracle truth fed back into arm control;
 - approximate/fuzzy matching masquerading as exact local retrieval;
-- repeat-opportunity denominator drift;
+- opportunity-manifest or denominator drift;
 - repeated-dead-end numerator drift;
-- deleted or reordered dead-end/restart rows;
-- forged `prevented_repeat_count` or `nogood_hits`;
-- over-prune aggregate drift;
+- deleted/reordered dead-end or restart rows;
+- forged `prevented_repeat_count`, `nogood_hits`, prune counts or store counts;
+- false reporting of soundness/over-prune outcomes;
 - candidate/verified solution drift;
 - storage/retrieval cost omission;
 - per-step or episode accounted-cost drift;
@@ -388,7 +407,9 @@ The validator must independently regenerate or recompute all critical semantics 
 - remaining-blocker removal;
 - artifact digest mismatch.
 
-The validator must continue to reject semantic tampering after the attacker recomputes the top-level self-hash.
+Critically, the validator must **accept faithfully recorded negative scientific outcomes** such as nonzero over-prune, unsound stored keys, low RDER benefit or failed solution rate. Validation means the artifact is truthful and reconstructable, not that EXP-289 succeeded scientifically.
+
+The validator must still reject semantic tampering after an attacker recomputes the top-level self-hash.
 
 ## 15. Neural-arm registry integration
 
@@ -399,9 +420,9 @@ Add optional evidence inputs:
 - `exp289_pair_audit`;
 - `exp289_execution_artifact`.
 
-A valid pair audit plus paired DEVELOPMENT artifact may advance an engineering status such as `PAIRED_LOCAL_NOGOOD_DEV_READY`.
+A valid pair audit plus paired DEVELOPMENT artifact may advance an engineering status such as `PAIRED_LOCAL_NOGOOD_DEV_READY` regardless of whether descriptive scientific effect is positive or negative; the status means the court executed validly, not that the hypothesis passed.
 
-`match_court` must remain `BLOCKED` because confirmatory sample-size/analysis freeze, confirmatory-open execution and post-freeze challenge evidence remain outstanding.
+`match_court` remains `BLOCKED` because confirmatory sample-size/analysis freeze, confirmatory-open execution and post-freeze challenge evidence remain outstanding.
 
 Registry language must not imply:
 
@@ -414,10 +435,10 @@ Registry language must not imply:
 
 `src/nolane_ai/reasoning/search.py` already contains `EpisodeNogoodStore` and algorithmic branch/hybrid hooks.
 
-EXP-289 may reuse its exact subset-match semantics or refactor common exact-store primitives if needed, but the experiment-specific development store must add stronger provenance requirements:
+EXP-289 may reuse exact subset-match semantics or refactor common exact-store primitives if required, but experiment-specific development state must add:
 
 - explicit episode/problem scope;
-- insertion evidence;
+- insertion-event provenance;
 - deterministic canonical serialization;
 - maintenance-cost receipts;
 - safe reset/destruction boundary;
@@ -427,7 +448,7 @@ No unrelated rewrite of general search is required.
 
 ## 17. CLI, CI and version boundary
 
-Add a CPU-safe development CLI, tentatively:
+Add a CPU-safe development CLI:
 
 `scripts/run_exp289_paired_dev.py`
 
@@ -445,7 +466,7 @@ CI model-smoke must include all EXP-289 unit/integration tests and one tiny pair
 
 Only after the complete EXP-289 lane is green should package/runtime version advance from `0.13.0` to `0.14.0`, with README documenting the `EV-E2 / UNVERIFIED` boundary.
 
-## 18. Tentative implementation files
+## 18. Expected implementation files
 
 Production:
 
@@ -453,9 +474,9 @@ Production:
 - `src/nolane_ai/experiments/exp289_nogood_worlds.py`
 - `src/nolane_ai/experiments/exp289_paired_runner.py`
 - `scripts/run_exp289_paired_dev.py`
-- modifications to `src/nolane_ai/experiments/neural_arm_registry.py`
+- modifications to `src/nolane_ai/experiments/neural_arm_registry.py`;
 - CI/package/README updates;
-- only narrowly scoped common-search/store refactoring if required by exact provenance/accounting.
+- only narrowly scoped common-search/store refactoring if required by provenance/accounting.
 
 Tests:
 
@@ -474,22 +495,23 @@ Implementation is complete only when all of the following are true:
 2. exact total/functional/active/optimizer-visible parameter matching passes;
 3. both arms share identical initialization/world/restart/opportunity lineage;
 4. local store is strictly episode/problem scoped and reset at episode end;
-5. only observed, independently unsatisfiable, non-empty partial assignments can be stored;
+5. insertion uses only arm-observable dead-end evidence; evaluator ground truth never gates arm behavior;
 6. baseline cannot persist/apply a real nogood;
-7. repeat-opportunity denominator is arm-independent and validator-regenerated;
+7. opportunity denominator is arm-independent and validator-regenerated;
 8. repeat re-entry/prevention receipts are reconstructable from raw restart/search traces;
-9. valid-state over-prune safety is independently recomputed from regenerated ground truth;
-10. storage/canonicalization/retrieval costs are charged and cannot be edited away;
-11. unresolved/censored scientific outcomes remain in raw rows and aggregates;
-12. semantic tamper tests fail closed after re-hash;
-13. registry cannot clear confirmatory blockers or claim EXP-290/generalization/lemma-economy evidence;
-14. tiny CLI execution passes in GitHub Actions;
-15. all existing EXP-277/279/282/286 regressions remain green;
-16. frozen Stage-A protocol files are absent from the PR diff;
-17. package/runtime versions agree at `0.14.0` only after the full lane is green;
-18. exact-head `core (3.11)`, `core (3.13)` and `model-smoke` are green;
-19. review has no unresolved Critical/Important issue;
-20. squash merge uses exact expected-head protection and post-merge `main` CI is verified before engineering closure is claimed.
+9. over-prune and stored-key soundness are independently recomputed from regenerated ground truth;
+10. negative safety/scientific outcomes remain faithfully representable as valid artifacts;
+11. storage/canonicalization/retrieval costs are charged and cannot be edited away;
+12. unresolved/censored scientific outcomes remain in raw rows and aggregates;
+13. semantic tamper tests fail closed after re-hash;
+14. registry cannot clear confirmatory blockers or claim EXP-290/generalization/lemma-economy evidence;
+15. tiny CLI execution passes in GitHub Actions;
+16. all existing EXP-277/279/282/286 regressions remain green;
+17. frozen Stage-A protocol files are absent from the PR diff;
+18. package/runtime versions agree at `0.14.0` only after the full lane is green;
+19. exact-head `core (3.11)`, `core (3.13)` and `model-smoke` are green;
+20. review has no unresolved Critical/Important issue;
+21. squash merge uses exact expected-head protection and post-merge `main` CI is verified before engineering closure is claimed.
 
 ## 20. What EXP-289 cannot establish
 
@@ -502,4 +524,4 @@ Even a strong DEVELOPMENT result cannot establish that:
 - truth-maintenance under premise retraction is solved;
 - full V0.16 beats simpler 100M rivals.
 
-Those remain separate downstream hypotheses/experiments. EXP-289 is deliberately narrow: **can exact, sound, episode-local failure reuse prevent enough repeated dead-end work to justify proceeding?**
+Those remain separate downstream hypotheses/experiments. EXP-289 is deliberately narrow: **can exact, scoped, episode-local failure reuse prevent enough repeated dead-end work to justify proceeding?**
