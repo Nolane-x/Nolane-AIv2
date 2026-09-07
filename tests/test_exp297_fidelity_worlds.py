@@ -7,7 +7,8 @@ def test_exp297_generator_is_deterministic_balanced_and_multistratum():
     second = generate_fidelity_world(297001)
 
     assert first == second
-    assert tuple(case.stratum for case in first.candidates) == EXPECTED_STRATA
+    observed_order = tuple(dict.fromkeys(case.stratum for case in first.candidates))
+    assert observed_order == EXPECTED_STRATA
     assert set(EXPECTED_STRATA) == {
         "faithful_equivalent",
         "relation_shift",
@@ -18,8 +19,9 @@ def test_exp297_generator_is_deterministic_balanced_and_multistratum():
         "domain_mapping_error",
         "negation_or_relation_flip",
     }
-    assert any(case.is_faithful for case in first.candidates)
-    assert any(not case.is_faithful for case in first.candidates)
+    for stratum in EXPECTED_STRATA:
+        cases = [case for case in first.candidates if case.stratum == stratum]
+        assert {case.is_faithful for case in cases} == {True, False}
     assert all(compile_valid(case.candidate) for case in first.candidates)
     assert len({case.candidate_digest for case in first.candidates}) == len(first.candidates)
 
