@@ -73,6 +73,7 @@ jobs:
           tests/test_exp286_paired_cli.py
           tests/test_exp289_neural_import.py
           tests/test_matched_nogood_arms.py
+          tests/test_exp289_nogood_worlds.py
           tests/test_matched_belief_arms.py
           tests/test_exp282_compute_ledger.py
           tests/test_exp282_partial_observability.py
