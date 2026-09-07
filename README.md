@@ -188,3 +188,32 @@ python scripts/run_exp286_paired_dev.py \
 Both arms expose exact total/functional/optimizer-visible parameter matching, identical functional initialization, deterministic paired lineage, and an analytical compute ledger. Neural operations that consume oracle metadata are charged. Unresolved episodes are retained as scientific outcomes and censored at the shared FLOP ceiling rather than dropped. The development runner reports descriptive paired log-cost/headroom statistics only; it does **not** execute the frozen confirmatory bootstrap decision rule.
 
 A valid execution can advance the Neural Arm Registry to `PAIRED_CONFLICT_HEADROOM_DEV_READY`, but `match_court` remains `BLOCKED`. This lane remains **EV-E2 / UNVERIFIED** and does not validate the learned `ConflictCoreRegion` localizer. Confirmatory sample-size/analysis freeze, confirmatory-open execution, and post-freeze challenge evidence remain separate future gates.
+
+## EXP-289 episode-local nogood DEVELOPMENT lane
+
+Package `0.14.0` adds the matched-neural DEVELOPMENT lane for frozen `EXP-289`. The exact frozen arms are `no_nogood` (hybrid reasoner without episode-local learned nogoods) and `local_nogood` (the same reasoner with an episode-local nogood store and scoped applicability). Both arms share the same trainable neural envelope, initialization lineage, deterministic world/restart lineage, and common maximum accounted-cost ceiling.
+
+Run the CPU-safe development smoke:
+
+```bash
+python scripts/run_exp289_paired_dev.py \
+  --tiny \
+  --train-replicates 2 \
+  --eval-replicates 3 \
+  --batch-size 2 \
+  --timesteps 3 \
+  --restarts 3 \
+  --variables 6 \
+  --decoys 2 \
+  --max-search-steps 12 \
+  --output /tmp/nlm-exp289-paired.json \
+  --registry-output /tmp/nlm-exp289-registry.json
+```
+
+`local_nogood` may store only exact, non-empty partial assignments that its own current-episode search actually reached and observed as dead ends. Reuse is exact subset matching within the same episode/problem only: there is no cross-episode or cross-problem import, approximate retrieval, oracle conflict core, learned clause transfer, or lifelong lemma mechanism. The evaluator's valid-completion truth is used only after an arm action to audit soundness; it never gates insertion, chooses a controller action, or enters an arm input.
+
+The frozen primary endpoint is `repeat_dead_end_rate`, lower is better, with a 25% relative-reduction MESI. Its denominator is arm-independent and predeclared by the deterministic generator/evaluator, so an arm cannot improve the metric by changing which repeat opportunities count. Zero-opportunity episodes remain in raw evidence under the explicit exclusion policy. Protected safety evidence includes `valid_state_overprune_rate <= 0.005` and the frozen verified-solution-rate floor `local_nogood >= no_nogood - 0.01`; truthful over-prune or ceiling-exhaustion outcomes remain scientific failures rather than being deleted or repaired.
+
+Memory is not free compute. Canonicalization, insertion, query and exact subset-comparison operations are charged alongside the matched neural compute path, and the validator reconstructs raw cost/censoring receipts under one common ceiling. The CLI verifies the canonical frozen protocol digest before model work, refuses overwrite, validates execution/registry semantics before publication, and writes fully staged JSON artifacts without exposing partial files.
+
+This lane remains **EV-E2 / UNVERIFIED**. It emits `confirmatory_ready=false`, `confirmatory_data_consumed=false`, `challenge_seed_materialized=false`, `challenge_materialized=false`, and `decision_rule_executed=false`. A valid DEVELOPMENT execution can advance the Neural Arm Registry to `PAIRED_LOCAL_NOGOOD_DEV_READY`, but `match_court` remains `BLOCKED`. EXP-289 does **not** validate EXP-290-style learned cross-problem clause transfer and does **not** establish lifelong lemma economy; those are separate future claims and gates.
