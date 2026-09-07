@@ -62,10 +62,11 @@ def test_exp289_paired_cli_writes_valid_development_and_registry_artifacts(tmp_p
     assert execution["challenge_materialized"] is False
     assert execution["decision_rule_executed"] is False
     assert execution["learned_clause_generalization_validated"] is False
-    assert execution["cross_episode_memory_reuse_validated"] is False
+    assert execution["scope_policy"]["cross_episode_reuse"] is False
+    assert execution["scope_policy"]["cross_problem_reuse"] is False
     assert execution["artifact_digest"] == _artifact_digest(execution)
     assert validate_exp289_paired_development(execution) == []
-    validate_exp289_execution_artifact(execution, execution["frozen_contract"])
+    validate_exp289_execution_artifact(execution)
 
     exp289 = registry["experiments"]["EXP-289"]
     assert exp289["development_status"] == "PAIRED_LOCAL_NOGOOD_DEV_READY"
