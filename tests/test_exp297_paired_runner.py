@@ -89,6 +89,17 @@ def test_exp297_validator_rejects_rehashed_truth_witness_authority_cost_and_orde
         assert errors
 
 
+def test_exp297_validator_reconstructs_neural_cost_instead_of_trusting_self_consistent_ledger():
+    artifact = _tiny(eval_replicates=1)
+    changed = deepcopy(artifact)
+    arm = changed["evaluation"]["raw_candidates"][0]["arms"]["compile_only"]
+    arm["neural_accounted_flops"] -= 1
+    arm["total_accounted_cost_proxy"] -= 1
+    _rehash(changed)
+
+    assert validate_exp297_execution(changed)
+
+
 def test_exp297_inconclusive_verification_fails_closed():
     artifact = _tiny(eval_replicates=1, max_exact_assignments=8)
     rows = artifact["evaluation"]["raw_candidates"]
