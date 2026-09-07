@@ -429,6 +429,7 @@ def validate_exp286_paired_development(payload: dict[str, Any]) -> list[str]:
     for key in (
         "confirmatory_ready",
         "confirmatory_data_consumed",
+        "challenge_seed_materialized",
         "challenge_materialized",
         "decision_rule_executed",
     ):
@@ -847,6 +848,7 @@ def run_exp286_paired_development(
         "decision": "UNVERIFIED",
         "confirmatory_ready": False,
         "confirmatory_data_consumed": False,
+        "challenge_seed_materialized": False,
         "challenge_materialized": False,
         "decision_rule_executed": False,
         "protocol_id": "NLM-REASONING-STAGE-A-CONFIRMATORY-V1",
