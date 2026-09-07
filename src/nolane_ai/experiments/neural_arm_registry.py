@@ -244,6 +244,16 @@ def _validate_exp282_pair_audit(pair_audit: dict[str, Any]) -> None:
 
 def _validate_exp286_pair_audit(pair_audit: dict[str, Any]) -> None:
     receipt = pair_audit.get("oracle_information_receipt") or {}
+    expected_receipt = {
+        "artifact": "ground_truth_conflict_core",
+        "ground_truth": True,
+        "delivery_event": "after_current_contradiction_only",
+        "delivered_to": ["oracle_conflict_core"],
+        "withheld_from": ["chronological_failure"],
+        "chronological_failure_received_conflict_core": False,
+        "future_conflict_core_leakage": False,
+        "solution_leakage": False,
+    }
     required_true = (
         pair_audit.get("schema") == "NLM-EXP-286-MATCHED-CONFLICT-ARMS-DEV-V1",
         pair_audit.get("evidence_level") == "EV-E2",
@@ -254,10 +264,7 @@ def _validate_exp286_pair_audit(pair_audit: dict[str, Any]) -> None:
         pair_audit.get("optimizer_visible_parameter_match") is True,
         pair_audit.get("oracle_information_separation") is True,
         pair_audit.get("compute_budget_closed") is True,
-        receipt.get("chronological_failure_received_conflict_core") is False,
-        receipt.get("future_conflict_core_leakage") is False,
-        receipt.get("solution_leakage") is False,
-        receipt.get("delivery_event") == "after_current_contradiction_only",
+        receipt == expected_receipt,
     )
     ceiling = int(pair_audit.get("declared_max_accounted_flops_per_episode", 0) or 0)
     ledger = pair_audit.get("compute_ledger") or {}
