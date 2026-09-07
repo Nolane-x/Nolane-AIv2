@@ -162,3 +162,29 @@ python scripts/run_exp279_paired_dev.py \
 All three arms share one matched parameter envelope. `branch_only` is structurally denied the compiled constraint↔variable incidence artifact, while `propagation_only` and `hybrid` receive it. Simpler arms reclaim otherwise idle functional capacity rather than hiding it in excluded reserve. The hybrid executes branch recurrence only for episodes whose residual uncertainty crosses the frozen development threshold, and its cost receipt charges the observed routed fraction between pre-accounted stop and branch paths under one common maximum FLOP ceiling.
 
 This lane remains **EV-E2 / UNVERIFIED**. It reports descriptive paired development aggregates only; it does not run the frozen blocked/Holm confirmatory analysis, does not consume confirmatory-open observations, and does not materialize post-freeze challenge randomness. The Neural Arm Registry can record `PAIRED_ROUTING_DEV_READY`, but `match_court` remains `BLOCKED` until confirmatory sample-size/analysis freeze, confirmatory-open execution, and post-freeze challenge evidence are actually completed.
+
+## EXP-286 oracle conflict-core DEVELOPMENT lane
+
+Package `0.13.0` adds a matched-neural DEVELOPMENT lane for the frozen `EXP-286` oracle conflict-core headroom gate. It compares the exact frozen arms `chronological_failure` and `oracle_conflict_core` on deterministic, globally solvable conflict worlds with paired model/world initialization and one common analytical accounted-FLOP ceiling.
+
+Run the CPU-safe development smoke:
+
+```bash
+python scripts/run_exp286_paired_dev.py \
+  --tiny \
+  --train-replicates 2 \
+  --eval-replicates 3 \
+  --batch-size 2 \
+  --timesteps 3 \
+  --variables 5 \
+  --decoys 2 \
+  --max-search-steps 8 \
+  --output /tmp/nlm-exp286-paired.json \
+  --registry-output /tmp/nlm-exp286-registry.json
+```
+
+`chronological_failure` never receives a ground-truth conflict core; it executes the matched null-core path plus chronological rollback context. `oracle_conflict_core` receives the current ground-truth local/minimal conflict core only after the current contradiction event. Future cores, solution targets as privileged inputs, confirmatory observations, and challenge randomness are withheld. The emitted artifact explicitly records `challenge_seed_materialized=false`, `challenge_materialized=false`, `confirmatory_data_consumed=false`, and `decision_rule_executed=false`.
+
+Both arms expose exact total/functional/optimizer-visible parameter matching, identical functional initialization, deterministic paired lineage, and an analytical compute ledger. Neural operations that consume oracle metadata are charged. Unresolved episodes are retained as scientific outcomes and censored at the shared FLOP ceiling rather than dropped. The development runner reports descriptive paired log-cost/headroom statistics only; it does **not** execute the frozen confirmatory bootstrap decision rule.
+
+A valid execution can advance the Neural Arm Registry to `PAIRED_CONFLICT_HEADROOM_DEV_READY`, but `match_court` remains `BLOCKED`. This lane remains **EV-E2 / UNVERIFIED** and does not validate the learned `ConflictCoreRegion` localizer. Confirmatory sample-size/analysis freeze, confirmatory-open execution, and post-freeze challenge evidence remain separate future gates.
