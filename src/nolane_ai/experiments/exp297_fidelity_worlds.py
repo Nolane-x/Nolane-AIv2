@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
 import random
 
 from nolane_ai.reasoning.cps import CanonicalProblemState, TableConstraint, Variable
@@ -60,18 +61,19 @@ def _base(seed: int) -> tuple[tuple[Variable, ...], tuple[TableConstraint, ...]]
     relation = tuple((x, (x + shift) % 3) for x in domain)
     relation2 = tuple((y, (y + 1) % 3) for y in domain)
     constraints = (
-        TableConstraint("xy_relation", ("x", "y"), relation),
-        TableConstraint("yz_relation", ("y", "z"), relation2),
+        TableConstraint("source_c0", ("x", "y"), relation),
+        TableConstraint("source_c1", ("y", "z"), relation2),
     )
     return variables, constraints
 
 
-def _renamed(
-    constraints: tuple[TableConstraint, ...], suffix: str
+def _neutralize_candidate_constraints(
+    constraints: tuple[TableConstraint, ...],
 ) -> tuple[TableConstraint, ...]:
+    """Remove evaluator taxonomy from arm-observable formal constraint labels."""
     return tuple(
-        TableConstraint(f"{constraint.name}_{suffix}", constraint.scope, constraint.allowed)
-        for constraint in constraints
+        TableConstraint(f"compiled_c{index}", constraint.scope, constraint.allowed)
+        for index, constraint in enumerate(constraints)
     )
 
 
@@ -82,14 +84,14 @@ def _wrong_for(
     domain = (0, 1, 2)
     if stratum == "faithful_equivalent":
         rows = tuple(row for row in first.allowed if row != first.allowed[0])
-        return (TableConstraint("faithful_equivalent_negative", first.scope, rows), second)
+        return (TableConstraint("internal_c0", first.scope, rows), second)
     if stratum == "relation_shift":
         rows = tuple((x, (y + 1) % 3) for x, y in first.allowed)
-        return (TableConstraint("relation_shift", first.scope, rows), second)
+        return (TableConstraint("internal_c0", first.scope, rows), second)
     if stratum == "constraint_drop":
-        return (TableConstraint("constraint_drop_keep", first.scope, first.allowed),)
+        return (TableConstraint("internal_c0", first.scope, first.allowed),)
     if stratum == "constraint_strengthen":
-        return (TableConstraint("constraint_strengthen", first.scope, first.allowed[:-1]), second)
+        return (TableConstraint("internal_c0", first.scope, first.allowed[:-1]), second)
     if stratum == "constraint_weaken":
         extras = tuple(
             (x, y)
@@ -98,14 +100,14 @@ def _wrong_for(
             if (x, y) not in first.allowed
         )
         return (
-            TableConstraint("constraint_weaken", first.scope, first.allowed + extras[:1]),
+            TableConstraint("internal_c0", first.scope, first.allowed + extras[:1]),
             second,
         )
     if stratum == "variable_binding_swap":
-        return (TableConstraint("binding_swap", ("y", "x"), first.allowed), second)
+        return (TableConstraint("internal_c0", ("y", "x"), first.allowed), second)
     if stratum == "domain_mapping_error":
         mapped = tuple(((x + 1) % 3, y) for x, y in first.allowed)
-        return (TableConstraint("domain_mapping_error", first.scope, mapped), second)
+        return (TableConstraint("internal_c0", first.scope, mapped), second)
     if stratum == "negation_or_relation_flip":
         complement = tuple(
             (x, y)
@@ -113,38 +115,58 @@ def _wrong_for(
             for y in domain
             if (x, y) not in first.allowed
         )
-        return (TableConstraint("relation_flip", first.scope, complement), second)
+        return (TableConstraint("internal_c0", first.scope, complement), second)
     raise ValueError(f"unknown fidelity stratum: {stratum}")
 
 
 def generate_fidelity_world(seed: int) -> FidelityWorldBatch:
     variables, constraints = _base(seed)
     source = _problem(variables, constraints, f"exp297-source-{seed}")
-    cases: list[FidelityCandidateCase] = []
-    for index, stratum in enumerate(EXPECTED_STRATA):
+
+    # Evaluator metadata lives only in these draft tuples. Candidate formal objects
+    # receive neutral labels/world metadata before any arm-visible serialization.
+    drafts: list[tuple[str, bool, CanonicalProblemState, str]] = []
+    neutral_faithful_constraints = _neutralize_candidate_constraints(constraints)
+    for stratum in EXPECTED_STRATA:
         faithful = _problem(
             variables,
-            _renamed(constraints, f"{stratum}_pos"),
-            f"exp297-{seed}-{index}-pos",
+            neutral_faithful_constraints,
+            f"exp297-candidate-{seed}",
         )
         wrong = _problem(
             variables,
-            _wrong_for(stratum, constraints),
-            f"exp297-{seed}-{index}-neg",
+            _neutralize_candidate_constraints(_wrong_for(stratum, constraints)),
+            f"exp297-candidate-{seed}",
         )
-        for polarity, is_faithful, candidate in (
-            ("faithful", True, faithful),
-            ("wrong", False, wrong),
-        ):
-            cases.append(
-                FidelityCandidateCase(
-                    candidate_id=f"{seed}:{index}:{polarity}",
-                    stratum=stratum,
-                    is_faithful=is_faithful,
-                    candidate=candidate,
-                    candidate_digest=canonical_problem_digest(candidate),
+        for is_faithful, candidate in ((True, faithful), (False, wrong)):
+            drafts.append(
+                (
+                    stratum,
+                    is_faithful,
+                    candidate,
+                    canonical_problem_digest(candidate),
                 )
             )
+
+    # Freeze one deterministic candidate order shared by both arms, but do not let
+    # position encode the evaluator faithful/wrong bit across replicates.
+    order_rng = random.Random(seed ^ 0x2975A17)
+    order_rng.shuffle(drafts)
+
+    cases: list[FidelityCandidateCase] = []
+    for slot, (stratum, is_faithful, candidate, candidate_digest) in enumerate(drafts):
+        nonce = order_rng.getrandbits(128)
+        opaque = sha256(f"{seed}|{slot}|{nonce}".encode("ascii")).hexdigest()[:20]
+        cases.append(
+            FidelityCandidateCase(
+                candidate_id=f"case-{opaque}",
+                stratum=stratum,
+                is_faithful=is_faithful,
+                candidate=candidate,
+                candidate_digest=candidate_digest,
+            )
+        )
+
     return FidelityWorldBatch(
         seed=seed,
         source=source,
