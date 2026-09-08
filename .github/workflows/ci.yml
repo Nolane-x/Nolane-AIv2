@@ -85,6 +85,7 @@ jobs:
           tests/test_exp297_ground_truth_boundary.py
           tests/test_exp297_registry_integration.py
           tests/test_exp297_paired_cli.py
+          tests/test_exp297_confirmatory_prep.py
           tests/test_matched_belief_arms.py
           tests/test_exp282_compute_ledger.py
           tests/test_exp282_partial_observability.py
