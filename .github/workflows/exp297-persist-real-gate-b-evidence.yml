@@ -1,0 +1,161 @@
+name: exp297-persist-real-gate-b-evidence
+
+on:
+  push:
+    branches: [exp297-real-gate-b-ceremony]
+    paths:
+      - .github/workflows/exp297-persist-real-gate-b-evidence.yml
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  persist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Prove persistence commit cannot alter frozen source
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE_SHA=982e674181b645854c31c9ac9f238fe2830cc44e
+          test -z "$(git diff --name-only "$FREEZE_SHA" HEAD -- src scripts)"
+
+      - name: Verify immutable source artifact metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/exp297-persist
+          gh api repos/Nolane-x/Nolane-AIv2/actions/artifacts/10050568621 > /tmp/exp297-persist/artifact-metadata.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m = json.loads(Path('/tmp/exp297-persist/artifact-metadata.json').read_text())
+          assert m['id'] == 10050568621
+          assert m['name'] == 'exp297-real-gate-b-evidence'
+          assert m['expired'] is False
+          assert m['digest'] == 'sha256:3e3506f5328cdc7896284e8f65de31791f62ffe530a22132d1580504d2a0af0e'
+          wr = m['workflow_run']
+          assert wr['id'] == 34212719081
+          assert wr['head_sha'] == '1ec057070dc0db69dad648cf78ed1e850ad3a283'
+          PY
+
+      - name: Download only the completed ceremony artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=evidence/exp297/2026-09-08-real-gate-b
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          gh run download 34212719081 --repo Nolane-x/Nolane-AIv2 --name exp297-real-gate-b-evidence --dir "$OUT"
+          cp /tmp/exp297-persist/artifact-metadata.json "$OUT/actions-artifact-metadata.json"
+          gh api repos/Nolane-x/Nolane-AIv2/actions/runs/34212719081 > "$OUT/actions-run-metadata.json"
+
+      - name: Verify every persisted file and frozen scientific result
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path('evidence/exp297/2026-09-08-real-gate-b')
+          sums = {}
+          for line in (root / 'SHA256SUMS').read_text().splitlines():
+              digest, path = line.split(None, 1)
+              sums[Path(path).name] = digest
+          for name, expected in sums.items():
+              observed = hashlib.sha256((root / name).read_bytes()).hexdigest()
+              assert observed == expected, (name, observed, expected)
+
+          summary = json.loads((root / 'ceremony-summary.json').read_text())
+          analysis = json.loads((root / 'confirmatory-analysis.json').read_text())
+          raw = json.loads((root / 'confirmatory-raw.json').read_text())
+          seal = json.loads((root / 'gate-a-seal.json').read_text())
+          beacon = json.loads((root / 'public-beacon-receipt.json').read_text())
+          external = json.loads((root / 'public-beacon-external-evidence.json').read_text())
+          run_meta = json.loads((root / 'actions-run-metadata.json').read_text())
+
+          assert run_meta['id'] == 34212719081
+          assert run_meta['status'] == 'completed'
+          assert run_meta['conclusion'] == 'success'
+          assert run_meta['head_sha'] == '1ec057070dc0db69dad648cf78ed1e850ad3a283'
+          assert seal['freeze_commit_sha'] == '982e674181b645854c31c9ac9f238fe2830cc44e'
+          assert seal['freeze_commit_timestamp_utc'] == '2026-09-08T09:41:57Z'
+          assert seal['code_tree_digest'] == '966fd1ac59d827270353e22bb46b7cf8d1456b9652c113634d2762d55ef4b725'
+          assert seal['seal_digest'] == '6378cd28a87d37d3cbdd22b443c586c948a65ffaca547a9482b4338001fb9514'
+          assert beacon['beacon_id'] == 'drand:8990e7a9aaed2ffed73dbd7092123d6f289930540d7651336225dc172e51b2ce:6447683'
+          assert beacon['published_at_utc'] == '2026-09-08T09:58:30Z'
+          assert beacon['receipt_digest'] == 'c912fcf0c6aab8e30691e28de3f622ef7c9a77f273919c0c3b83f652b333a92b'
+          assert beacon['test_only'] is False
+          assert beacon['scientific_evidence_eligible'] is True
+          assert beacon['authenticity_status'] == 'EXTERNAL_EVIDENCE_RECORDED'
+          assert external['cryptographic_signature_verified_by_ceremony'] is False
+          assert raw['artifact_digest'] == '6ca5443baa7e6bf8a93a35f58e848cdc024fc4771a667e951d9e72d5b82ff48a'
+          assert raw['confirmatory_data_consumed'] is True
+          assert analysis['analysis_digest'] == 'f0a81dea871811930fdf8cb8d9ee874d9b77b93801765ab5e00ac52f1572fcbf'
+          assert analysis['evidence_level'] == 'EV-E3'
+          assert analysis['decision'] == 'PROMOTE_TO_NEXT_STAGE'
+          assert analysis['confirmatory_n'] == 32
+          assert analysis['decision_rule_executed'] is True
+          assert analysis['semantic_authority_promoted'] is False
+          assert analysis['primary_effect']['observed_mean'] == 0.5
+          assert analysis['primary_effect']['one_sided_lower'] == 0.5
+          assert analysis['primary_effect']['mesi_absolute_gain'] == 0.1
+          for endpoint in analysis['protected_endpoints'].values():
+              assert endpoint['events'] == 0
+              assert endpoint['total'] == 256
+              assert endpoint['rate'] == 0.0
+              assert endpoint['one_sided_upper'] == 0.017382264084998468
+              assert endpoint['pass'] is True
+          assert summary['decision'] == analysis['decision']
+          assert summary['analysis_digest'] == analysis['analysis_digest']
+          assert summary['semantic_authority_promoted'] is False
+          PY
+
+      - name: Write durable provenance note
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > evidence/exp297/2026-09-08-real-gate-b/PROVENANCE.md <<'EOF'
+          # EXP-297 real Gate B evidence
+
+          This directory is an immutable persistence copy of GitHub Actions artifact `10050568621`, produced by ceremony run `34212719081` from frozen EXP-297 source identity `982e674181b645854c31c9ac9f238fe2830cc44e`.
+
+          Scientific outcome: `EV-E3 / PROMOTE_TO_NEXT_STAGE` for the frozen synthetic EXP-297 semantic-formalization challenge family only.
+
+          The result does **not** promote unrestricted semantic authority: `semantic_authority_promoted=false`.
+
+          Public beacon: drand round `6447683`, published `2026-09-08T09:58:30Z`, receipt digest `c912fcf0c6aab8e30691e28de3f622ef7c9a77f273919c0c3b83f652b333a92b`. The ceremony cross-recorded round/randomness/signature from two public HTTP endpoints, but deliberately records `cryptographic_signature_verified_by_ceremony=false`; authenticity status is `EXTERNAL_EVIDENCE_RECORDED`.
+
+          Frozen primary result: paired balanced-accuracy gain `+0.500`; one-sided lower bound `0.500` versus MESI `+0.100`. Wrong-authority and faithful-rejection were both `0/256`; each one-sided Wilson upper bound was `0.017382264084998468`.
+
+          `SHA256SUMS` authenticates the original 11 evidence files copied from the Actions artifact. `actions-artifact-metadata.json` and `actions-run-metadata.json` preserve GitHub provenance metadata around that immutable source artifact/run.
+          EOF
+
+      - name: Confirm persistence diff remains evidence-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git diff --name-only 982e674181b645854c31c9ac9f238fe2830cc44e -- src scripts protocols/stage_a_v1.json protocols/stage_a_v1.sha256)"
+          git status --short
+
+      - name: Commit persisted evidence to ceremony branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add evidence/exp297/2026-09-08-real-gate-b
+          git commit -m 'evidence(exp297): persist real Gate B ceremony'
+          git push origin HEAD:exp297-real-gate-b-ceremony
