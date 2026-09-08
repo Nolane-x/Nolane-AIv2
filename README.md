@@ -240,3 +240,61 @@ python scripts/run_exp297_paired_dev.py \
 The artifact schema is `NLM-EXP-297-PAIRED-DEV-EVAL-V1`. Its reconstruction validator regenerates candidate lineage and recomputes compile results, witnesses, authority decisions, semantic verification operations, confusion matrices, balanced accuracy and both protected endpoints from raw per-candidate evidence. Neural accounted FLOPs and symbolic semantic-verification operations are reported separately; neither is mislabeled as hardware-profiler FLOPs.
 
 This lane remains strictly **EV-E2 / UNVERIFIED**. Development outputs keep `confirmatory_ready=false`, `confirmatory_data_consumed=false`, `challenge_seed_materialized=false`, `challenge_materialized=false`, `decision_rule_executed=false`, `hidden_trap_family_consumed=false`, and `semantic_authority_promoted=false`. A valid development execution may record `PAIRED_FIDELITY_COURT_DEV_READY`, but `match_court` remains `BLOCKED`. Descriptive development balanced accuracy—even if numerically high—does not satisfy the frozen `+0.10` confirmatory MESI and does not production-validate semantic authority.
+
+## EXP-297 confirmatory Gate A freeze machinery
+
+Package `0.16.0` adds the **pre-beacon** confirmatory freeze machinery for `EXP-297`. Gate A does not execute confirmatory science. It freezes DEVELOPMENT-derived sample size, the hidden semantic-trap challenge contract, execution authorization, reconstruction authorization, frozen analysis, matched-arm lineage, and one source-tree identity into a seal that is only ready for a later public-beacon ceremony.
+
+The Gate A chain uses these schemas:
+
+- `NLM-EXP-297-CONFIRMATORY-GATE-A-PREP-V1`
+- `NLM-EXP-297-CONFIRMATORY-EXECUTION-AUTH-V1`
+- `NLM-EXP-297-CONFIRMATORY-RECONSTRUCTION-AUTH-V1`
+- `NLM-EXP-297-CONFIRMATORY-GATE-A-SEAL-V1`
+
+Gate B, which is present but not scientifically executed by ordinary CI, emits `NLM-EXP-297-CONFIRMATORY-CHALLENGE-RAW-V1` followed by `NLM-EXP-297-CONFIRMATORY-ANALYSIS-V1`.
+
+First generate a same-code-tree DEVELOPMENT pilot with at least 32 paired replicates:
+
+```bash
+python scripts/run_exp297_paired_dev.py \
+  --tiny \
+  --eval-replicates 32 \
+  --eval-start-replicate 10000 \
+  --output /tmp/nlm-exp297-gatea-dev.json \
+  --registry-output /tmp/nlm-exp297-gatea-registry.json
+```
+
+Then freeze and publish the four Gate A artifacts atomically:
+
+```bash
+python scripts/prepare_exp297_confirmatory_gate_a.py \
+  --execution /tmp/nlm-exp297-gatea-dev.json \
+  --registry /tmp/nlm-exp297-gatea-registry.json \
+  --freeze-commit-sha <frozen-commit-sha> \
+  --freeze-commit-timestamp-utc <UTC-ISO-8601> \
+  --prep-output /tmp/nlm-exp297-gatea-prep.json \
+  --authorization-output /tmp/nlm-exp297-gatea-auth.json \
+  --reconstruction-output /tmp/nlm-exp297-gatea-reconstruction.json \
+  --seal-output /tmp/nlm-exp297-gatea-seal.json
+```
+
+For a real ceremony, `--freeze-commit-sha` and `--freeze-commit-timestamp-utc` must identify the actual frozen Gate A code state. The CLI verifies the canonical frozen Stage-A protocol, requires the DEVELOPMENT artifact to have been produced by the same current source tree, validates every nested artifact before publication, refuses overwrite, and rolls back the transaction if any output cannot be published.
+
+Only after that frozen state exists may a real Gate B consume a public beacon receipt:
+
+```bash
+python scripts/run_exp297_confirmatory_gate_b.py \
+  --seal /tmp/nlm-exp297-gatea-seal.json \
+  --beacon /path/to/public-beacon-receipt.json \
+  --raw-output /tmp/nlm-exp297-confirmatory-raw.json \
+  --analysis-output /tmp/nlm-exp297-confirmatory-analysis.json
+```
+
+The beacon publication timestamp must be **strictly later** than the freeze timestamp in the Gate A seal. Challenge seeds are derived internally from the frozen protocol digest, freeze commit SHA, beacon receipt digest, experiment/stream identity and reserved replicate; the Gate B CLI exposes no direct seed argument. Any source-tree drift after the seal causes Gate B to fail closed and requires a new Gate A freeze.
+
+CI exercises the future path only with an explicitly synthetic TEST-ONLY beacon. `--test-only` artifacts are infrastructure evidence, not confirmatory evidence: they remain `EV-E2 / UNVERIFIED`, `scientific_evidence_eligible=false`, `confirmatory_data_consumed=false`, `decision_rule_executed=false`, and `semantic_authority_promoted=false`. A TEST-ONLY run may report `test_only_would_be_decision` solely to verify the frozen analysis implementation; that field cannot promote the scientific decision.
+
+The Gate A seal itself records `confirmatory_ready=true` only under the narrow scope `FROZEN_MACHINERY_READY_FOR_FUTURE_BEACON_ONLY`. It still records `confirmatory_data_consumed=false`, `seed_materialization_status=NOT_EXECUTED`, `challenge_materialized=false`, `decision_rule_executed=false`, and `semantic_authority_promoted=false`.
+
+Even a later real Gate B promotion would support only the frozen synthetic semantic-formalization challenge family. It would **not** validate unrestricted open-language formalization, general semantic understanding, or unconstrained formal authority.
