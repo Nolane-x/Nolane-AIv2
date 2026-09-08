@@ -102,6 +102,40 @@ def _validate_prefreeze_surface(payload: dict[str, Any], *, label: str) -> list[
     ]
 
 
+def _per_arm_flops_from_resource(
+    resource: dict[str, Any],
+    execution: dict[str, Any],
+) -> tuple[dict[str, int], str]:
+    pair_audit = resource.get("pair_audit") or {}
+    ledger = pair_audit.get("compute_ledger") or {}
+    values: dict[str, int] = {}
+    if isinstance(ledger, dict):
+        for arm in ("arcs_branch", "oracle_cbrf"):
+            arm_ledger = ledger.get(arm) or {}
+            value = arm_ledger.get("accounted_flops_per_episode")
+            if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+                values[arm] = value
+    if set(values) == {"arcs_branch", "oracle_cbrf"}:
+        return values, "pair_audit_compute_ledger"
+
+    rows = list((execution.get("evaluation") or {}).get("per_replicate") or [])
+    fallback: dict[str, int] = {}
+    for arm in ("arcs_branch", "oracle_cbrf"):
+        observed = {
+            row.get(arm, {}).get("accounted_flops_per_episode")
+            for row in rows
+            if isinstance(row, dict)
+        }
+        if (
+            len(observed) == 1
+            and all(isinstance(item, int) and not isinstance(item, bool) and item > 0 for item in observed)
+        ):
+            fallback[arm] = int(next(iter(observed)))
+    if set(fallback) != {"arcs_branch", "oracle_cbrf"}:
+        raise ValueError("EXP-277 resource court per-arm accounted FLOPs missing")
+    return fallback, "development_evaluation_consistent_fallback"
+
+
 def _validate_development_bindings(
     *,
     prep_artifact: dict[str, Any],
@@ -155,6 +189,9 @@ def _validate_development_bindings(
     declared = resource.get("declared_max_accounted_flops_per_episode")
     if not isinstance(declared, int) or isinstance(declared, bool) or declared <= 0:
         raise ValueError("EXP-277 resource court compute ceiling missing")
+    arm_flops, _ = _per_arm_flops_from_resource(resource, execution)
+    if any(value > declared for value in arm_flops.values()):
+        raise ValueError("EXP-277 resource court per-arm FLOPs exceed declared ceiling")
 
     oracle = execution.get("oracle_information_receipt") or {}
     expected_oracle = {
@@ -174,8 +211,6 @@ def _validate_checkpoint_binding(
     checkpoint_receipt: dict[str, Any],
     development_execution_artifact: dict[str, Any],
 ) -> None:
-    # Lazy import keeps this module usable by CPU-only tooling while the actual
-    # checkpoint court remains model-dependent.
     from .exp277_checkpoint import validate_exp277_checkpoint_receipt
 
     errors = validate_exp277_checkpoint_receipt(checkpoint_receipt)
@@ -259,12 +294,15 @@ def build_exp277_gate_a_authorization(
         "checkpoint_file_sha256": checkpoint_receipt.get("checkpoint_file_sha256"),
         "state_policy": checkpoint_receipt.get("state_policy"),
     }
+    arm_flops, arm_flops_source = _per_arm_flops_from_resource(resource, development_execution_artifact)
     resource_snapshot = {
         "parameter_match": resource.get("parameter_match"),
         "functional_parameter_match": resource.get("functional_parameter_match"),
         "same_world_lineage": resource.get("same_world_lineage"),
         "compute_budget_closed": resource.get("compute_budget_closed"),
         "declared_max_accounted_flops_per_episode": resource.get("declared_max_accounted_flops_per_episode"),
+        "arm_accounted_flops_per_episode": arm_flops,
+        "arm_accounted_flops_source": arm_flops_source,
         "pair_audit_digest": canonical_sha256(resource.get("pair_audit") or {}),
     }
     payload: dict[str, Any] = {
@@ -360,8 +398,11 @@ def validate_exp277_gate_a_authorization(payload: dict[str, Any]) -> list[str]:
         errors.append("EXP-277 Gate A reserved replicates are not contiguous")
 
     machinery = payload.get("machinery_digests") or {}
-    if set(machinery) != _REQUIRED_MACHINERY or any(not isinstance(value, str) or len(value) != 64 for value in machinery.values()):
+    if set(machinery) != _REQUIRED_MACHINERY or any(
+        not isinstance(value, str) or len(value) != 64 for value in machinery.values()
+    ):
         errors.append("EXP-277 Gate A machinery digest surface invalid")
+
     checkpoint = payload.get("checkpoint") or {}
     for field in (
         "receipt_digest",
@@ -380,13 +421,32 @@ def validate_exp277_gate_a_authorization(payload: dict[str, Any]) -> list[str]:
     for field in ("parameter_match", "functional_parameter_match", "same_world_lineage", "compute_budget_closed"):
         if resource.get(field) is not True:
             errors.append(f"EXP-277 Gate A resource court open: {field}")
-    if not isinstance(resource.get("declared_max_accounted_flops_per_episode"), int) or resource.get("declared_max_accounted_flops_per_episode", 0) <= 0:
+    ceiling = resource.get("declared_max_accounted_flops_per_episode")
+    if not isinstance(ceiling, int) or isinstance(ceiling, bool) or ceiling <= 0:
         errors.append("EXP-277 Gate A resource court compute ceiling invalid")
+    arm_flops = resource.get("arm_accounted_flops_per_episode")
+    if not isinstance(arm_flops, dict) or set(arm_flops) != {"arcs_branch", "oracle_cbrf"}:
+        errors.append("EXP-277 Gate A per-arm FLOP binding missing")
+    else:
+        for arm, value in arm_flops.items():
+            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+                errors.append(f"EXP-277 Gate A {arm} accounted FLOPs invalid")
+            elif isinstance(ceiling, int) and value > ceiling:
+                errors.append(f"EXP-277 Gate A {arm} accounted FLOPs exceed ceiling")
+    if resource.get("arm_accounted_flops_source") not in {
+        "pair_audit_compute_ledger",
+        "development_evaluation_consistent_fallback",
+    }:
+        errors.append("EXP-277 Gate A per-arm FLOP source invalid")
     if not isinstance(resource.get("pair_audit_digest"), str) or not resource.get("pair_audit_digest"):
         errors.append("EXP-277 Gate A pair-audit binding missing")
 
     oracle = payload.get("oracle_information_separation") or {}
-    if oracle.get("arcs_received_oracle_incidence") is not False or oracle.get("delivered_to") != ["oracle_cbrf"] or oracle.get("withheld_from") != ["arcs_branch"]:
+    if (
+        oracle.get("arcs_received_oracle_incidence") is not False
+        or oracle.get("delivered_to") != ["oracle_cbrf"]
+        or oracle.get("withheld_from") != ["arcs_branch"]
+    ):
         errors.append("EXP-277 Gate A oracle-information separation drift")
 
     wall = payload.get("wall_energy_policy") or {}
