@@ -1,16 +1,23 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import importlib.util
+from pathlib import Path
 
 import pytest
 
 
 torch = pytest.importorskip("torch")
 
-# Reuse the already-green real checkpoint/seal/beacon fixture. Imported pytest
-# fixtures remain fixtures in this module and keep Task-7 tests tied to the
-# exact reconstruction contract rather than a mock surface.
-from test_exp277_reconstruction_court import court_fixture  # noqa: F401,E402
+# Load the already-green Task-6 fixture by exact sibling path. Pytest's import
+# path differs between local and hosted execution, so avoid relying on tests/
+# being an import package while still reusing the real checkpoint/seal setup.
+_support_path = Path(__file__).with_name("test_exp277_reconstruction_court.py")
+_support_spec = importlib.util.spec_from_file_location("exp277_reconstruction_test_support", _support_path)
+assert _support_spec is not None and _support_spec.loader is not None
+_support = importlib.util.module_from_spec(_support_spec)
+_support_spec.loader.exec_module(_support)
+court_fixture = _support.court_fixture
 
 
 def _execute(fixture, *, beacon=None, source_tree_digest=None, executor_code_digest=None):
@@ -32,8 +39,6 @@ def test_exp277_raw_executor_consumes_exact_reserved_lineage_without_parameter_w
     from nolane_ai.protocol.identity import file_sha256
 
     fixture = court_fixture
-    # Task 6 fixture predates this test file; materialize the reconstruction
-    # authorization once and bind it into the shared fixture for Task 7.
     if "reconstruction" not in fixture:
         from nolane_ai.experiments.exp277_reconstruction_court import build_exp277_reconstruction_authorization
 
