@@ -1,0 +1,9 @@
+{
+  "ceremony_id": "EXP-282-REAL-EV-E3-2026-09-08",
+  "ceremony_sha": "68deb39cb33f7697dbc1f88006a2b4868ae6fed3",
+  "exact_head_ci_run_id": 34223665546,
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "schema": "NLM-EXP-282-REAL-EV-E3-SOURCE-IDENTITY-V1",
+  "scientific_baseline_sha": "77383b0a9c2ce92ded66f07234891790652a037b",
+  "source_tree_digest": "966fd1ac59d827270353e22bb46b7cf8d1456b9652c113634d2762d55ef4b725"
+}
