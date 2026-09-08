@@ -14,3 +14,5 @@ This receipt attests the persistence-only copy produced by GitHub Actions persis
 The persistence workflow completed successfully after validating the source artifact metadata, `SHA256SUMS`, frozen EXP-282 validators, and evidence-only staged path boundary. This receipt does not regenerate or re-execute scientific observations.
 
 The authoritative frozen EV-E3 result remains `KILL_SUBSYSTEM` for the EXP-282 small-model partial-observability comparison. It remains bounded by `challenge_materialized=false`; EV-E4 post-freeze challenge replication and EV-E5 independent clean-room replication were not performed by this ceremony.
+
+The evidence artifact still records the generic EV-E4/EV-E5 evidence-ladder blockers because no post-freeze challenge or clean-room replication was materialized. The approved closure plan applies the frozen decision fork after observing `KILL_SUBSYSTEM`: **persist/stop and do not run EV-E4 for the explicit-belief hypothesis**. Any future attempt to revisit that hypothesis would require a new development/protocol decision rather than a same-protocol continuation or outcome-shopping rerun.
