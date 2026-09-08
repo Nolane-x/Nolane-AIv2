@@ -55,6 +55,7 @@ def _authorization_binding(payload: dict[str, Any]) -> str:
             "arm_registry_digest": payload.get("arm_registry_digest"),
             "prep_digest": payload.get("prep_digest"),
             "frozen_analysis_digest": payload.get("frozen_analysis_digest"),
+            "analysis_code_digest": payload.get("analysis_code_digest"),
             "sample_size_freeze_digest": payload.get("sample_size_freeze_digest"),
             "endpoint_alpha": payload.get("endpoint_alpha"),
             "bootstrap_samples": payload.get("bootstrap_samples"),
@@ -273,6 +274,8 @@ def build_exp277_gate_a_authorization(
         raise ValueError("EXP-277 frozen endpoint alpha drift")
     if int(frozen.get("bootstrap_samples", -1)) != BOOTSTRAP_SAMPLES:
         raise ValueError("EXP-277 frozen bootstrap count drift")
+    analysis_code_digest = (prep_artifact.get("lineage") or {}).get("analysis_code_digest")
+    _validate_digest_label(analysis_code_digest, label="analysis_code_digest")
     sample = prep_artifact.get("sample_size_freeze") or {}
     confirmatory_n = sample.get("confirmatory_n")
     reserved = list((prep_artifact.get("confirmatory_lineage") or {}).get("reserved_replicate_ids") or [])
@@ -326,6 +329,7 @@ def build_exp277_gate_a_authorization(
         "arm_registry_digest": arm_registry.get("registry_digest"),
         "prep_digest": prep_artifact.get("prep_digest"),
         "frozen_analysis_digest": canonical_sha256(frozen),
+        "analysis_code_digest": analysis_code_digest,
         "sample_size_freeze_digest": canonical_sha256(sample),
         "endpoint_alpha": ENDPOINT_ALPHA,
         "bootstrap_samples": BOOTSTRAP_SAMPLES,
@@ -375,6 +379,8 @@ def validate_exp277_gate_a_authorization(payload: dict[str, Any]) -> list[str]:
         errors.append("EXP-277 Gate A endpoint alpha drift")
     if payload.get("bootstrap_samples") != BOOTSTRAP_SAMPLES:
         errors.append("EXP-277 Gate A bootstrap count drift")
+    if not isinstance(payload.get("analysis_code_digest"), str) or len(payload.get("analysis_code_digest", "")) != 64:
+        errors.append("EXP-277 Gate A analysis code digest invalid")
     if not isinstance(payload.get("source_tree_digest"), str) or len(payload.get("source_tree_digest", "")) != 64:
         errors.append("EXP-277 Gate A source-tree digest invalid")
     if not isinstance(payload.get("freeze_commit_sha"), str) or len(payload.get("freeze_commit_sha", "")) != 40:
