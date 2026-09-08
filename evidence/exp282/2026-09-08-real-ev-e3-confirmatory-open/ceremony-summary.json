@@ -1,0 +1,143 @@
+{
+  "analysis_digest": "af3c135017be49e64cb2107aa957db8836dd5e8b5a6f4b04b13cde485ae5b628",
+  "ceremony_id": "EXP-282-REAL-EV-E3-2026-09-08",
+  "ceremony_result_digest": "71db0faeff59ecc2d787550a2830619adcea821a6dc54630e83325c6da0dbb34",
+  "ceremony_seal_digest": "a6196039557333d8f4f4a2860618c1df14e4869cd2054abda9c071729896c34d",
+  "ceremony_sha": "68deb39cb33f7697dbc1f88006a2b4868ae6fed3",
+  "challenge_materialized": false,
+  "confirmatory_data_consumed": true,
+  "confirmatory_n": 32,
+  "decision": "KILL_SUBSYSTEM",
+  "evidence_level": "EV-E3",
+  "inference_started": true,
+  "primary_effect": {
+    "alpha": 0.05,
+    "baseline_arm": "recurrent_hidden",
+    "candidate_arm": "explicit_belief",
+    "effect_type": "absolute_gain",
+    "median": 0.0,
+    "mesi_absolute_gain": 0.03,
+    "metric": "grounded_decision_accuracy",
+    "negative_count": 5,
+    "observed_mean": 0.001953125,
+    "one_sided_lower_95": -0.0048828125,
+    "one_sided_upper_95": 0.0087890625,
+    "positive_count": 7,
+    "replicates": 32,
+    "samples": 10000,
+    "seed_digest": "a6cc5c3a715dbbcc1d6c14eafca71f60074eaf95ee6bf3ff839d7a87e7bd0a67",
+    "zero_count": 20
+  },
+  "protected_endpoints": {
+    "brier": {
+      "delta": 0.0006208908744156361,
+      "explicit_brier_count": 1024,
+      "explicit_brier_score": 0.30093772849068046,
+      "explicit_brier_sum": 308.1602339744568,
+      "guard": "explicit_belief <= recurrent_hidden + 0.02",
+      "margin": 0.02,
+      "metric": "brier_score",
+      "pass": true,
+      "recurrent_brier_count": 1024,
+      "recurrent_brier_score": 0.3003168376162648,
+      "recurrent_brier_sum": 307.5244417190552
+    },
+    "compute": {
+      "accounted_flops_match": true,
+      "guard": "difference <= 0.05 relative unless included in primary cost normalization",
+      "hardware_profiler_flops_claimed": false,
+      "ledger": {
+        "accounted_flops_match": true,
+        "accounting_semantics": "analytical scalar arithmetic FLOPs plus exact nonlinear primitive signature; not hardware-profiler FLOPs",
+        "decision": "UNVERIFIED",
+        "evidence_level": "EV-E2",
+        "explicit_belief": {
+          "accounted_flops_per_episode": 819120,
+          "primitive_counts": {
+            "bias_add": 5808,
+            "decision_head_calls": 24,
+            "elementwise_add": 2352,
+            "elementwise_multiply": 1152,
+            "linear_accumulate": 402000,
+            "linear_multiply": 407808,
+            "sigmoid_elements": 1152,
+            "silu_elements": 4608,
+            "tanh_elements": 1152
+          }
+        },
+        "geometry": {
+          "timesteps": 6,
+          "variables": 4
+        },
+        "hardware_profiler_flops_claimed": false,
+        "primitive_operation_match": true,
+        "recurrent_hidden": {
+          "accounted_flops_per_episode": 819120,
+          "primitive_counts": {
+            "bias_add": 5808,
+            "decision_head_calls": 24,
+            "elementwise_add": 2352,
+            "elementwise_multiply": 1152,
+            "linear_accumulate": 402000,
+            "linear_multiply": 407808,
+            "sigmoid_elements": 1152,
+            "silu_elements": 4608,
+            "tanh_elements": 1152
+          }
+        },
+        "relative_accounted_flop_difference": 0.0,
+        "schema": "NLM-EXP-282-COMPUTE-LEDGER-V1"
+      },
+      "margin": 0.05,
+      "metric": "accounted_flops",
+      "pass": true,
+      "primitive_operation_match": true,
+      "relative_accounted_flop_difference": 0.0
+    }
+  },
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "raw_artifact_digest": "158ca65f5085c994cc88a3138048ed06b54418821ab402fb72ae6bdafd7da44a",
+  "remaining_blockers": [
+    "100M post-freeze challenge replication remains open for EV-E4",
+    "independent clean-room replication remains open for EV-E5"
+  ],
+  "reserved_replicate_ids": [
+    50032,
+    50033,
+    50034,
+    50035,
+    50036,
+    50037,
+    50038,
+    50039,
+    50040,
+    50041,
+    50042,
+    50043,
+    50044,
+    50045,
+    50046,
+    50047,
+    50048,
+    50049,
+    50050,
+    50051,
+    50052,
+    50053,
+    50054,
+    50055,
+    50056,
+    50057,
+    50058,
+    50059,
+    50060,
+    50061,
+    50062,
+    50063
+  ],
+  "schema": "NLM-EXP-282-REAL-EV-E3-CEREMONY-SUMMARY-V1",
+  "scientific_baseline_sha": "77383b0a9c2ce92ded66f07234891790652a037b",
+  "scope_boundary": "Frozen EXP-282 small-model partial-observability comparison only; EV-E4 100M challenge replication remains separate.",
+  "source_tree_digest": "966fd1ac59d827270353e22bb46b7cf8d1456b9652c113634d2762d55ef4b725",
+  "state": "EXECUTED_AND_ANALYZED"
+}
