@@ -9,6 +9,11 @@ CEREMONY = ROOT / ".github" / "workflows" / "exp282-real-ev-e3-ceremony.yml"
 PERSISTENCE = ROOT / ".github" / "workflows" / "exp282-persist-real-ev-e3-evidence.yml"
 BASELINE_SHA = "77383b0a9c2ce92ded66f07234891790652a037b"
 PROTOCOL_SHA = "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440"
+ARM_SHA = "68deb39cb33f7697dbc1f88006a2b4868ae6fed3"
+CEREMONY_RUN_ID = "34223658313"
+EVIDENCE_ARTIFACT_ID = "10055052239"
+EVIDENCE_ARTIFACT_NAME = f"exp282-real-ev-e3-evidence-{ARM_SHA}"
+EVIDENCE_ARTIFACT_DIGEST = "sha256:51aefb693e2bde56e9e276cbbb8cc9d8f986b51f615961a9241883f62b1ce10a"
 ARM_PATH = ".github/ceremony/exp282-real-ev-e3-arm.json"
 ARM = ROOT / ARM_PATH
 
@@ -27,8 +32,7 @@ def _ceremony_text() -> str:
 
 
 def _persistence_text() -> str:
-    if not PERSISTENCE.is_file():
-        pytest.skip("persistence contract activates after first valid ceremony artifact exists")
+    assert PERSISTENCE.is_file(), f"missing EXP-282 persistence workflow: {PERSISTENCE}"
     return PERSISTENCE.read_text(encoding="utf-8")
 
 
@@ -140,6 +144,14 @@ def test_arm_marker_if_present_is_exact_and_does_not_change_scientific_contract(
 
 def test_persistence_is_pinned_and_never_reruns_science() -> None:
     text = _persistence_text()
+    for token in (
+        CEREMONY_RUN_ID,
+        EVIDENCE_ARTIFACT_ID,
+        EVIDENCE_ARTIFACT_NAME,
+        EVIDENCE_ARTIFACT_DIGEST,
+        ARM_SHA,
+    ):
+        assert token in text
     assert "actions/artifacts/" in text
     assert "actions/runs/" in text
     assert "SHA256SUMS" in text
