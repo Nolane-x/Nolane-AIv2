@@ -4,6 +4,8 @@ from copy import deepcopy
 
 import pytest
 
+pytest.importorskip("torch")
+
 
 def _protocol_exp277() -> dict:
     return {
@@ -131,10 +133,9 @@ def _registry() -> dict:
     }
 
 
-def _prepared(execution: dict | None = None) -> dict:
+def _prepared(execution: dict) -> dict:
     from nolane_ai.experiments.exp277_confirmatory_prep import build_exp277_confirmatory_prep
 
-    execution = execution or _execution()
     return build_exp277_confirmatory_prep(
         experiment=_protocol_exp277(),
         execution_artifact=execution,
@@ -144,11 +145,7 @@ def _prepared(execution: dict | None = None) -> dict:
 
 
 def _checkpoint_receipt(execution: dict) -> dict:
-    from nolane_ai.experiments.exp277_checkpoint import (
-        _execution_contract,
-        _receipt_digest,
-        _scientific_identity_digest,
-    )
+    from nolane_ai.experiments.exp277_checkpoint import _execution_contract, _receipt_digest, _scientific_identity_digest
     from nolane_ai.protocol.evidence import canonical_sha256
 
     contract = _execution_contract(execution)
@@ -186,41 +183,39 @@ def _machinery() -> dict[str, str]:
     }
 
 
+def _auth_kwargs(execution: dict, prep: dict | None = None) -> dict:
+    return {
+        "prep_artifact": prep or _prepared(execution),
+        "checkpoint_receipt": _checkpoint_receipt(execution),
+        "development_execution_artifact": execution,
+        "arm_registry": _registry(),
+        "source_tree_digest": "s" * 64,
+        "freeze_commit_sha": "a" * 40,
+        "freeze_commit_timestamp_utc": "2026-09-08T10:00:00Z",
+        "checkpoint_seal_created_at_utc": "2026-09-08T10:00:30Z",
+        "machinery_digests": _machinery(),
+    }
+
+
 def _build():
-    from nolane_ai.experiments.exp277_confirmatory_authorization import (
-        build_exp277_gate_a_authorization,
-        build_exp277_gate_a_seal,
-    )
+    from nolane_ai.experiments.exp277_confirmatory_authorization import build_exp277_gate_a_authorization, build_exp277_gate_a_seal
 
     execution = _execution()
     prep = _prepared(execution)
     checkpoint = _checkpoint_receipt(execution)
-    authorization = build_exp277_gate_a_authorization(
-        prep_artifact=prep,
-        checkpoint_receipt=checkpoint,
-        development_execution_artifact=execution,
-        arm_registry=_registry(),
-        source_tree_digest="s" * 64,
-        freeze_commit_sha="a" * 40,
-        freeze_commit_timestamp_utc="2026-09-08T10:00:00Z",
-        checkpoint_seal_created_at_utc="2026-09-08T10:00:30Z",
-        machinery_digests=_machinery(),
-    )
-    seal = build_exp277_gate_a_seal(authorization=authorization)
-    return execution, prep, checkpoint, authorization, seal
+    kwargs = _auth_kwargs(execution, prep)
+    kwargs["checkpoint_receipt"] = checkpoint
+    authorization = build_exp277_gate_a_authorization(**kwargs)
+    return execution, prep, checkpoint, authorization, build_exp277_gate_a_seal(authorization=authorization)
 
 
 def test_exp277_gate_a_authorization_and_seal_freeze_without_consuming_challenge_data() -> None:
-    from nolane_ai.experiments.exp277_confirmatory_authorization import (
-        validate_exp277_gate_a_authorization,
-        validate_exp277_gate_a_seal,
-    )
+    from nolane_ai.experiments.exp277_confirmatory_authorization import validate_exp277_gate_a_authorization, validate_exp277_gate_a_seal
 
     _, prep, checkpoint, authorization, seal = _build()
     assert authorization["schema"] == "NLM-EXP-277-CONFIRMATORY-GATE-A-AUTH-V1"
     assert authorization["status"] == "AUTHORIZED_NOT_EXECUTED"
-    assert authorization["evidence_level"] == "EV-E2"
-    assert authorization["decision"] == "UNVERIFIED"
+    assert authorization["evidence_level"] == "EV-E2" and authorization["decision"] == "UNVERIFIED"
     assert authorization["confirmatory_data_consumed"] is False
     assert authorization["challenge_materialized"] is False
     assert authorization["seed_materialization_status"] == "NOT_EXECUTED"
@@ -229,21 +224,17 @@ def test_exp277_gate_a_authorization_and_seal_freeze_without_consuming_challenge
     assert authorization["confirmatory_n"] == prep["sample_size_freeze"]["confirmatory_n"]
     assert authorization["reserved_replicate_ids"] == prep["confirmatory_lineage"]["reserved_replicate_ids"]
     assert validate_exp277_gate_a_authorization(authorization) == []
-
     assert seal["schema"] == "NLM-EXP-277-CONFIRMATORY-GATE-A-SEAL-V1"
     assert seal["status"] == "CONFIRMATORY_GATE_A_SEALED"
     assert seal["readiness"] == "FROZEN_MACHINERY_AND_CHECKPOINT_READY_FOR_FUTURE_BEACON_ONLY"
-    assert seal["evidence_level"] == "EV-E2"
-    assert seal["decision"] == "UNVERIFIED"
+    assert seal["evidence_level"] == "EV-E2" and seal["decision"] == "UNVERIFIED"
     assert seal["confirmatory_data_consumed"] is False
     assert seal["challenge_materialized"] is False
     assert seal["seed_materialization_status"] == "NOT_EXECUTED"
     assert seal["decision_rule_executed"] is False
     assert validate_exp277_gate_a_seal(seal) == []
     rendered = repr(seal).lower()
-    assert "beacon_receipt" not in rendered
-    assert "challenge_seed" not in rendered
-    assert "challenge_batch" not in rendered
+    assert "beacon_receipt" not in rendered and "challenge_seed" not in rendered and "challenge_batch" not in rendered
 
 
 def test_exp277_gate_a_binds_frozen_analysis_resource_oracle_and_machinery_contracts() -> None:
@@ -274,55 +265,26 @@ def test_exp277_gate_a_rejects_not_ready_prep_and_resource_or_oracle_court_failu
     for row in bad_baseline["evaluation"]["per_replicate"]:
         row["arcs_branch"]["verified_utility_per_accounted_flop"] = 0.0
     not_ready = build_exp277_confirmatory_prep(
-        experiment=_protocol_exp277(),
-        execution_artifact=bad_baseline,
-        arm_registry=_registry(),
-        analysis_code_digest="d" * 64,
+        experiment=_protocol_exp277(), execution_artifact=bad_baseline, arm_registry=_registry(), analysis_code_digest="d" * 64
     )
     with pytest.raises(ValueError, match="not executable"):
-        build_exp277_gate_a_authorization(
-            prep_artifact=not_ready,
-            checkpoint_receipt=_checkpoint_receipt(bad_baseline),
-            development_execution_artifact=bad_baseline,
-            arm_registry=_registry(),
-            source_tree_digest="s" * 64,
-            freeze_commit_sha="a" * 40,
-            freeze_commit_timestamp_utc="2026-09-08T10:00:00Z",
-            checkpoint_seal_created_at_utc="2026-09-08T10:00:30Z",
-            machinery_digests=_machinery(),
-        )
+        build_exp277_gate_a_authorization(**_auth_kwargs(bad_baseline, not_ready))
 
-    good_execution = _execution()
-    good_prep = _prepared(good_execution)
-    court_open = deepcopy(good_execution)
-    court_open["resource_match"]["compute_budget_closed"] = False
+    good = _execution()
+    good_prep = _prepared(good)
+    resource_open = deepcopy(good)
+    resource_open["resource_match"]["compute_budget_closed"] = False
+    kwargs = _auth_kwargs(good, good_prep)
+    kwargs["development_execution_artifact"] = resource_open
     with pytest.raises(ValueError, match="resource"):
-        build_exp277_gate_a_authorization(
-            prep_artifact=good_prep,
-            checkpoint_receipt=_checkpoint_receipt(good_execution),
-            development_execution_artifact=court_open,
-            arm_registry=_registry(),
-            source_tree_digest="s" * 64,
-            freeze_commit_sha="a" * 40,
-            freeze_commit_timestamp_utc="2026-09-08T10:00:00Z",
-            checkpoint_seal_created_at_utc="2026-09-08T10:00:30Z",
-            machinery_digests=_machinery(),
-        )
+        build_exp277_gate_a_authorization(**kwargs)
 
-    oracle_open = deepcopy(good_execution)
+    oracle_open = deepcopy(good)
     oracle_open["oracle_information_receipt"]["arcs_received_oracle_incidence"] = True
+    kwargs = _auth_kwargs(good, good_prep)
+    kwargs["development_execution_artifact"] = oracle_open
     with pytest.raises(ValueError, match="oracle"):
-        build_exp277_gate_a_authorization(
-            prep_artifact=good_prep,
-            checkpoint_receipt=_checkpoint_receipt(good_execution),
-            development_execution_artifact=oracle_open,
-            arm_registry=_registry(),
-            source_tree_digest="s" * 64,
-            freeze_commit_sha="a" * 40,
-            freeze_commit_timestamp_utc="2026-09-08T10:00:00Z",
-            checkpoint_seal_created_at_utc="2026-09-08T10:00:30Z",
-            machinery_digests=_machinery(),
-        )
+        build_exp277_gate_a_authorization(**kwargs)
 
 
 def test_exp277_gate_a_rejects_checkpoint_or_development_lineage_mismatch() -> None:
@@ -334,33 +296,17 @@ def test_exp277_gate_a_rejects_checkpoint_or_development_lineage_mismatch() -> N
     checkpoint = _checkpoint_receipt(execution)
     checkpoint["arcs_branch_final_digest"] = "x" * 64
     checkpoint["receipt_digest"] = _receipt_digest(checkpoint)
+    kwargs = _auth_kwargs(execution, prep)
+    kwargs["checkpoint_receipt"] = checkpoint
     with pytest.raises(ValueError, match="checkpoint"):
-        build_exp277_gate_a_authorization(
-            prep_artifact=prep,
-            checkpoint_receipt=checkpoint,
-            development_execution_artifact=execution,
-            arm_registry=_registry(),
-            source_tree_digest="s" * 64,
-            freeze_commit_sha="a" * 40,
-            freeze_commit_timestamp_utc="2026-09-08T10:00:00Z",
-            checkpoint_seal_created_at_utc="2026-09-08T10:00:30Z",
-            machinery_digests=_machinery(),
-        )
+        build_exp277_gate_a_authorization(**kwargs)
 
     drift = deepcopy(execution)
     drift["artifact_digest"] = "z" * 64
+    kwargs = _auth_kwargs(execution, prep)
+    kwargs["development_execution_artifact"] = drift
     with pytest.raises(ValueError, match="development"):
-        build_exp277_gate_a_authorization(
-            prep_artifact=prep,
-            checkpoint_receipt=_checkpoint_receipt(execution),
-            development_execution_artifact=drift,
-            arm_registry=_registry(),
-            source_tree_digest="s" * 64,
-            freeze_commit_sha="a" * 40,
-            freeze_commit_timestamp_utc="2026-09-08T10:00:00Z",
-            checkpoint_seal_created_at_utc="2026-09-08T10:00:30Z",
-            machinery_digests=_machinery(),
-        )
+        build_exp277_gate_a_authorization(**kwargs)
 
 
 def test_exp277_gate_a_validators_reject_rehashed_semantic_tamper_and_prefreeze_material() -> None:
@@ -392,24 +338,13 @@ def test_exp277_gate_a_requires_ordered_utc_freeze_and_checkpoint_seal_times() -
     from nolane_ai.experiments.exp277_confirmatory_authorization import build_exp277_gate_a_authorization
 
     execution = _execution()
-    kwargs = dict(
-        prep_artifact=_prepared(execution),
-        checkpoint_receipt=_checkpoint_receipt(execution),
-        development_execution_artifact=execution,
-        arm_registry=_registry(),
-        source_tree_digest="s" * 64,
-        freeze_commit_sha="a" * 40,
-        machinery_digests=_machinery(),
-    )
+    kwargs = _auth_kwargs(execution)
+    kwargs["checkpoint_seal_created_at_utc"] = "2026-09-08T09:59:59Z"
     with pytest.raises(ValueError, match="checkpoint seal"):
-        build_exp277_gate_a_authorization(
-            **kwargs,
-            freeze_commit_timestamp_utc="2026-09-08T10:00:00Z",
-            checkpoint_seal_created_at_utc="2026-09-08T09:59:59Z",
-        )
+        build_exp277_gate_a_authorization(**kwargs)
+
+    kwargs = _auth_kwargs(execution)
+    kwargs["freeze_commit_timestamp_utc"] = "2026-09-08T12:00:00+02:00"
+    kwargs["checkpoint_seal_created_at_utc"] = "2026-09-08T12:00:30+02:00"
     with pytest.raises(ValueError, match="UTC"):
-        build_exp277_gate_a_authorization(
-            **kwargs,
-            freeze_commit_timestamp_utc="2026-09-08T12:00:00+02:00",
-            checkpoint_seal_created_at_utc="2026-09-08T12:00:30+02:00",
-        )
+        build_exp277_gate_a_authorization(**kwargs)
