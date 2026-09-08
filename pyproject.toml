@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nolane-aiv2"
-version = "0.15.0"
+version = "0.16.0"
 description = "Nolane Living Model 100M research substrate and Stage-A falsification lab"
 requires-python = ">=3.11"
 dependencies = []

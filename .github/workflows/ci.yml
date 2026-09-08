@@ -85,6 +85,12 @@ jobs:
           tests/test_exp297_ground_truth_boundary.py
           tests/test_exp297_registry_integration.py
           tests/test_exp297_paired_cli.py
+          tests/test_exp297_confirmatory_prep.py
+          tests/test_exp297_confirmatory_authorization.py
+          tests/test_exp297_confirmatory_executor.py
+          tests/test_exp297_confirmatory_analysis.py
+          tests/test_exp297_confirmatory_ceremony.py
+          tests/test_exp297_confirmatory_cli.py
           tests/test_matched_belief_arms.py
           tests/test_exp282_compute_ledger.py
           tests/test_exp282_partial_observability.py
@@ -187,6 +193,51 @@ jobs:
           --eval-start-replicate 1000
           --output /tmp/nlm-exp297-paired.json
           --registry-output /tmp/nlm-exp297-neural-arm-registry.json
+      - name: Build EXP-297 Gate A DEVELOPMENT baseline
+        run: >-
+          python scripts/run_exp297_paired_dev.py
+          --tiny
+          --eval-replicates 32
+          --eval-start-replicate 20000
+          --output /tmp/nlm-exp297-gatea-dev.json
+          --registry-output /tmp/nlm-exp297-gatea-registry.json
+      - name: Seal EXP-297 Gate A with synthetic freeze metadata
+        run: >-
+          python scripts/prepare_exp297_confirmatory_gate_a.py
+          --execution /tmp/nlm-exp297-gatea-dev.json
+          --registry /tmp/nlm-exp297-gatea-registry.json
+          --freeze-commit-sha 0000000000000000000000000000000000000000
+          --freeze-commit-timestamp-utc 2026-01-01T00:00:00Z
+          --prep-output /tmp/nlm-exp297-gatea-prep.json
+          --authorization-output /tmp/nlm-exp297-gatea-auth.json
+          --reconstruction-output /tmp/nlm-exp297-gatea-reconstruction.json
+          --seal-output /tmp/nlm-exp297-gatea-seal.json
+      - name: Materialize EXP-297 TEST-ONLY beacon
+        run: >-
+          python -c 'import json; from pathlib import Path; from nolane_ai.experiments.exp297_beacon import build_test_beacon_receipt; p=build_test_beacon_receipt(source="ci-synthetic", beacon_id="exp297-gate-b-ci", published_at_utc="2026-01-01T00:01:00Z", entropy_hex="ab"*32, evidence_reference="TEST-ONLY"); Path("/tmp/nlm-exp297-test-beacon.json").write_text(json.dumps(p, sort_keys=True, indent=2)+"\n", encoding="utf-8")'
+      - name: Execute EXP-297 TEST-ONLY Gate B
+        run: >-
+          python scripts/run_exp297_confirmatory_gate_b.py
+          --seal /tmp/nlm-exp297-gatea-seal.json
+          --beacon /tmp/nlm-exp297-test-beacon.json
+          --test-only
+          --raw-output /tmp/nlm-exp297-test-only-raw.json
+          --analysis-output /tmp/nlm-exp297-test-only-analysis.json
+      - name: Assert EXP-297 TEST-ONLY non-promotion boundary
+        run: >-
+          python -c 'import json; from pathlib import Path; raw=json.loads(Path("/tmp/nlm-exp297-test-only-raw.json").read_text()); a=json.loads(Path("/tmp/nlm-exp297-test-only-analysis.json").read_text()); assert raw["test_only"] is True; assert raw["scientific_evidence_eligible"] is False; assert raw["confirmatory_data_consumed"] is False; assert a["evidence_level"] == "EV-E2"; assert a["decision"] == "UNVERIFIED"; assert a["scientific_evidence_eligible"] is False; assert a["confirmatory_data_consumed"] is False; assert a["decision_rule_executed"] is False; assert a["semantic_authority_promoted"] is False'
+      - name: Remove EXP-297 synthetic ceremony artifacts
+        run: >-
+          rm -f
+          /tmp/nlm-exp297-gatea-dev.json
+          /tmp/nlm-exp297-gatea-registry.json
+          /tmp/nlm-exp297-gatea-prep.json
+          /tmp/nlm-exp297-gatea-auth.json
+          /tmp/nlm-exp297-gatea-reconstruction.json
+          /tmp/nlm-exp297-gatea-seal.json
+          /tmp/nlm-exp297-test-beacon.json
+          /tmp/nlm-exp297-test-only-raw.json
+          /tmp/nlm-exp297-test-only-analysis.json
       - run: >-
           python scripts/run_exp282_paired_dev.py
           --tiny
