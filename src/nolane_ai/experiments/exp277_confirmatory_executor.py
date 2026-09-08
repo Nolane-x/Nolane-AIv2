@@ -1,16 +1,21 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import math
 from pathlib import Path
 from typing import Any
 
+import torch
+
 from nolane_ai.protocol.evidence import canonical_sha256
-from .exp277_beacon import validate_exp277_beacon_receipt
-from .exp277_checkpoint import validate_exp277_checkpoint_receipt
+from nolane_ai.protocol.identity import file_sha256
+from .exp277_beacon import derive_exp277_challenge_seed, validate_exp277_beacon_receipt
+from .exp277_challenge_worlds import build_exp277_challenge_batch
+from .exp277_checkpoint import load_exp277_trained_checkpoint, validate_exp277_checkpoint_receipt
 from .exp277_confirmatory_authorization import validate_exp277_gate_a_seal
+from .exp277_paired_runner import _functional_state_digest
 from .exp277_reconstruction_court import (
     _row_digest,
-    reconstruct_exp277_expected_row,
     validate_exp277_raw_row_against_reconstruction,
     validate_exp277_reconstruction_authorization,
 )
@@ -22,6 +27,10 @@ SCIENTIFIC_STATUS = "CONFIRMATORY_CHALLENGE_EXECUTED_UNANALYZED"
 TEST_ONLY_STATUS = "TEST_ONLY_CHALLENGE_EXECUTED_UNANALYZED"
 INVALID_STATUS = "INVALID_RUN"
 CHALLENGE_STREAM = "challenge"
+COST_SEMANTICS = (
+    "analytical scalar arithmetic FLOPs for frozen neural geometry; "
+    "not hardware-profiler FLOPs"
+)
 
 
 def _artifact_digest(payload: dict[str, Any]) -> str:
@@ -42,10 +51,18 @@ def _arm_input_receipt() -> dict[str, bool]:
 
 def _analytical_cost_receipt(accounted_flops: int) -> dict[str, Any]:
     return {
-        "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+        "accounting_semantics": COST_SEMANTICS,
         "accounted_flops_per_episode": int(accounted_flops),
         "hardware_profiler_flops_claimed": False,
     }
+
+
+def _finite_number(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+    )
 
 
 def _invalid_artifact(
@@ -61,7 +78,7 @@ def _invalid_artifact(
         "schema": SCHEMA,
         "experiment_id": EXPERIMENT_ID,
         "evidence_level": "EV-E2",
-        "decision": "INVALID_RUN",
+        "decision": INVALID_STATUS,
         "status": INVALID_STATUS,
         "test_only": bool(beacon_receipt.get("test_only") is True),
         "scientific_evidence_eligible": False,
@@ -71,14 +88,18 @@ def _invalid_artifact(
         "seed_materialization_status": "NOT_EXECUTED",
         "decision_rule_executed": False,
         "confirmatory_n": reconstruction_authorization.get("confirmatory_n"),
-        "reserved_replicate_ids": deepcopy(reconstruction_authorization.get("reserved_replicate_ids") or []),
+        "reserved_replicate_ids": deepcopy(
+            reconstruction_authorization.get("reserved_replicate_ids") or []
+        ),
         "challenge_stream": CHALLENGE_STREAM,
         "per_replicate": [],
         "integrity_errors": list(integrity_errors),
         "current_source_tree_digest": current_source_tree_digest,
         "executor_code_digest": executor_code_digest,
         "seal_digest": seal.get("seal_digest"),
-        "reconstruction_digest": reconstruction_authorization.get("reconstruction_digest"),
+        "reconstruction_digest": reconstruction_authorization.get(
+            "reconstruction_digest"
+        ),
         "beacon_receipt_digest": beacon_receipt.get("receipt_digest"),
         "artifact_digest": "",
     }
@@ -98,9 +119,14 @@ def _preflight_integrity_errors(
 ) -> list[str]:
     errors: list[str] = []
 
-    reconstruction_errors = validate_exp277_reconstruction_authorization(reconstruction_authorization)
+    reconstruction_errors = validate_exp277_reconstruction_authorization(
+        reconstruction_authorization
+    )
     if reconstruction_errors:
-        errors.append("EXP-277 reconstruction authorization invalid: " + "; ".join(reconstruction_errors))
+        errors.append(
+            "EXP-277 reconstruction authorization invalid: "
+            + "; ".join(reconstruction_errors)
+        )
 
     seal_errors = validate_exp277_gate_a_seal(seal)
     if seal_errors:
@@ -111,16 +137,22 @@ def _preflight_integrity_errors(
 
     frozen_source = reconstruction_authorization.get("source_tree_digest")
     if current_source_tree_digest != frozen_source:
-        errors.append("EXP-277 current source tree digest does not match frozen source tree")
+        errors.append(
+            "EXP-277 current source tree digest does not match frozen source tree"
+        )
 
     sealed = seal.get("authorization_snapshot") or {}
     machinery = sealed.get("machinery_digests") or {}
     if executor_code_digest != machinery.get("executor_code_digest"):
-        errors.append("EXP-277 executor code digest does not match frozen executor machinery")
+        errors.append(
+            "EXP-277 executor code digest does not match frozen executor machinery"
+        )
 
     checkpoint_errors = validate_exp277_checkpoint_receipt(checkpoint_receipt)
     if checkpoint_errors:
-        errors.append("EXP-277 checkpoint receipt invalid: " + "; ".join(checkpoint_errors))
+        errors.append(
+            "EXP-277 checkpoint receipt invalid: " + "; ".join(checkpoint_errors)
+        )
     sealed_checkpoint = sealed.get("checkpoint") or {}
     for field in (
         "receipt_digest",
@@ -134,14 +166,35 @@ def _preflight_integrity_errors(
         if checkpoint_receipt.get(field) != sealed_checkpoint.get(field):
             errors.append(f"EXP-277 checkpoint Gate A binding mismatch: {field}")
 
+    if checkpoint_receipt.get("scientific_identity_digest") != (
+        reconstruction_authorization.get("checkpoint_scientific_identity_digest")
+    ):
+        errors.append(
+            "EXP-277 checkpoint scientific identity differs from reconstruction authorization"
+        )
+    if checkpoint_receipt.get("receipt_digest") != reconstruction_authorization.get(
+        "checkpoint_receipt_digest"
+    ):
+        errors.append(
+            "EXP-277 checkpoint receipt differs from reconstruction authorization"
+        )
+
     checkpoint_path = Path(checkpoint_path)
     if not checkpoint_path.is_file():
         errors.append("EXP-277 checkpoint file is missing")
+    elif checkpoint_receipt.get("checkpoint_file_sha256") != file_sha256(
+        checkpoint_path
+    ):
+        errors.append("EXP-277 checkpoint file SHA256 differs from frozen checkpoint")
 
     beacon_errors = validate_exp277_beacon_receipt(
         beacon_receipt,
-        freeze_commit_timestamp_utc=reconstruction_authorization.get("freeze_commit_timestamp_utc"),
-        checkpoint_seal_created_at_utc=reconstruction_authorization.get("checkpoint_seal_created_at_utc"),
+        freeze_commit_timestamp_utc=reconstruction_authorization.get(
+            "freeze_commit_timestamp_utc"
+        ),
+        checkpoint_seal_created_at_utc=reconstruction_authorization.get(
+            "checkpoint_seal_created_at_utc"
+        ),
     )
     if beacon_errors:
         errors.append("EXP-277 beacon receipt invalid: " + "; ".join(beacon_errors))
@@ -155,11 +208,183 @@ def _preflight_integrity_errors(
         or not isinstance(reserved, list)
         or len(reserved) != confirmatory_n
         or len(set(reserved)) != confirmatory_n
-        or (reserved and reserved != list(range(reserved[0], reserved[0] + len(reserved))))
+        or (
+            reserved
+            and reserved != list(range(reserved[0], reserved[0] + len(reserved)))
+        )
     ):
         errors.append("EXP-277 frozen confirmatory replicate lineage invalid")
 
+    arm_flops = reconstruction_authorization.get(
+        "arm_accounted_flops_per_episode"
+    )
+    if not isinstance(arm_flops, dict) or set(arm_flops) != {
+        "arcs_branch",
+        "oracle_cbrf",
+    }:
+        errors.append("EXP-277 exact per-arm analytical FLOP binding missing")
+    elif any(
+        not isinstance(value, int) or isinstance(value, bool) or value <= 0
+        for value in arm_flops.values()
+    ):
+        errors.append("EXP-277 exact per-arm analytical FLOP binding invalid")
+
     return errors
+
+
+def _arm_metrics(
+    output: Any,
+    targets: torch.Tensor,
+    *,
+    accounted_flops: int,
+) -> dict[str, Any]:
+    predictions = output.decision_logits.argmax(dim=-1)
+    exact_per_episode = (predictions == targets).all(dim=-1)
+    solution_rate = float(exact_per_episode.to(torch.float32).mean().item())
+    decision_accuracy = float(
+        (predictions == targets).to(torch.float32).mean().item()
+    )
+    return {
+        "predictions": predictions.detach().cpu().tolist(),
+        "verified_solution_rate": solution_rate,
+        "verified_decision_accuracy": decision_accuracy,
+        "mean_verifier_confidence": float(output.verifier_confidence.mean().item()),
+        "accounted_flops_per_episode": int(accounted_flops),
+        "verified_utility_per_accounted_flop": solution_rate
+        / int(accounted_flops),
+        "analytical_cost_receipt": _analytical_cost_receipt(accounted_flops),
+    }
+
+
+def _execute_rows_independently(
+    *,
+    reconstruction_authorization: dict[str, Any],
+    beacon_receipt: dict[str, Any],
+    checkpoint_path: str | Path,
+    checkpoint_receipt: dict[str, Any],
+) -> list[dict[str, Any]]:
+    # This is intentionally independent from the reconstruction court's row
+    # builder. The executor creates evidence; the reconstruction court later
+    # regenerates and verifies that evidence through a separate code path.
+    arcs, oracle = load_exp277_trained_checkpoint(
+        checkpoint_path=checkpoint_path,
+        receipt=checkpoint_receipt,
+    )
+    arcs.eval()
+    oracle.eval()
+
+    reserved = list(reconstruction_authorization["reserved_replicate_ids"])
+    arm_flops = reconstruction_authorization["arm_accounted_flops_per_episode"]
+    world = (reconstruction_authorization.get("model_geometry") or {}).get(
+        "world"
+    ) or {}
+    rows: list[dict[str, Any]] = []
+
+    for ordinal, replicate in enumerate(reserved):
+        before = {
+            "arcs_branch": _functional_state_digest(arcs),
+            "oracle_cbrf": _functional_state_digest(oracle),
+        }
+
+        challenge_seed = derive_exp277_challenge_seed(
+            protocol_digest=str(
+                reconstruction_authorization.get("protocol_digest") or ""
+            ),
+            beacon_receipt=beacon_receipt,
+            stream=CHALLENGE_STREAM,
+            replicate=replicate,
+            freeze_commit_timestamp_utc=reconstruction_authorization.get(
+                "freeze_commit_timestamp_utc"
+            ),
+            checkpoint_seal_created_at_utc=reconstruction_authorization.get(
+                "checkpoint_seal_created_at_utc"
+            ),
+        )
+        batch = build_exp277_challenge_batch(
+            challenge_seed=challenge_seed,
+            replicate=replicate,
+            batch_size=int(world.get("batch_size", 0)),
+            timesteps=int(world.get("timesteps", 0)),
+            variables=int(world.get("variables", 0)),
+            constraints=int(world.get("constraints", 0)),
+            d_model=int(world.get("d_model", 0)),
+            noise_std=float(world.get("noise_std", -1.0)),
+            device="cpu",
+        )
+
+        with torch.no_grad():
+            arcs_output = arcs(batch.surface_events, batch.variable_states)
+            oracle_output = oracle(
+                batch.surface_events,
+                batch.variable_states,
+                batch.oracle_incidence,
+            )
+
+        after = {
+            "arcs_branch": _functional_state_digest(arcs),
+            "oracle_cbrf": _functional_state_digest(oracle),
+        }
+        if before != after:
+            raise RuntimeError(
+                "EXP-277 executor detected forbidden parameter drift during "
+                "confirmatory inference"
+            )
+
+        arcs_metrics = _arm_metrics(
+            arcs_output,
+            batch.targets,
+            accounted_flops=int(arm_flops["arcs_branch"]),
+        )
+        oracle_metrics = _arm_metrics(
+            oracle_output,
+            batch.targets,
+            accounted_flops=int(arm_flops["oracle_cbrf"]),
+        )
+        arcs_utility = float(arcs_metrics["verified_utility_per_accounted_flop"])
+        oracle_utility = float(
+            oracle_metrics["verified_utility_per_accounted_flop"]
+        )
+        relative_gain = (
+            None
+            if arcs_utility <= 0.0
+            else (oracle_utility - arcs_utility) / arcs_utility
+        )
+
+        row: dict[str, Any] = {
+            "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1",
+            "experiment_id": EXPERIMENT_ID,
+            "replicate": replicate,
+            "replicate_ordinal": ordinal,
+            "challenge_seed": challenge_seed,
+            "challenge_digest": batch.digest,
+            "checkpoint_scientific_identity_digest": checkpoint_receipt.get(
+                "scientific_identity_digest"
+            ),
+            "checkpoint_functional_state_before": before,
+            "checkpoint_functional_state_after": after,
+            "oracle_information_receipt": deepcopy(
+                reconstruction_authorization.get("oracle_information_separation")
+                or {}
+            ),
+            "arm_input_receipt": _arm_input_receipt(),
+            "arcs_branch": arcs_metrics,
+            "oracle_cbrf": oracle_metrics,
+            "paired": {
+                "world_pairing_closed": True,
+                "solution_rate_difference": float(
+                    oracle_metrics["verified_solution_rate"]
+                )
+                - float(arcs_metrics["verified_solution_rate"]),
+                "utility_difference": oracle_utility - arcs_utility,
+                "relative_utility_gain": relative_gain,
+                "baseline_denominator_positive": arcs_utility > 0.0,
+            },
+            "row_digest": "",
+        }
+        row["row_digest"] = _row_digest(row)
+        rows.append(row)
+
+    return rows
 
 
 def execute_exp277_confirmatory_challenge(
@@ -191,36 +416,30 @@ def execute_exp277_confirmatory_challenge(
             integrity_errors=errors,
         )
 
-    reserved = list(reconstruction_authorization["reserved_replicate_ids"])
-    arm_flops = reconstruction_authorization["arm_accounted_flops_per_episode"]
-    rows: list[dict[str, Any]] = []
-    for replicate in reserved:
-        try:
-            row = reconstruct_exp277_expected_row(
-                reconstruction_authorization=reconstruction_authorization,
-                seal=seal,
-                beacon_receipt=beacon_receipt,
-                checkpoint_path=checkpoint_path,
-                checkpoint_receipt=checkpoint_receipt,
-                replicate=replicate,
-            )
-        except (ValueError, RuntimeError) as exc:
-            return _invalid_artifact(
-                reconstruction_authorization=reconstruction_authorization,
-                seal=seal,
-                beacon_receipt=beacon_receipt,
-                current_source_tree_digest=current_source_tree_digest,
-                executor_code_digest=executor_code_digest,
-                integrity_errors=[f"EXP-277 confirmatory row reconstruction failed before publication: {exc}"],
-            )
-        row["arm_input_receipt"] = _arm_input_receipt()
-        for arm in ("arcs_branch", "oracle_cbrf"):
-            row[arm]["analytical_cost_receipt"] = _analytical_cost_receipt(int(arm_flops[arm]))
-        row["row_digest"] = _row_digest(row)
-        rows.append(row)
+    try:
+        rows = _execute_rows_independently(
+            reconstruction_authorization=reconstruction_authorization,
+            beacon_receipt=beacon_receipt,
+            checkpoint_path=checkpoint_path,
+            checkpoint_receipt=checkpoint_receipt,
+        )
+    except (ValueError, RuntimeError, OSError) as exc:
+        return _invalid_artifact(
+            reconstruction_authorization=reconstruction_authorization,
+            seal=seal,
+            beacon_receipt=beacon_receipt,
+            current_source_tree_digest=current_source_tree_digest,
+            executor_code_digest=executor_code_digest,
+            integrity_errors=[
+                "EXP-277 confirmatory executor integrity failure before "
+                f"publication: {exc}"
+            ],
+        )
 
     test_only = beacon_receipt.get("test_only") is True
-    scientific_eligible = bool(beacon_receipt.get("scientific_evidence_eligible") is True and not test_only)
+    scientific_eligible = bool(
+        beacon_receipt.get("scientific_evidence_eligible") is True and not test_only
+    )
     payload: dict[str, Any] = {
         "schema": SCHEMA,
         "experiment_id": EXPERIMENT_ID,
@@ -232,10 +451,14 @@ def execute_exp277_confirmatory_challenge(
         "confirmatory_data_consumed": bool(scientific_eligible),
         "synthetic_challenge_data_consumed": bool(test_only),
         "challenge_materialized": True,
-        "seed_materialization_status": "TEST_ONLY_EXECUTED" if test_only else "EXECUTED",
+        "seed_materialization_status": (
+            "TEST_ONLY_EXECUTED" if test_only else "EXECUTED"
+        ),
         "decision_rule_executed": False,
-        "confirmatory_n": len(reserved),
-        "reserved_replicate_ids": reserved,
+        "confirmatory_n": len(rows),
+        "reserved_replicate_ids": deepcopy(
+            reconstruction_authorization.get("reserved_replicate_ids") or []
+        ),
         "challenge_stream": CHALLENGE_STREAM,
         "per_replicate": rows,
         "integrity_errors": [],
@@ -246,10 +469,16 @@ def execute_exp277_confirmatory_challenge(
         "beacon_receipt": deepcopy(beacon_receipt),
         "lineage": {
             "protocol_digest": reconstruction_authorization.get("protocol_digest"),
-            "source_tree_digest": reconstruction_authorization.get("source_tree_digest"),
+            "source_tree_digest": reconstruction_authorization.get(
+                "source_tree_digest"
+            ),
             "seal_digest": seal.get("seal_digest"),
-            "reconstruction_digest": reconstruction_authorization.get("reconstruction_digest"),
-            "checkpoint_scientific_identity_digest": checkpoint_receipt.get("scientific_identity_digest"),
+            "reconstruction_digest": reconstruction_authorization.get(
+                "reconstruction_digest"
+            ),
+            "checkpoint_scientific_identity_digest": checkpoint_receipt.get(
+                "scientific_identity_digest"
+            ),
             "checkpoint_receipt_digest": checkpoint_receipt.get("receipt_digest"),
             "beacon_receipt_digest": beacon_receipt.get("receipt_digest"),
             "executor_code_digest": executor_code_digest,
@@ -257,6 +486,7 @@ def execute_exp277_confirmatory_challenge(
         "artifact_digest": "",
     }
     payload["artifact_digest"] = _artifact_digest(payload)
+
     validation_errors = validate_exp277_confirmatory_raw(
         payload,
         checkpoint_path=checkpoint_path,
@@ -290,15 +520,17 @@ def validate_exp277_confirmatory_raw(
 
     status = payload.get("status")
     decision = payload.get("decision")
-    if status == INVALID_STATUS or decision == "INVALID_RUN":
-        if status != INVALID_STATUS or decision != "INVALID_RUN":
+    if status == INVALID_STATUS or decision == INVALID_STATUS:
+        if status != INVALID_STATUS or decision != INVALID_STATUS:
             errors.append("EXP-277 invalid raw status/decision mismatch")
         if payload.get("scientific_evidence_eligible") is not False:
             errors.append("EXP-277 invalid run cannot be scientific evidence")
         if payload.get("confirmatory_data_consumed") is not False:
             errors.append("EXP-277 invalid run cannot consume confirmatory data")
         if payload.get("challenge_materialized") is not False:
-            errors.append("EXP-277 invalid run must fail before challenge materialization")
+            errors.append(
+                "EXP-277 invalid run must fail before challenge materialization"
+            )
         if payload.get("decision_rule_executed") is not False:
             errors.append("EXP-277 invalid run cannot execute decision rule")
         if payload.get("per_replicate") != []:
@@ -337,9 +569,13 @@ def validate_exp277_confirmatory_raw(
         if scientific is not True:
             errors.append("EXP-277 scientific raw must be evidence-eligible")
         if payload.get("confirmatory_data_consumed") is not True:
-            errors.append("EXP-277 scientific raw must record confirmatory consumption")
+            errors.append(
+                "EXP-277 scientific raw must record confirmatory consumption"
+            )
         if payload.get("synthetic_challenge_data_consumed") is not False:
-            errors.append("EXP-277 scientific raw cannot mark synthetic challenge consumption")
+            errors.append(
+                "EXP-277 scientific raw cannot mark synthetic challenge consumption"
+            )
         if payload.get("seed_materialization_status") != "EXECUTED":
             errors.append("EXP-277 scientific seed materialization status drift")
     else:
@@ -348,50 +584,124 @@ def validate_exp277_confirmatory_raw(
     reconstruction = payload.get("reconstruction_authorization")
     seal = payload.get("seal")
     beacon = payload.get("beacon_receipt")
-    if not isinstance(reconstruction, dict) or not isinstance(seal, dict) or not isinstance(beacon, dict):
+    if (
+        not isinstance(reconstruction, dict)
+        or not isinstance(seal, dict)
+        or not isinstance(beacon, dict)
+    ):
         errors.append("EXP-277 raw reconstruction/seal/beacon lineage missing")
         return errors
-    reconstruction_errors = validate_exp277_reconstruction_authorization(reconstruction)
+
+    reconstruction_errors = validate_exp277_reconstruction_authorization(
+        reconstruction
+    )
     if reconstruction_errors:
-        errors.append("EXP-277 raw reconstruction authorization invalid: " + "; ".join(reconstruction_errors))
+        errors.append(
+            "EXP-277 raw reconstruction authorization invalid: "
+            + "; ".join(reconstruction_errors)
+        )
     seal_errors = validate_exp277_gate_a_seal(seal)
     if seal_errors:
         errors.append("EXP-277 raw Gate A seal invalid: " + "; ".join(seal_errors))
+    beacon_errors = validate_exp277_beacon_receipt(
+        beacon,
+        freeze_commit_timestamp_utc=reconstruction.get(
+            "freeze_commit_timestamp_utc"
+        ),
+        checkpoint_seal_created_at_utc=reconstruction.get(
+            "checkpoint_seal_created_at_utc"
+        ),
+    )
+    if beacon_errors:
+        errors.append("EXP-277 raw beacon invalid: " + "; ".join(beacon_errors))
 
-    reserved = payload.get("reserved_replicate_ids") or []
-    rows = payload.get("per_replicate") or []
-    if payload.get("confirmatory_n") != len(reserved) or len(rows) != len(reserved):
+    if payload.get("current_source_tree_digest") != reconstruction.get(
+        "source_tree_digest"
+    ):
+        errors.append("EXP-277 raw current/frozen source tree mismatch")
+    sealed = seal.get("authorization_snapshot") or {}
+    if payload.get("executor_code_digest") != (
+        sealed.get("machinery_digests") or {}
+    ).get("executor_code_digest"):
+        errors.append("EXP-277 raw executor machinery digest mismatch")
+
+    reserved = list(reconstruction.get("reserved_replicate_ids") or [])
+    rows = payload.get("per_replicate")
+    if payload.get("confirmatory_n") != len(reserved):
+        errors.append("EXP-277 raw confirmatory n mismatch")
+    if payload.get("reserved_replicate_ids") != reserved:
+        errors.append("EXP-277 raw reserved replicate lineage mismatch")
+    if not isinstance(rows, list) or len(rows) != len(reserved):
         errors.append("EXP-277 raw confirmatory row count mismatch")
-    if [row.get("replicate") for row in rows if isinstance(row, dict)] != reserved:
-        errors.append("EXP-277 raw replicate lineage must exactly match reserved IDs")
+        return errors
+    if [row.get("replicate") for row in rows] != reserved:
+        errors.append("EXP-277 raw replicate lineage order mismatch")
+        return errors
 
-    expected_inputs = _arm_input_receipt()
+    lineage = payload.get("lineage") or {}
+    expected_lineage = {
+        "protocol_digest": reconstruction.get("protocol_digest"),
+        "source_tree_digest": reconstruction.get("source_tree_digest"),
+        "seal_digest": seal.get("seal_digest"),
+        "reconstruction_digest": reconstruction.get("reconstruction_digest"),
+        "checkpoint_scientific_identity_digest": (
+            checkpoint_receipt or {}
+        ).get("scientific_identity_digest"),
+        "checkpoint_receipt_digest": (checkpoint_receipt or {}).get(
+            "receipt_digest"
+        ),
+        "beacon_receipt_digest": beacon.get("receipt_digest"),
+        "executor_code_digest": payload.get("executor_code_digest"),
+    }
+    if checkpoint_receipt is not None and lineage != expected_lineage:
+        errors.append("EXP-277 raw lineage binding mismatch")
+
+    if checkpoint_path is None or checkpoint_receipt is None:
+        errors.append(
+            "EXP-277 raw validator requires checkpoint bytes and receipt for "
+            "independent reconstruction"
+        )
+        return errors
+
     expected_flops = reconstruction.get("arm_accounted_flops_per_episode") or {}
+    expected_input = _arm_input_receipt()
     for row in rows:
-        if not isinstance(row, dict):
-            errors.append("EXP-277 raw row is not an object")
-            continue
-        if row.get("row_digest") != _row_digest(row):
-            errors.append("EXP-277 raw row digest mismatch")
-        if row.get("arm_input_receipt") != expected_inputs:
-            errors.append("EXP-277 raw arm input receipt mismatch")
+        if row.get("arm_input_receipt") != expected_input:
+            errors.append("EXP-277 raw arm input/oracle separation receipt mismatch")
+            break
         for arm in ("arcs_branch", "oracle_cbrf"):
-            arm_payload = row.get(arm) or {}
-            expected_cost = _analytical_cost_receipt(int(expected_flops.get(arm, 0))) if expected_flops.get(arm) else None
-            if arm_payload.get("analytical_cost_receipt") != expected_cost:
-                errors.append(f"EXP-277 {arm} analytical cost receipt mismatch")
+            metrics = row.get(arm) or {}
+            if metrics.get("accounted_flops_per_episode") != expected_flops.get(arm):
+                errors.append(f"EXP-277 raw {arm} accounted FLOP mismatch")
+                break
+            if metrics.get("analytical_cost_receipt") != _analytical_cost_receipt(
+                int(expected_flops.get(arm, 0))
+            ):
+                errors.append(
+                    f"EXP-277 raw {arm} analytical cost receipt mismatch"
+                )
+                break
+            if not _finite_number(metrics.get("verified_solution_rate")):
+                errors.append(f"EXP-277 raw {arm} solution rate is non-finite")
+                break
+            if not _finite_number(
+                metrics.get("verified_utility_per_accounted_flop")
+            ):
+                errors.append(f"EXP-277 raw {arm} utility is non-finite")
+                break
+        if errors:
+            break
 
-    if checkpoint_path is not None and checkpoint_receipt is not None:
-        for row in rows:
-            if not isinstance(row, dict):
-                continue
-            row_errors = validate_exp277_raw_row_against_reconstruction(
-                raw_row=row,
-                reconstruction_authorization=reconstruction,
-                seal=seal,
-                beacon_receipt=beacon,
-                checkpoint_path=checkpoint_path,
-                checkpoint_receipt=checkpoint_receipt,
-            )
-            errors.extend(row_errors)
+        reconstruction_row_errors = validate_exp277_raw_row_against_reconstruction(
+            raw_row=row,
+            reconstruction_authorization=reconstruction,
+            seal=seal,
+            beacon_receipt=beacon,
+            checkpoint_path=checkpoint_path,
+            checkpoint_receipt=checkpoint_receipt,
+        )
+        if reconstruction_row_errors:
+            errors.extend(reconstruction_row_errors)
+            break
+
     return errors
