@@ -1,0 +1,249 @@
+name: exp282-persist-real-ev-e3-evidence
+
+on:
+  push:
+    branches: [exp282-real-ev-e3-ceremony]
+    paths:
+      - .github/workflows/exp282-persist-real-ev-e3-evidence.yml
+
+permissions:
+  actions: read
+  contents: write
+
+env:
+  SCIENTIFIC_BASELINE_SHA: 77383b0a9c2ce92ded66f07234891790652a037b
+  ARM_SHA: 68deb39cb33f7697dbc1f88006a2b4868ae6fed3
+  CEREMONY_RUN_ID: "34223658313"
+  EXACT_HEAD_CI_RUN_ID: "34223665546"
+  EVIDENCE_ARTIFACT_ID: "10055052239"
+  EVIDENCE_ARTIFACT_NAME: exp282-real-ev-e3-evidence-68deb39cb33f7697dbc1f88006a2b4868ae6fed3
+  EVIDENCE_ARTIFACT_DIGEST: sha256:51aefb693e2bde56e9e276cbbb8cc9d8f986b51f615961a9241883f62b1ce10a
+  PROTOCOL_DIGEST: c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440
+  SOURCE_TREE_DIGEST: 966fd1ac59d827270353e22bb46b7cf8d1456b9652c113634d2762d55ef4b725
+  EVIDENCE_DIR: evidence/exp282/2026-09-08-real-ev-e3-confirmatory-open
+
+jobs:
+  persist:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prove persistence commit cannot alter frozen scientific source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git diff --name-only "$SCIENTIFIC_BASELINE_SHA" HEAD -- src scripts protocols/stage_a_v1.json protocols/stage_a_v1.sha256)"
+
+      - name: Fetch and verify pinned GitHub Actions provenance metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/exp282-persist
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${EVIDENCE_ARTIFACT_ID}" > /tmp/exp282-persist/artifact-metadata.json
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${CEREMONY_RUN_ID}" > /tmp/exp282-persist/run-metadata.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          artifact = json.loads(Path('/tmp/exp282-persist/artifact-metadata.json').read_text(encoding='utf-8'))
+          assert str(artifact['id']) == os.environ['EVIDENCE_ARTIFACT_ID']
+          assert artifact['name'] == os.environ['EVIDENCE_ARTIFACT_NAME']
+          assert artifact['expired'] is False
+          assert artifact['digest'] == os.environ['EVIDENCE_ARTIFACT_DIGEST']
+          workflow_run = artifact['workflow_run']
+          assert str(workflow_run['id']) == os.environ['CEREMONY_RUN_ID']
+          assert workflow_run['head_sha'] == os.environ['ARM_SHA']
+
+          run = json.loads(Path('/tmp/exp282-persist/run-metadata.json').read_text(encoding='utf-8'))
+          assert str(run['id']) == os.environ['CEREMONY_RUN_ID']
+          assert run['status'] == 'completed'
+          assert run['conclusion'] == 'success'
+          assert run['head_sha'] == os.environ['ARM_SHA']
+          assert run['event'] == 'push'
+          assert run['path'] == '.github/workflows/exp282-real-ev-e3-ceremony.yml'
+          PY
+
+      - name: Download only the exact pinned EV-E3 artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$EVIDENCE_DIR"
+          mkdir -p "$EVIDENCE_DIR"
+          gh run download "$CEREMONY_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "$EVIDENCE_ARTIFACT_NAME" --dir "$EVIDENCE_DIR"
+          cp /tmp/exp282-persist/artifact-metadata.json "$EVIDENCE_DIR/actions-artifact-metadata.json"
+          cp /tmp/exp282-persist/run-metadata.json "$EVIDENCE_DIR/actions-run-metadata.json"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install validation-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev,model]'
+
+      - name: Verify SHA256SUMS and validated EXP-282 EV-E3 lineage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          from nolane_ai.experiments.exp282_confirmatory_analysis import validate_exp282_confirmatory_analysis
+          from nolane_ai.experiments.exp282_confirmatory_ceremony import (
+              validate_exp282_confirmatory_ceremony_result,
+              validate_exp282_confirmatory_ceremony_seal,
+          )
+          from nolane_ai.experiments.exp282_confirmatory_executor import validate_exp282_confirmatory_open_raw
+          from nolane_ai.experiments.exp282_confirmatory_prep import validate_exp282_confirmatory_prep
+          from nolane_ai.experiments.exp282_paired_runner import validate_exp282_paired_development
+
+          root = Path(os.environ['EVIDENCE_DIR'])
+          sums_path = root / 'SHA256SUMS'
+          assert sums_path.is_file()
+          entries: dict[str, str] = {}
+          for line in sums_path.read_text(encoding='utf-8').splitlines():
+              line = line.strip()
+              if not line:
+                  continue
+              digest, relative = line.split(None, 1)
+              relative = relative.lstrip('*').strip()
+              entries[relative] = digest
+          assert entries
+          for relative, expected in entries.items():
+              target = root / relative
+              assert target.is_file(), relative
+              observed = hashlib.sha256(target.read_bytes()).hexdigest()
+              assert observed == expected, (relative, observed, expected)
+
+          required = {
+              'source-identity.json',
+              'development-planning-baseline.json',
+              'development-arm-registry.json',
+              'confirmatory-prep.json',
+              'ceremony-seal.json',
+              'confirmatory-raw.json',
+              'confirmatory-analysis.json',
+              'ceremony-result.json',
+              'ceremony-summary.json',
+          }
+          assert required.issubset(entries)
+
+          source = json.loads((root / 'source-identity.json').read_text(encoding='utf-8'))
+          development = json.loads((root / 'development-planning-baseline.json').read_text(encoding='utf-8'))
+          prep = json.loads((root / 'confirmatory-prep.json').read_text(encoding='utf-8'))
+          seal = json.loads((root / 'ceremony-seal.json').read_text(encoding='utf-8'))
+          raw = json.loads((root / 'confirmatory-raw.json').read_text(encoding='utf-8'))
+          analysis = json.loads((root / 'confirmatory-analysis.json').read_text(encoding='utf-8'))
+          result = json.loads((root / 'ceremony-result.json').read_text(encoding='utf-8'))
+          summary = json.loads((root / 'ceremony-summary.json').read_text(encoding='utf-8'))
+          run_meta = json.loads((root / 'actions-run-metadata.json').read_text(encoding='utf-8'))
+          artifact_meta = json.loads((root / 'actions-artifact-metadata.json').read_text(encoding='utf-8'))
+
+          assert source['ceremony_sha'] == os.environ['ARM_SHA']
+          assert source['scientific_baseline_sha'] == os.environ['SCIENTIFIC_BASELINE_SHA']
+          assert source['protocol_digest'] == os.environ['PROTOCOL_DIGEST']
+          assert source['source_tree_digest'] == os.environ['SOURCE_TREE_DIGEST']
+          assert str(source['exact_head_ci_run_id']) == os.environ['EXACT_HEAD_CI_RUN_ID']
+
+          assert validate_exp282_paired_development(development) == []
+          assert validate_exp282_confirmatory_prep(prep) == []
+          assert prep['status'] == 'CONFIRMATORY_OPEN_PREPARED'
+          assert prep['confirmatory_data_consumed'] is False
+          assert prep['sample_size_freeze']['confirmatory_n'] == 32
+
+          assert validate_exp282_confirmatory_ceremony_seal(seal) == []
+          assert seal['confirmatory_data_consumed'] is False
+          assert seal['challenge_materialized'] is False
+
+          assert validate_exp282_confirmatory_open_raw(raw) == []
+          assert raw['confirmatory_data_consumed'] is True
+          assert raw['challenge_materialized'] is False
+          assert raw['confirmatory_n'] == 32
+
+          assert validate_exp282_confirmatory_analysis(analysis) == []
+          assert analysis['evidence_level'] == 'EV-E3'
+          assert analysis['decision'] in {'PROMOTE_TO_NEXT_STAGE', 'HOLD_UNSTABLE', 'KILL_SUBSYSTEM'}
+          assert analysis['confirmatory_data_consumed'] is True
+          assert analysis['challenge_materialized'] is False
+          assert analysis['confirmatory_n'] == 32
+          assert analysis['protected_endpoints']['brier']['pass'] is True
+          assert analysis['protected_endpoints']['compute']['pass'] is True
+
+          assert validate_exp282_confirmatory_ceremony_result(result) == []
+          assert result['analysis']['analysis_digest'] == analysis['analysis_digest']
+          assert result['raw_artifact']['artifact_digest'] == raw['artifact_digest']
+          assert result['ceremony_seal']['ceremony_seal_digest'] == seal['ceremony_seal_digest']
+
+          assert summary['schema'] == 'NLM-EXP-282-REAL-EV-E3-CEREMONY-SUMMARY-V1'
+          assert summary['state'] == 'EXECUTED_AND_ANALYZED'
+          assert summary['ceremony_sha'] == os.environ['ARM_SHA']
+          assert summary['scientific_baseline_sha'] == os.environ['SCIENTIFIC_BASELINE_SHA']
+          assert summary['protocol_digest'] == os.environ['PROTOCOL_DIGEST']
+          assert summary['source_tree_digest'] == os.environ['SOURCE_TREE_DIGEST']
+          assert summary['decision'] == analysis['decision']
+          assert summary['analysis_digest'] == analysis['analysis_digest']
+          assert summary['raw_artifact_digest'] == raw['artifact_digest']
+          assert summary['ceremony_seal_digest'] == seal['ceremony_seal_digest']
+          assert summary['confirmatory_data_consumed'] is True
+          assert summary['challenge_materialized'] is False
+          assert summary['confirmatory_n'] == 32
+
+          assert str(run_meta['id']) == os.environ['CEREMONY_RUN_ID']
+          assert run_meta['status'] == 'completed'
+          assert run_meta['conclusion'] == 'success'
+          assert run_meta['head_sha'] == os.environ['ARM_SHA']
+          assert str(artifact_meta['id']) == os.environ['EVIDENCE_ARTIFACT_ID']
+          assert artifact_meta['name'] == os.environ['EVIDENCE_ARTIFACT_NAME']
+          assert artifact_meta['digest'] == os.environ['EVIDENCE_ARTIFACT_DIGEST']
+          assert artifact_meta['workflow_run']['head_sha'] == os.environ['ARM_SHA']
+          PY
+
+      - name: Write durable bounded provenance note
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$EVIDENCE_DIR/PROVENANCE.md" <<'EOF'
+          # EXP-282 real EV-E3 confirmatory-open evidence
+
+          This directory is a persistence-only copy of GitHub Actions evidence artifact `10055052239`, produced by real ceremony run `34223658313` at exact armed SHA `68deb39cb33f7697dbc1f88006a2b4868ae6fed3`. The artifact digest recorded by GitHub is `sha256:51aefb693e2bde56e9e276cbbb8cc9d8f986b51f615961a9241883f62b1ce10a`.
+
+          Scientific source identity is frozen to baseline `77383b0a9c2ce92ded66f07234891790652a037b`, source-tree digest `966fd1ac59d827270353e22bb46b7cf8d1456b9652c113634d2762d55ef4b725`, canonical Stage-A V1 protocol digest `c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440`, and exact-head normal CI run `34223665546`.
+
+          The first-valid real EV-E3 ceremony was READY at `n=32`, consumed the reserved confirmatory replicates `50032` through `50063`, and produced `KILL_SUBSYSTEM` for the frozen EXP-282 small-model partial-observability comparison. The observed explicit-belief minus recurrent-hidden grounded-decision-accuracy mean was `+0.001953125`; the one-sided 95% interval endpoints recorded by the frozen analysis were `-0.0048828125` and `+0.0087890625`, while the frozen MESI was `+0.03`. Both protected guards passed: Brier delta `+0.0006208908744156361` within the `+0.02` margin, and relative accounted-FLOP difference `0.0` within the `0.05` margin.
+
+          This result does not materialize a post-freeze challenge: `challenge_materialized=false`. The 100M post-freeze challenge replication remains open for EV-E4, and independent clean-room replication remains open for EV-E5.
+
+          `SHA256SUMS` authenticates the original files inside the source Actions artifact. `actions-artifact-metadata.json` and `actions-run-metadata.json` preserve GitHub provenance metadata around the exact immutable source artifact and ceremony run. This workflow does not regenerate or re-execute scientific observations.
+          EOF
+
+      - name: Confirm final diff remains evidence-only outside orchestration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git diff --name-only "$SCIENTIFIC_BASELINE_SHA" HEAD -- src scripts protocols/stage_a_v1.json protocols/stage_a_v1.sha256)"
+          git status --short
+
+      - name: Commit persisted evidence to ceremony branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$EVIDENCE_DIR"
+          test -z "$(git diff --cached --name-only | grep -v '^evidence/exp282/2026-09-08-real-ev-e3-confirmatory-open/' || true)"
+          git commit -m 'evidence(exp282): persist real EV-E3 confirmatory-open result'
+          git push origin HEAD:exp282-real-ev-e3-ceremony
