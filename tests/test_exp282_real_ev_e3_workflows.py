@@ -10,6 +10,7 @@ PERSISTENCE = ROOT / ".github" / "workflows" / "exp282-persist-real-ev-e3-eviden
 BASELINE_SHA = "77383b0a9c2ce92ded66f07234891790652a037b"
 PROTOCOL_SHA = "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440"
 ARM_PATH = ".github/ceremony/exp282-real-ev-e3-arm.json"
+ARM = ROOT / ARM_PATH
 
 FORBIDDEN_PERSISTENCE_EXECUTION = (
     "run_exp282_paired_dev.py",
@@ -121,6 +122,20 @@ def test_ceremony_does_not_hard_code_scientific_outcome_or_challenge() -> None:
     assert "PROMOTE_TO_NEXT_STAGE" in text
     assert "HOLD_UNSTABLE" in text
     assert "KILL_SUBSYSTEM" in text
+
+
+def test_arm_marker_if_present_is_exact_and_does_not_change_scientific_contract() -> None:
+    if not ARM.is_file():
+        pytest.skip("ceremony has not been armed yet")
+    import json
+
+    arm = json.loads(ARM.read_text(encoding="utf-8"))
+    assert arm == {
+        "schema": "NLM-EXP-282-REAL-EV-E3-ARM-V1",
+        "ceremony_id": "EXP-282-REAL-EV-E3-2026-09-08",
+        "source_baseline_sha": BASELINE_SHA,
+        "armed": True,
+    }
 
 
 def test_persistence_is_pinned_and_never_reruns_science() -> None:
