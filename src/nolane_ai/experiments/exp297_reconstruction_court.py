@@ -4,10 +4,9 @@ from copy import deepcopy
 from typing import Any
 
 from nolane_ai.experiments.exp297_confirmatory_execution_court import (
+    _prep_snapshot,
+    _validated_prep,
     validate_exp297_confirmatory_execution_authorization,
-)
-from nolane_ai.experiments.exp297_confirmatory_prep import (
-    validate_exp297_confirmatory_prep,
 )
 from nolane_ai.protocol.evidence import canonical_sha256
 
@@ -15,7 +14,6 @@ SCHEMA = "NLM-EXP-297-CONFIRMATORY-RECONSTRUCTION-AUTH-V1"
 EXPERIMENT_ID = "EXP-297"
 STATUS = "RECONSTRUCTION_AUTHORIZED_NOT_EXECUTED"
 
-_VALIDATED_PREP_DIGESTS: set[str] = set()
 _VALIDATED_AUTH_DIGESTS: set[str] = set()
 
 
@@ -25,28 +23,10 @@ def _reconstruction_digest(payload: dict[str, Any]) -> str:
     return canonical_sha256(clean)
 
 
-def _prep_content_digest(prep: dict[str, Any]) -> str:
-    clean = deepcopy(prep)
-    clean.pop("prep_digest", None)
-    return canonical_sha256(clean)
-
-
 def _auth_content_digest(auth: dict[str, Any]) -> str:
     clean = deepcopy(auth)
     clean.pop("authorization_digest", None)
     return canonical_sha256(clean)
-
-
-def _validate_prep_cached(prep: dict[str, Any]) -> list[str]:
-    digest = prep.get("prep_digest")
-    if not isinstance(digest, str) or not digest or digest != _prep_content_digest(prep):
-        return ["EXP-297 reconstruction embedded prep digest mismatch"]
-    if digest not in _VALIDATED_PREP_DIGESTS:
-        errors = validate_exp297_confirmatory_prep(prep)
-        if errors:
-            return ["invalid EXP-297 reconstruction prep: " + "; ".join(errors)]
-        _VALIDATED_PREP_DIGESTS.add(digest)
-    return []
 
 
 def _validate_auth_cached(auth: dict[str, Any]) -> list[str]:
@@ -88,6 +68,9 @@ def _binding_digest(payload: dict[str, Any]) -> str:
             "sample_size_freeze_digest": payload.get("sample_size_freeze_digest"),
             "reconstruction_contract": payload.get("reconstruction_contract"),
             "reconstruction_code_digest": payload.get("reconstruction_code_digest"),
+            "execution_authorization_digest": (
+                (payload.get("execution_authorization") or {}).get("authorization_digest")
+            ),
         }
     )
 
@@ -98,7 +81,7 @@ def authorize_exp297_confirmatory_reconstruction(
     execution_authorization: dict[str, Any],
     reconstruction_code_digest: str,
 ) -> dict[str, Any]:
-    prep_errors = _validate_prep_cached(prep_artifact)
+    prep_errors = _validated_prep(prep_artifact)
     if prep_errors:
         raise ValueError("; ".join(prep_errors))
     auth_errors = _validate_auth_cached(execution_authorization)
@@ -106,20 +89,21 @@ def authorize_exp297_confirmatory_reconstruction(
         raise ValueError("; ".join(auth_errors))
     if not isinstance(reconstruction_code_digest, str) or not reconstruction_code_digest:
         raise ValueError("reconstruction_code_digest is required")
-    if execution_authorization.get("prep_artifact") != prep_artifact:
+    if _prep_snapshot(prep_artifact) != execution_authorization.get("prep_snapshot"):
         raise ValueError("EXP-297 reconstruction prep/authorization binding mismatch")
 
     candidate_count = execution_authorization.get("candidate_count_per_replicate")
     if candidate_count != 16:
         raise ValueError("EXP-297 reconstruction candidate count drift")
     model_geometry = deepcopy(execution_authorization.get("model_geometry") or {})
+    auth_lineage = execution_authorization.get("lineage") or {}
     lineage = {
-        "prep_digest": prep_artifact.get("prep_digest"),
+        "prep_digest": auth_lineage.get("prep_digest"),
         "execution_authorization_digest": execution_authorization.get("authorization_digest"),
-        "protocol_digest": (execution_authorization.get("lineage") or {}).get("protocol_digest"),
-        "development_execution_digest": (execution_authorization.get("lineage") or {}).get("development_execution_digest"),
-        "pair_audit_digest": (execution_authorization.get("lineage") or {}).get("pair_audit_digest"),
-        "model_init_seed": (execution_authorization.get("lineage") or {}).get("model_init_seed"),
+        "protocol_digest": auth_lineage.get("protocol_digest"),
+        "development_execution_digest": auth_lineage.get("development_execution_digest"),
+        "pair_audit_digest": auth_lineage.get("pair_audit_digest"),
+        "model_init_seed": auth_lineage.get("model_init_seed"),
         "challenge_contract_digest": execution_authorization.get("challenge_contract_digest"),
         "reconstruction_code_digest": reconstruction_code_digest,
     }
@@ -146,7 +130,6 @@ def authorize_exp297_confirmatory_reconstruction(
         "reconstruction_contract": _reconstruction_contract(candidate_count),
         "reconstruction_code_digest": reconstruction_code_digest,
         "lineage": lineage,
-        "prep_artifact": deepcopy(prep_artifact),
         "execution_authorization": deepcopy(execution_authorization),
         "binding_digest": "",
         "reconstruction_digest": "",
@@ -198,24 +181,14 @@ def validate_exp297_confirmatory_reconstruction(payload: dict[str, Any]) -> list
     if payload.get("reconstruction_digest") != _reconstruction_digest(payload):
         errors.append("EXP-297 reconstruction authorization digest mismatch")
 
-    prep = payload.get("prep_artifact")
     auth = payload.get("execution_authorization")
-    if not isinstance(prep, dict):
-        errors.append("EXP-297 reconstruction prep artifact missing")
-        return errors
     if not isinstance(auth, dict):
         errors.append("EXP-297 reconstruction execution authorization missing")
-        return errors
-    prep_errors = _validate_prep_cached(prep)
-    if prep_errors:
-        errors.extend(prep_errors)
         return errors
     auth_errors = _validate_auth_cached(auth)
     if auth_errors:
         errors.extend(auth_errors)
         return errors
-    if auth.get("prep_artifact") != prep:
-        errors.append("EXP-297 reconstruction prep/authorization binding mismatch")
 
     expected_model_geometry = auth.get("model_geometry") or {}
     if payload.get("model_geometry") != expected_model_geometry:
@@ -244,7 +217,7 @@ def validate_exp297_confirmatory_reconstruction(payload: dict[str, Any]) -> list
 
     auth_lineage = auth.get("lineage") or {}
     expected_lineage = {
-        "prep_digest": prep.get("prep_digest"),
+        "prep_digest": auth_lineage.get("prep_digest"),
         "execution_authorization_digest": auth.get("authorization_digest"),
         "protocol_digest": auth_lineage.get("protocol_digest"),
         "development_execution_digest": auth_lineage.get("development_execution_digest"),
