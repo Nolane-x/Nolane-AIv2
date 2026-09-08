@@ -82,7 +82,7 @@ EXP-277 differs from EXP-297 because the candidate arms contain learned paramete
 The checkpoint builder deterministically reconstructs the matched pair from the frozen model-init seed and geometry, replays exactly the frozen 16 DEVELOPMENT training replicates, and verifies:
 
 - training batch digests match the DEVELOPMENT artifact
-- per-arm training losses match within the frozen deterministic tolerance
+- each stored per-arm training loss matches the reconstructed scalar with `rel_tol=0` and `abs_tol=1e-12`
 - final functional-state digests exactly match the DEVELOPMENT artifact
 - parameter/resource audit still closes after loading
 - ARCS cannot receive oracle incidence
@@ -125,7 +125,7 @@ when `required_n <= 128`.
 
 If required n exceeds 128, status is `NOT_READY_VARIANCE_EXCEEDS_MAX_N`; no confirmatory replicate IDs are reserved and no beacon is consumed.
 
-Reserved confirmatory replicate IDs are contiguous, ordered, deterministic and disjoint from DEVELOPMENT training and pilot IDs.
+Reserved confirmatory replicate IDs are contiguous, ordered, deterministic and disjoint from DEVELOPMENT training and pilot IDs. Reservation begins at `max(all DEVELOPMENT replicate IDs) + 1`.
 
 ## Frozen primary statistic
 
@@ -145,7 +145,11 @@ Gate B performs deterministic paired bootstrap resampling of confirmatory replic
 
 No epsilon is permitted in the scientific denominator.
 
-If confirmatory `mean(U_a) <= 0`, or if bootstrap resamples produce a materially non-identifiable denominator distribution, the primary endpoint is not promotable. The scientific result is `HOLD_UNSTABLE` unless another frozen kill condition independently applies. Undefined or infinite relative gains must never be converted into promotion by clipping or epsilon substitution.
+If observed confirmatory `mean(U_a) <= 0` or is non-finite, the primary endpoint is non-identifiable and the result is `HOLD_UNSTABLE` unless a separate frozen scientific kill condition is already satisfied.
+
+For bootstrap resampling, **any** resample with `mean(U_a) <= 0` or non-finite marks the bootstrap distribution non-identifiable. The analysis must not drop, clip, replace or epsilon-correct such resamples. It records the invalid-resample count and returns `HOLD_UNSTABLE` unless a separate frozen scientific kill condition is already satisfied.
+
+Undefined or infinite relative gains must never be converted into promotion.
 
 ## Protected solution endpoint
 
@@ -157,7 +161,7 @@ Use deterministic paired bootstrap with the same frozen `10_000` samples and end
 
 Promotion requires the one-sided lower confidence bound of the mean paired solution-rate difference to be `>= -0.005`.
 
-A protected endpoint constitutes a decisive failure only when its one-sided upper bound is `< -0.005`. Ambiguous overlap with the floor produces `HOLD_UNSTABLE`, not post-hoc threshold relaxation.
+A protected endpoint constitutes a decisive scientific failure only when its one-sided upper bound is `< -0.005`. Ambiguous overlap with the floor produces `HOLD_UNSTABLE`, not post-hoc threshold relaxation.
 
 ## Wall-energy evidence
 
@@ -176,7 +180,9 @@ If no validated energy measurement backend was frozen before Gate A, the object 
 
 Wall clock, analytical FLOPs or CPU time must never be mislabeled as joules.
 
-## Frozen decision function
+## Frozen result states and decision function
+
+`INVALID_RUN` is reserved for provenance, resource-match, oracle-information-separation, reconstruction, checkpoint-identity or execution-integrity failures. Such failures are not scientific evidence for or against H-CBRF-01 and MUST NOT be relabeled as `KILL_SUBSYSTEM`.
 
 `PROMOTE_TO_NEXT_STAGE` iff all of the following hold:
 
@@ -185,15 +191,14 @@ Wall clock, analytical FLOPs or CPU time must never be mislabeled as joules.
 3. resource-match and oracle-information-separation courts remain closed;
 4. no invalid/divergent artifact condition applies.
 
-`KILL_SUBSYSTEM` if either:
+`KILL_SUBSYSTEM` iff a scientifically valid run establishes either:
 
 1. primary one-sided upper bootstrap bound `< +0.10`; or
-2. protected solution-rate one-sided upper bootstrap bound `< -0.005`; or
-3. a frozen resource/oracle-information integrity court fails after valid scientific inference has begun.
+2. protected solution-rate one-sided upper bootstrap bound `< -0.005`.
 
 `HOLD_UNSTABLE` otherwise, including denominator instability or confidence intervals spanning decisive thresholds.
 
-Practical equivalence therefore selects the simpler ARCS rival when the upper primary bound cannot reach the +10% MESI.
+Practical equivalence therefore selects the simpler ARCS rival when the valid upper primary bound cannot reach the +10% MESI.
 
 ## Hidden post-freeze challenge generator
 
@@ -215,7 +220,7 @@ Both arms receive identical `surface_events` and `variable_states`; only `oracle
 
 The challenge object must have a dedicated schema and scope such as `POST_FREEZE_CHALLENGE`. It must not accept the DEVELOPMENT root seed or the `augmentation/evaluation` stream API as an operator-selectable substitute for beacon-derived challenge material.
 
-## Public beacon and seed derivation
+## Public beacon and exact frozen seed derivation
 
 Gate A freezes a dedicated EXP-277 public-beacon receipt schema. Real Gate B receipts require:
 
@@ -231,11 +236,13 @@ Gate A freezes a dedicated EXP-277 public-beacon receipt schema. Real Gate B rec
 
 The beacon must be strictly later than both the exact freeze commit timestamp and the runtime checkpoint-seal timestamp.
 
-Per replicate/stream challenge seeds are derived only as:
+The frozen protocol seed rule is followed without adding post-hoc fields to the seed material. Canonical `beacon` means the validated beacon receipt digest. For each replicate/stream:
 
-`SHA256(protocol_digest | freeze_commit_sha | checkpoint_seal_digest | beacon_receipt_digest | EXP-277 | stream | replicate)`.
+`SHA256(protocol_digest | beacon_receipt_digest | EXP-277 | stream | replicate)`.
 
 The first 8 digest bytes are interpreted as a big-endian integer for deterministic challenge generation.
+
+Freeze commit SHA and checkpoint seal digest are validated as independent authorization/provenance bindings; they are **not** silently added to the seed formula.
 
 No Gate B CLI accepts an arbitrary `--seed` or equivalent operator-controlled challenge seed.
 
@@ -318,11 +325,13 @@ For each raw confirmatory row the reconstruction court must reproduce or verify:
 
 Aggregate values are never trusted when raw rows allow reconstruction.
 
+Any reconstruction/provenance failure yields `INVALID_RUN`, not a scientific kill.
+
 ## First-valid-attempt ceremony discipline
 
 The real scientific workflow follows the hardened pattern already proven in the repository:
 
-1. dormant ceremony workflow and static contract tests are merged into the experiment branch;
+1. dormant ceremony workflow and static contract tests are added to the experiment branch;
 2. exact-head normal CI must be 3/3 GREEN while the workflow is unarmed;
 3. the next scientific arming commit changes only the declared arm marker/orchestration metadata outside `src/` and `scripts/`;
 4. the ceremony verifies exact source-tree identity and normal CI before science;
@@ -333,7 +342,7 @@ The real scientific workflow follows the hardened pattern already proven in the 
 9. infrastructure failure is rerunnable only under the frozen failure policy and only when the failure is proven to occur before first confirmatory inference;
 10. persistence later pins that exact authoritative run/artifact digest and does not rerun science.
 
-`PROMOTE`, `HOLD`, `KILL` and valid `NOT_READY` are all acceptable scientific/process outcomes and must be preserved.
+`PROMOTE`, `HOLD`, `KILL`, `INVALID_RUN` and valid `NOT_READY` are distinct outcomes and must not be conflated.
 
 ## CI boundary
 
@@ -347,7 +356,8 @@ Normal CI may exercise the complete Gate A/Gate B path using tiny geometry and a
 - challenge truth/oracle incidence cannot leak to ARCS
 - re-hashed tampering fails validation
 - denominator-zero/instability cases do not promote
-- protected-endpoint ambiguity produces HOLD rather than threshold relaxation.
+- protected-endpoint ambiguity produces HOLD rather than threshold relaxation
+- provenance/resource/integrity faults produce `INVALID_RUN`, never `KILL_SUBSYSTEM`.
 
 ## TDD implementation decomposition
 
@@ -380,4 +390,4 @@ A future Gate B `PROMOTE_TO_NEXT_STAGE` would show only that the frozen oracle s
 - the effect scales to 1B+
 - all Stage-A gates have passed.
 
-A `KILL_SUBSYSTEM` outcome attacks the architectural justification for pursuing CBRF structure machinery under the frozen H-CBRF-01 claim and must not be softened after observing the result.
+A valid `KILL_SUBSYSTEM` outcome attacks the architectural justification for pursuing CBRF structure machinery under the frozen H-CBRF-01 claim and must not be softened after observing the result.
