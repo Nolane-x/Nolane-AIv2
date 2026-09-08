@@ -1,0 +1,430 @@
+{
+  "base_registry_digest": "ffebcc23b9ba0537593b7965d59e447fdfe07afa172a269e59388029025e5536",
+  "decision": "UNVERIFIED",
+  "evidence_level": "EV-E2",
+  "experiments": {
+    "EXP-277": {
+      "arms": {
+        "arcs_branch": {
+          "blockers": [
+            "full V0.15 ARCS branch bank and verifier-court execution path is not implemented as a matched neural arm"
+          ],
+          "implementation_id": "exp277_matched_arcs_dev_v1",
+          "implementation_status": "BLOCKED",
+          "implementation_tier": "NOT_IMPLEMENTED_FULL_PROTOCOL_ARM",
+          "protocol_arm_id": "arcs_branch",
+          "protocol_description": "V0.15 ARCS recurrent-depth + branch bank + verifier court",
+          "required_region_functional_parameters": {
+            "recurrent_deliberation_core": 395265,
+            "verifier_proof_counterexample_heads": 132097
+          },
+          "required_regions": [
+            "recurrent_deliberation_core",
+            "verifier_proof_counterexample_heads"
+          ]
+        },
+        "oracle_cbrf": {
+          "blockers": [
+            "ground-truth constraint/factor oracle injection is not wired into the exact-16M neural execution path"
+          ],
+          "implementation_id": "exp277_matched_oracle_cbrf_dev_v1",
+          "implementation_status": "BLOCKED",
+          "implementation_tier": "ORACLE_NEURAL_ARM_NOT_WIRED",
+          "protocol_arm_id": "oracle_cbrf",
+          "protocol_description": "same substrate with ground-truth constraint/factor representation",
+          "required_region_functional_parameters": {
+            "constraint_belief_fabric": 198403,
+            "verifier_proof_counterexample_heads": 132097
+          },
+          "required_regions": [
+            "constraint_belief_fabric",
+            "verifier_proof_counterexample_heads"
+          ]
+        }
+      },
+      "blockers": [
+        "arcs_branch: full V0.15 ARCS branch bank and verifier-court execution path is not implemented as a matched neural arm",
+        "oracle_cbrf: ground-truth constraint/factor oracle injection is not wired into the exact-16M neural execution path"
+      ],
+      "match_court": "BLOCKED",
+      "protocol_arm_ids": [
+        "arcs_branch",
+        "oracle_cbrf"
+      ],
+      "resource_match_contract": {
+        "inference_budget": "same max accounted FLOPs per episode",
+        "parameter_budget": "matched active parameter count",
+        "world_pairing": "same world lineage and replicate index"
+      }
+    },
+    "EXP-279": {
+      "arms": {
+        "branch_only": {
+          "blockers": [
+            "full neural ARCS branch-search arm is not implemented"
+          ],
+          "implementation_id": "neural_branch_only_v1",
+          "implementation_status": "BLOCKED",
+          "implementation_tier": "FULL_BRANCH_ARM_NOT_IMPLEMENTED",
+          "protocol_arm_id": "branch_only",
+          "protocol_description": "ARCS branch search without CBRF propagation",
+          "required_region_functional_parameters": {
+            "recurrent_deliberation_core": 395265,
+            "verifier_proof_counterexample_heads": 132097
+          },
+          "required_regions": [
+            "recurrent_deliberation_core",
+            "verifier_proof_counterexample_heads"
+          ]
+        },
+        "hybrid": {
+          "blockers": [
+            "matched neural routing policy with predeclared structure-fit strata and equal accounted-FLOP budget is not implemented"
+          ],
+          "implementation_id": "neural_hybrid_routing_v1",
+          "implementation_status": "BLOCKED",
+          "implementation_tier": "MATCHED_HYBRID_ROUTER_NOT_IMPLEMENTED",
+          "protocol_arm_id": "hybrid",
+          "protocol_description": "propagation followed by branch search when residual uncertainty remains",
+          "required_region_functional_parameters": {
+            "constraint_belief_fabric": 198403,
+            "recurrent_deliberation_core": 395265,
+            "verifier_proof_counterexample_heads": 132097
+          },
+          "required_regions": [
+            "constraint_belief_fabric",
+            "recurrent_deliberation_core",
+            "verifier_proof_counterexample_heads"
+          ]
+        },
+        "propagation_only": {
+          "blockers": [
+            "neural accounted-FLOP utility runner and reclaimed-parameter matching against simpler rivals are not frozen"
+          ],
+          "implementation_id": "neural_propagation_only_v1",
+          "implementation_status": "DEVELOPMENT_COMPONENT_PRESENT",
+          "implementation_tier": "NEURAL_COMPONENT_WITHOUT_CONFIRMATORY_ACCOUNTING",
+          "protocol_arm_id": "propagation_only",
+          "protocol_description": "constraint propagation without branch search",
+          "required_region_functional_parameters": {
+            "constraint_belief_fabric": 198403
+          },
+          "required_regions": [
+            "constraint_belief_fabric"
+          ]
+        }
+      },
+      "blockers": [
+        "propagation_only: neural accounted-FLOP utility runner and reclaimed-parameter matching against simpler rivals are not frozen",
+        "branch_only: full neural ARCS branch-search arm is not implemented",
+        "hybrid: matched neural routing policy with predeclared structure-fit strata and equal accounted-FLOP budget is not implemented"
+      ],
+      "match_court": "BLOCKED",
+      "protocol_arm_ids": [
+        "propagation_only",
+        "branch_only",
+        "hybrid"
+      ],
+      "resource_match_contract": {
+        "inference_budget": "equal max accounted FLOPs",
+        "parameter_budget": "reclaimed parameters assigned to simpler rivals",
+        "structure_fit": "predeclared strata"
+      }
+    },
+    "EXP-282": {
+      "arms": {
+        "explicit_belief": {
+          "blockers": [
+            "matched recurrent-hidden comparator and equal state/controller parameter/compute accounting are not closed"
+          ],
+          "implementation_id": "neural_explicit_belief_dev_v1",
+          "implementation_status": "DEVELOPMENT_COMPONENT_PRESENT",
+          "implementation_tier": "NEURAL_DEVELOPMENT_COMPONENT",
+          "protocol_arm_id": "explicit_belief",
+          "protocol_description": "explicit calibrated belief state over hidden world variables",
+          "required_region_functional_parameters": {
+            "constraint_belief_fabric": 198403
+          },
+          "required_regions": [
+            "constraint_belief_fabric"
+          ]
+        },
+        "recurrent_hidden": {
+          "blockers": [
+            "matched recurrent-hidden decision head with equal state/controller parameter and compute budget is not implemented"
+          ],
+          "implementation_id": "neural_recurrent_hidden_matched_v1",
+          "implementation_status": "BLOCKED",
+          "implementation_tier": "MATCHED_BASELINE_NOT_IMPLEMENTED",
+          "protocol_arm_id": "recurrent_hidden",
+          "protocol_description": "matched recurrent state without explicit belief representation",
+          "required_region_functional_parameters": {
+            "recurrent_deliberation_core": 395265
+          },
+          "required_regions": [
+            "recurrent_deliberation_core"
+          ]
+        }
+      },
+      "blockers": [
+        "recurrent_hidden: matched recurrent-hidden decision head with equal state/controller parameter and compute budget is not implemented",
+        "explicit_belief: matched recurrent-hidden comparator and equal state/controller parameter/compute accounting are not closed"
+      ],
+      "match_court": "BLOCKED",
+      "protocol_arm_ids": [
+        "recurrent_hidden",
+        "explicit_belief"
+      ],
+      "resource_match_contract": {
+        "compute_budget": "matched",
+        "observation_history": "identical",
+        "parameter_budget": "equal state/controller parameters"
+      }
+    },
+    "EXP-286": {
+      "arms": {
+        "chronological_failure": {
+          "blockers": [
+            "matched chronological rollback baseline is not yet admitted by the EXP-286 development pair audit"
+          ],
+          "implementation_id": "exp286_matched_chronological_failure_dev_v1",
+          "implementation_status": "BLOCKED",
+          "implementation_tier": "MATCHED_BASELINE_NOT_IMPLEMENTED",
+          "protocol_arm_id": "chronological_failure",
+          "protocol_description": "no conflict core; chronological rollback",
+          "required_region_functional_parameters": {},
+          "required_regions": []
+        },
+        "oracle_conflict_core": {
+          "blockers": [
+            "oracle conflict-core component exists only as development machinery until matched pair and execution evidence validate it"
+          ],
+          "implementation_id": "exp286_matched_oracle_conflict_core_dev_v1",
+          "implementation_status": "DEVELOPMENT_COMPONENT_PRESENT",
+          "implementation_tier": "ORACLE_DEVELOPMENT_COMPONENT_WITHOUT_MATCHED_EXECUTION_COURT",
+          "protocol_arm_id": "oracle_conflict_core",
+          "protocol_description": "ground-truth conflict core supplied at contradiction",
+          "required_region_functional_parameters": {},
+          "required_regions": []
+        }
+      },
+      "blockers": [
+        "chronological_failure: matched chronological rollback baseline is not yet admitted by the EXP-286 development pair audit",
+        "oracle_conflict_core: oracle conflict-core component exists only as development machinery until matched pair and execution evidence validate it"
+      ],
+      "match_court": "BLOCKED",
+      "protocol_arm_ids": [
+        "chronological_failure",
+        "oracle_conflict_core"
+      ],
+      "resource_match_contract": {
+        "episode_budget": "same max FLOPs",
+        "parameter_budget": "oracle metadata is information, not free neural parameters; oracle-info receipt reported"
+      }
+    },
+    "EXP-289": {
+      "arms": {
+        "local_nogood": {
+          "blockers": [
+            "episode-local nogood component remains development machinery until matched pair and execution evidence validate it"
+          ],
+          "implementation_id": "exp289_matched_local_nogood_dev_v1",
+          "implementation_status": "DEVELOPMENT_COMPONENT_PRESENT",
+          "implementation_tier": "EPISODE_LOCAL_NOGOOD_DEVELOPMENT_COMPONENT_WITHOUT_MATCHED_EXECUTION_COURT",
+          "protocol_arm_id": "local_nogood",
+          "protocol_description": "same reasoner with episode-local nogood store and scoped applicability",
+          "required_region_functional_parameters": {},
+          "required_regions": []
+        },
+        "no_nogood": {
+          "blockers": [
+            "matched no-nogood baseline is not yet admitted by the EXP-289 development pair audit"
+          ],
+          "implementation_id": "exp289_matched_no_nogood_dev_v1",
+          "implementation_status": "BLOCKED",
+          "implementation_tier": "MATCHED_BASELINE_NOT_IMPLEMENTED",
+          "protocol_arm_id": "no_nogood",
+          "protocol_description": "hybrid reasoner without episode-local learned nogoods",
+          "required_region_functional_parameters": {},
+          "required_regions": []
+        }
+      },
+      "blockers": [
+        "no_nogood: matched no-nogood baseline is not yet admitted by the EXP-289 development pair audit",
+        "local_nogood: episode-local nogood component remains development machinery until matched pair and execution evidence validate it"
+      ],
+      "match_court": "BLOCKED",
+      "protocol_arm_ids": [
+        "no_nogood",
+        "local_nogood"
+      ],
+      "resource_match_contract": {
+        "episode_budget": "matched",
+        "memory_cost": "nogood storage/retrieval charged to accounted cost",
+        "parameter_budget": "matched"
+      }
+    },
+    "EXP-297": {
+      "arms": {
+        "compile_only": {
+          "implementation_id": "exp297_matched_compile_only_dev_v1",
+          "implementation_status": "DEVELOPMENT_COMPONENT_PRESENT",
+          "implementation_tier": "MATCHED_NEURAL_DEVELOPMENT_ARM",
+          "required_regions": [
+            "encoding_fidelity_court"
+          ]
+        },
+        "fidelity_court": {
+          "implementation_id": "exp297_matched_fidelity_court_dev_v1",
+          "implementation_status": "DEVELOPMENT_COMPONENT_PRESENT",
+          "implementation_tier": "MATCHED_NEURAL_PLUS_EXACT_WITNESS_DEVELOPMENT_ARM",
+          "required_regions": [
+            "encoding_fidelity_court"
+          ]
+        }
+      },
+      "blockers": [
+        "confirmatory sample size is not frozen/materialized",
+        "future-beacon hidden semantic challenge is not materialized",
+        "frozen decision rule has not executed",
+        "semantic formal authority remains restricted"
+      ],
+      "decision": "UNVERIFIED",
+      "development_match_status": "PAIRED_FIDELITY_COURT_DEV_READY",
+      "evidence_level": "EV-E2",
+      "match_court": "BLOCKED",
+      "paired_execution_evidence": {
+        "challenge_materialized": false,
+        "challenge_seed_materialized": false,
+        "confirmatory_data_consumed": false,
+        "confirmatory_ready": false,
+        "decision_rule_executed": false,
+        "descriptive_aggregate": {
+          "compile_only": {
+            "faithful_count": 256,
+            "faithful_formalization_rejection_rate": 0.0,
+            "fn": 0,
+            "fp": 256,
+            "semantic_fidelity_balanced_accuracy": 0.5,
+            "tn": 0,
+            "tp": 256,
+            "wrong_count": 256,
+            "wrong_formalization_authority_rate": 1.0
+          },
+          "fidelity_court": {
+            "faithful_count": 256,
+            "faithful_formalization_rejection_rate": 0.0,
+            "fn": 0,
+            "fp": 0,
+            "semantic_fidelity_balanced_accuracy": 1.0,
+            "tn": 256,
+            "tp": 256,
+            "wrong_count": 256,
+            "wrong_formalization_authority_rate": 0.0
+          }
+        },
+        "evidence_binding_digest": "35dc3b2b1b16ba39eb4522df010e55ef149c53cba49eabf5b77d8b80c7a67d61",
+        "execution_digest": "ee55496680b2a67d72d5bd0f0a195584ec7f6e7891b9a00af4fde23dc6bb0df1",
+        "execution_identity": {
+          "code_digest": "966fd1ac59d827270353e22bb46b7cf8d1456b9652c113634d2762d55ef4b725",
+          "config": {
+            "d_model": 64,
+            "eval_replicates": 32,
+            "eval_start_replicate": 50000,
+            "hidden_size": 64,
+            "max_exact_assignments": 4096,
+            "target_parameters": 500000
+          },
+          "model_init_seed": 8933940458564164293,
+          "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+          "root_seed": "20260907-exp297-paired-dev"
+        },
+        "hidden_trap_family_consumed": false,
+        "pair_audit_digest": "66e692c6e07c4242851630f4490422443c3de436546c007b36c078c4ac07a374",
+        "semantic_authority_promoted": false
+      },
+      "protocol_arm_ids": [
+        "compile_only",
+        "fidelity_court"
+      ],
+      "resource_match_contract": {
+        "candidate_inputs": "same paired formalization candidates",
+        "formal_backend": "identical solver/compiler",
+        "verification_cost": "fully charged"
+      },
+      "resource_match_evidence": {
+        "active_functional_parameter_match": true,
+        "functional_parameter_match": true,
+        "hidden_trap_family_separation": true,
+        "initialization_match": true,
+        "label_information_separation": true,
+        "neural_accounted_flops_match": true,
+        "optimizer_visible_parameter_match": true,
+        "pair_audit_digest": "66e692c6e07c4242851630f4490422443c3de436546c007b36c078c4ac07a374",
+        "parameter_match": true
+      }
+    }
+  },
+  "pilot_functional_parameters": 2367754,
+  "pilot_reserved_parameters": 13632246,
+  "pilot_total_parameters": 16000000,
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "protocol_id": "NLM-REASONING-STAGE-A-CONFIRMATORY-V1",
+  "protocol_status": "FROZEN_V1",
+  "region_audit": {
+    "conflict_core_backjump_clause": {
+      "functional_parameters": 132354,
+      "reserved_parameters": 1867646,
+      "total_parameters": 2000000,
+      "trainable_parameters": 2000000
+    },
+    "constraint_belief_fabric": {
+      "functional_parameters": 198403,
+      "reserved_parameters": 3801597,
+      "total_parameters": 4000000,
+      "trainable_parameters": 4000000
+    },
+    "developmental_reserve": {
+      "functional_parameters": 0,
+      "reserved_parameters": 1000000,
+      "total_parameters": 1000000,
+      "trainable_parameters": 1000000
+    },
+    "language_perception_binding": {
+      "functional_parameters": 1180673,
+      "reserved_parameters": 819327,
+      "total_parameters": 2000000,
+      "trainable_parameters": 2000000
+    },
+    "problem_compiler_fidelity_court": {
+      "functional_parameters": 328962,
+      "reserved_parameters": 1671038,
+      "total_parameters": 2000000,
+      "trainable_parameters": 2000000
+    },
+    "recurrent_deliberation_core": {
+      "functional_parameters": 395265,
+      "reserved_parameters": 3604735,
+      "total_parameters": 4000000,
+      "trainable_parameters": 4000000
+    },
+    "verifier_proof_counterexample_heads": {
+      "functional_parameters": 132097,
+      "reserved_parameters": 867903,
+      "total_parameters": 1000000,
+      "trainable_parameters": 1000000
+    }
+  },
+  "region_functional_parameters": {
+    "conflict_core_backjump_clause": 132354,
+    "constraint_belief_fabric": 198403,
+    "developmental_reserve": 0,
+    "language_perception_binding": 1180673,
+    "problem_compiler_fidelity_court": 328962,
+    "recurrent_deliberation_core": 395265,
+    "verifier_proof_counterexample_heads": 132097
+  },
+  "registry_digest": "ec20311b31dc381d9504a164c312090a2551c01712f5b49e66693943256b25c7",
+  "schema": "NLM-STAGE-A-NEURAL-ARM-REGISTRY-V1",
+  "scope": "stage-a-neural-arm-implementation-and-resource-match-audit"
+}

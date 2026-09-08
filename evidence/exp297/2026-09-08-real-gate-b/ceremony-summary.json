@@ -1,0 +1,58 @@
+{
+  "analysis_digest": "f0a81dea871811930fdf8cb8d9ee874d9b77b93801765ab5e00ac52f1572fcbf",
+  "beacon_authenticity_status": "EXTERNAL_EVIDENCE_RECORDED",
+  "beacon_id": "drand:8990e7a9aaed2ffed73dbd7092123d6f289930540d7651336225dc172e51b2ce:6447683",
+  "beacon_published_at_utc": "2026-09-08T09:58:30Z",
+  "beacon_receipt_digest": "c912fcf0c6aab8e30691e28de3f622ef7c9a77f273919c0c3b83f652b333a92b",
+  "code_tree_digest": "966fd1ac59d827270353e22bb46b7cf8d1456b9652c113634d2762d55ef4b725",
+  "confirmatory_n": 32,
+  "decision": "PROMOTE_TO_NEXT_STAGE",
+  "evidence_level": "EV-E3",
+  "freeze_commit_sha": "982e674181b645854c31c9ac9f238fe2830cc44e",
+  "freeze_commit_timestamp_utc": "2026-09-08T09:41:57Z",
+  "gate_a_seal_digest": "6378cd28a87d37d3cbdd22b443c586c948a65ffaca547a9482b4338001fb9514",
+  "primary_effect": {
+    "alpha": 0.016666666666666666,
+    "baseline_arm": "compile_only",
+    "candidate_arm": "fidelity_court",
+    "effect_type": "absolute_gain",
+    "median": 0.5,
+    "mesi_absolute_gain": 0.1,
+    "metric": "semantic_fidelity_balanced_accuracy",
+    "negative_count": 0,
+    "observed_mean": 0.5,
+    "one_sided_lower": 0.5,
+    "one_sided_upper": 0.5,
+    "positive_count": 32,
+    "replicates": 32,
+    "samples": 10000,
+    "seed_digest": "b51536f5d68923b4bd098de4ac93b326373cb4c1d0d8084ec8d8bde6bd1da402",
+    "zero_count": 0
+  },
+  "protected_endpoints": {
+    "faithful_rejection": {
+      "alpha": 0.016666666666666666,
+      "events": 0,
+      "limit": 0.1,
+      "metric": "faithful_formalization_rejection_rate",
+      "one_sided_upper": 0.017382264084998468,
+      "pass": true,
+      "rate": 0.0,
+      "total": 256
+    },
+    "wrong_authority": {
+      "alpha": 0.016666666666666666,
+      "events": 0,
+      "limit": 0.05,
+      "metric": "wrong_formalization_authority_rate",
+      "one_sided_upper": 0.017382264084998468,
+      "pass": true,
+      "rate": 0.0,
+      "total": 256
+    }
+  },
+  "raw_artifact_digest": "6ca5443baa7e6bf8a93a35f58e848cdc024fc4771a667e951d9e72d5b82ff48a",
+  "schema": "NLM-EXP-297-REAL-GATE-B-CEREMONY-SUMMARY-V1",
+  "scope_boundary": "Frozen synthetic EXP-297 semantic-formalization challenge only; not unrestricted open-language semantic authority.",
+  "semantic_authority_promoted": false
+}
