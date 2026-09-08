@@ -191,3 +191,24 @@ def test_exp277_raw_validator_rejects_rehashed_semantic_row_tamper(court_fixture
         checkpoint_receipt=fixture["checkpoint_receipt"],
     )
     assert any("solution" in error.lower() for error in errors)
+
+
+def test_exp277_executor_generation_is_independent_from_reconstruction_row_builder(court_fixture, monkeypatch) -> None:
+    import nolane_ai.experiments.exp277_confirmatory_executor as executor
+
+    fixture = court_fixture
+    _ensure_reconstruction(fixture)
+
+    def forbidden_reconstruction_builder(**_kwargs):
+        raise AssertionError("raw executor must not use reconstruction to generate its own evidence")
+
+    monkeypatch.setattr(
+        executor,
+        "reconstruct_exp277_expected_row",
+        forbidden_reconstruction_builder,
+        raising=False,
+    )
+    raw = _execute(fixture)
+    assert raw["status"] == "CONFIRMATORY_CHALLENGE_EXECUTED_UNANALYZED"
+    assert raw["decision"] == "UNVERIFIED"
+    assert raw["per_replicate"]
