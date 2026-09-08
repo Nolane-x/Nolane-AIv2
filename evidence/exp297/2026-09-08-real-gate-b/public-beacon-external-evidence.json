@@ -1,0 +1,39 @@
+{
+  "authenticity_status": "EXTERNAL_EVIDENCE_RECORDED",
+  "beacon_receipt_digest": "c912fcf0c6aab8e30691e28de3f622ef7c9a77f273919c0c3b83f652b333a92b",
+  "chain_info": {
+    "genesis_time": 1595431050,
+    "groupHash": "176f93498eac9ca337150b46d21dd58673ea4e3581185f869672e59fa4cb390a",
+    "hash": "8990e7a9aaed2ffed73dbd7092123d6f289930540d7651336225dc172e51b2ce",
+    "metadata": {
+      "beaconID": "default"
+    },
+    "period": 30,
+    "public_key": "868f005eb8e6e4ca0a47c8a77ceaa5309a47978a7c71bc5cce96366b5d7a569937c529eeda66c7293784a9402801af31",
+    "schemeID": "pedersen-bls-chained"
+  },
+  "chain_info_url": "https://api.drand.sh/info",
+  "cross_source_fields_checked": [
+    "round",
+    "randomness",
+    "signature"
+  ],
+  "cryptographic_signature_verified_by_ceremony": false,
+  "freeze_commit_sha": "982e674181b645854c31c9ac9f238fe2830cc44e",
+  "freeze_commit_timestamp_utc": "2026-09-08T09:41:57Z",
+  "mirror_response": {
+    "previous_signature": "8f2b5d3a369466ba2f02e9fd612e46f884d9a92bfe9a68034231c809a8d39a54608901bacfb463e98a4d24b5b82ae4ee0c8f197f1f403e1c20f44fc955be79459592240a4afa6231d32b9833ac62440cc0b1a87f6cee06d3a0624cce7171f19a",
+    "randomness": "ef103d4c3da17dada29758f024aa9aea30efcf887656e95fe4d8d27305039178",
+    "round": 6447683,
+    "signature": "b4fda6b6a6ce6e0533c3c79b02ea31f71195ad93d7779352dcb92ac337d5b9559b6daf301ad9a8afd7875eba8cd9d61d124c9879595a5dd18d81c9ad952ff726951629e727d1b1651adc6b816a9e3626a311cd9e40656d8022fb0295eb26723a"
+  },
+  "mirror_url": "https://api2.drand.sh/public/6447683",
+  "observed_at_utc": "2026-09-08T09:58:48.466471Z",
+  "primary_response": {
+    "previous_signature": "8f2b5d3a369466ba2f02e9fd612e46f884d9a92bfe9a68034231c809a8d39a54608901bacfb463e98a4d24b5b82ae4ee0c8f197f1f403e1c20f44fc955be79459592240a4afa6231d32b9833ac62440cc0b1a87f6cee06d3a0624cce7171f19a",
+    "randomness": "ef103d4c3da17dada29758f024aa9aea30efcf887656e95fe4d8d27305039178",
+    "round": 6447683,
+    "signature": "b4fda6b6a6ce6e0533c3c79b02ea31f71195ad93d7779352dcb92ac337d5b9559b6daf301ad9a8afd7875eba8cd9d61d124c9879595a5dd18d81c9ad952ff726951629e727d1b1651adc6b816a9e3626a311cd9e40656d8022fb0295eb26723a"
+  },
+  "primary_url": "https://api.drand.sh/public/6447683"
+}
