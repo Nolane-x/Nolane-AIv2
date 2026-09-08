@@ -1,0 +1,539 @@
+name: exp282-real-ev-e3-ceremony
+
+on:
+  push:
+    branches: [exp282-real-ev-e3-ceremony]
+    paths:
+      - .github/ceremony/exp282-real-ev-e3-arm.json
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: exp282-real-ev-e3-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  BASELINE_SHA: 77383b0a9c2ce92ded66f07234891790652a037b
+  PROTOCOL_SHA: c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440
+  CEREMONY_ID: EXP-282-REAL-EV-E3-2026-09-08
+  INFERENCE_MARKER_NAME: exp282-real-ev-e3-inference-started-${{ github.sha }}
+  OUTCOME_NAME: exp282-real-ev-e3-outcome-${{ github.sha }}
+  EVIDENCE_NAME: exp282-real-ev-e3-evidence-${{ github.sha }}
+
+jobs:
+  ceremony:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate arm marker and frozen scientific scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          arm = json.loads(Path('.github/ceremony/exp282-real-ev-e3-arm.json').read_text(encoding='utf-8'))
+          expected = {
+              'schema': 'NLM-EXP-282-REAL-EV-E3-ARM-V1',
+              'ceremony_id': os.environ['CEREMONY_ID'],
+              'source_baseline_sha': os.environ['BASELINE_SHA'],
+              'armed': True,
+          }
+          if arm != expected:
+              raise SystemExit(f'invalid EXP-282 ceremony arm marker: {arm!r}')
+          if os.environ.get('GITHUB_REF_NAME') != 'exp282-real-ev-e3-ceremony':
+              raise SystemExit('real EXP-282 ceremony must run only on its dedicated branch')
+          PY
+          test -z "$(git diff --name-only "$BASELINE_SHA" HEAD -- src scripts protocols/stage_a_v1.json protocols/stage_a_v1.sha256)"
+
+      - name: Reject any prior inference or valid outcome for this exact SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in "$INFERENCE_MARKER_NAME" "$OUTCOME_NAME"; do
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${name}&per_page=100" > /tmp/exp282-artifacts.json
+            python - "$name" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          name = sys.argv[1]
+          payload = json.loads(Path('/tmp/exp282-artifacts.json').read_text(encoding='utf-8'))
+          active = [a for a in payload.get('artifacts', []) if a.get('name') == name and not a.get('expired', False)]
+          if active:
+              raise SystemExit(f'authoritative EXP-282 ceremony artifact already exists for this SHA: {name}')
+          PY
+          done
+
+      - name: Wait for exact-head normal CI 3 of 3 success
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_id=''
+          for attempt in $(seq 1 120); do
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${GITHUB_SHA}&event=pull_request&per_page=20" > /tmp/exp282-ci-runs.json
+            state="$(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = json.loads(Path('/tmp/exp282-ci-runs.json').read_text(encoding='utf-8'))
+          sha = os.environ['GITHUB_SHA']
+          runs = [r for r in payload.get('workflow_runs', []) if r.get('head_sha') == sha and r.get('event') == 'pull_request']
+          if not runs:
+              print('WAIT')
+          else:
+              run = sorted(runs, key=lambda r: int(r['id']))[0]
+              if run.get('status') != 'completed':
+                  print('WAIT')
+              elif run.get('conclusion') != 'success':
+                  print(f"FAIL:{run['id']}:{run.get('conclusion')}")
+              else:
+                  print(f"RUN:{run['id']}")
+          PY
+          )"
+            case "$state" in
+              WAIT)
+                sleep 15
+                ;;
+              FAIL:*)
+                echo "exact-head normal CI did not pass: $state" >&2
+                exit 1
+                ;;
+              RUN:*)
+                run_id="${state#RUN:}"
+                break
+                ;;
+              *)
+                echo "unexpected CI waiter state: $state" >&2
+                exit 1
+                ;;
+            esac
+          done
+          test -n "$run_id" || { echo 'timed out waiting for exact-head PR CI' >&2; exit 1; }
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" > /tmp/exp282-ci-jobs.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path('/tmp/exp282-ci-jobs.json').read_text(encoding='utf-8'))
+          observed = {job.get('name'): job.get('conclusion') for job in payload.get('jobs', [])}
+          required = ('core (3.11)', 'core (3.13)', 'model-smoke')
+          missing = [name for name in required if observed.get(name) != 'success']
+          if missing:
+              raise SystemExit(f'exact-head CI job court failed: missing/failed={missing!r}, observed={observed!r}')
+          PY
+          printf '%s\n' "$run_id" > /tmp/exp282-exact-head-ci-run-id.txt
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install frozen model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev,model]'
+
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+
+      - name: Capture runtime scientific source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          from nolane_ai.protocol.identity import file_sha256, source_tree_digest
+
+          root = Path.cwd()
+          protocol = root / 'protocols' / 'stage_a_v1.json'
+          protocol_digest = file_sha256(protocol)
+          if protocol_digest != os.environ['PROTOCOL_SHA']:
+              raise SystemExit(f'canonical protocol digest drift: {protocol_digest}')
+          payload = {
+              'schema': 'NLM-EXP-282-REAL-EV-E3-SOURCE-IDENTITY-V1',
+              'ceremony_id': os.environ['CEREMONY_ID'],
+              'ceremony_sha': os.environ['GITHUB_SHA'],
+              'scientific_baseline_sha': os.environ['BASELINE_SHA'],
+              'protocol_digest': protocol_digest,
+              'source_tree_digest': source_tree_digest(root),
+              'exact_head_ci_run_id': int(Path('/tmp/exp282-exact-head-ci-run-id.txt').read_text().strip()),
+          }
+          Path('/tmp/exp282-source-identity.json').write_text(
+              json.dumps(payload, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          print(json.dumps(payload, sort_keys=True))
+          PY
+
+      - name: Build fixed non-tiny EXP-282 DEVELOPMENT planning baseline
+        run: >-
+          python scripts/run_exp282_paired_dev.py
+          --root-seed 20260906-exp282-paired-dev
+          --d-model 64
+          --hidden-size 48
+          --target-parameters 500000
+          --train-replicates 16
+          --eval-replicates 32
+          --eval-start-replicate 50000
+          --batch-size 8
+          --timesteps 6
+          --variables 4
+          --visibility-rate 0.5
+          --noise-std 0.35
+          --lr 0.002
+          --weight-decay 0.0
+          --output /tmp/exp282-development.json
+          --registry-output /tmp/exp282-registry.json
+          --checkpoint-output /tmp/exp282-paired.pt
+
+      - name: Reconstruct DEVELOPMENT and checkpoint lineage
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from nolane_ai.experiments.exp282_paired_runner import validate_exp282_paired_development
+          from nolane_ai.experiments.neural_arm_registry import validate_neural_arm_registry
+          from nolane_ai.protocol.identity import file_sha256, source_tree_digest
+
+          root = Path.cwd()
+          execution = json.loads(Path('/tmp/exp282-development.json').read_text(encoding='utf-8'))
+          registry = json.loads(Path('/tmp/exp282-registry.json').read_text(encoding='utf-8'))
+          errors = validate_exp282_paired_development(execution)
+          if errors:
+              raise SystemExit('invalid DEVELOPMENT execution: ' + '; '.join(errors))
+          errors = validate_neural_arm_registry(registry)
+          if errors:
+              raise SystemExit('invalid DEVELOPMENT registry: ' + '; '.join(errors))
+          if execution.get('code_digest') != source_tree_digest(root):
+              raise SystemExit('DEVELOPMENT source-tree digest mismatch')
+          checkpoint = execution.get('checkpoint') or {}
+          actual_sha = file_sha256('/tmp/exp282-paired.pt')
+          if checkpoint.get('checkpoint_sha256') != actual_sha:
+              raise SystemExit('DEVELOPMENT checkpoint SHA mismatch')
+          if execution.get('protocol_digest') != registry.get('protocol_digest'):
+              raise SystemExit('DEVELOPMENT execution/registry protocol mismatch')
+          PY
+
+      - name: Freeze EXP-282 confirmatory-open prep once
+        run: >-
+          python scripts/prepare_exp282_confirmatory_open.py
+          --execution /tmp/exp282-development.json
+          --registry /tmp/exp282-registry.json
+          --output /tmp/exp282-prep.json
+
+      - name: Classify frozen prep state
+        id: prep_state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          from nolane_ai.experiments.exp282_confirmatory_prep import validate_exp282_confirmatory_prep
+
+          prep = json.loads(Path('/tmp/exp282-prep.json').read_text(encoding='utf-8'))
+          errors = validate_exp282_confirmatory_prep(prep)
+          if errors:
+              raise SystemExit('invalid confirmatory prep: ' + '; '.join(errors))
+          status = prep.get('status')
+          allowed = {'CONFIRMATORY_OPEN_PREPARED', 'NOT_READY_VARIANCE_EXCEEDS_MAX_N'}
+          if status not in allowed:
+              raise SystemExit(f'unexpected confirmatory prep status: {status!r}')
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as fh:
+              fh.write(f'status={status}\n')
+          print(json.dumps({
+              'status': status,
+              'confirmatory_n': (prep.get('sample_size_freeze') or {}).get('confirmatory_n'),
+              'unclamped_required_n': (prep.get('sample_size_freeze') or {}).get('unclamped_required_n'),
+              'confirmatory_data_consumed': prep.get('confirmatory_data_consumed'),
+              'inference_started': False,
+          }, sort_keys=True))
+          PY
+
+      - name: Stage authoritative not-ready outcome bundle
+        if: steps.prep_state.outputs.status == 'NOT_READY_VARIANCE_EXCEEDS_MAX_N'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/exp282-not-ready-evidence
+          cp /tmp/exp282-development.json /tmp/exp282-not-ready-evidence/development-planning-baseline.json
+          cp /tmp/exp282-registry.json /tmp/exp282-not-ready-evidence/development-arm-registry.json
+          cp /tmp/exp282-paired.pt /tmp/exp282-not-ready-evidence/paired-functional-checkpoint.pt
+          cp /tmp/exp282-prep.json /tmp/exp282-not-ready-evidence/confirmatory-prep.json
+          cp /tmp/exp282-source-identity.json /tmp/exp282-not-ready-evidence/source-identity.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          prep = json.loads(Path('/tmp/exp282-prep.json').read_text(encoding='utf-8'))
+          source = json.loads(Path('/tmp/exp282-source-identity.json').read_text(encoding='utf-8'))
+          summary = {
+              'schema': 'NLM-EXP-282-REAL-EV-E3-CEREMONY-SUMMARY-V1',
+              'ceremony_id': os.environ['CEREMONY_ID'],
+              'ceremony_sha': os.environ['GITHUB_SHA'],
+              'scientific_baseline_sha': os.environ['BASELINE_SHA'],
+              'protocol_digest': source['protocol_digest'],
+              'source_tree_digest': source['source_tree_digest'],
+              'state': 'NOT_READY_VARIANCE_EXCEEDS_MAX_N',
+              'evidence_level': 'EV-E2',
+              'decision': 'UNVERIFIED',
+              'confirmatory_data_consumed': False,
+              'inference_started': False,
+              'challenge_materialized': False,
+              'prep_digest': prep.get('prep_digest'),
+              'confirmatory_n': (prep.get('sample_size_freeze') or {}).get('confirmatory_n'),
+              'unclamped_required_n': (prep.get('sample_size_freeze') or {}).get('unclamped_required_n'),
+              'scope_boundary': 'EXP-282 small-model confirmatory-open planning only; no confirmatory inference executed.',
+          }
+          Path('/tmp/exp282-not-ready-evidence/ceremony-summary.json').write_text(
+              json.dumps(summary, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          Path('/tmp/exp282-not-ready-outcome.json').write_text(
+              json.dumps(summary, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          PY
+          (cd /tmp/exp282-not-ready-evidence && sha256sum development-planning-baseline.json development-arm-registry.json paired-functional-checkpoint.pt confirmatory-prep.json source-identity.json ceremony-summary.json > SHA256SUMS)
+
+      - name: Publish authoritative not-ready outcome marker
+        if: steps.prep_state.outputs.status == 'NOT_READY_VARIANCE_EXCEEDS_MAX_N'
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp282-real-ev-e3-outcome-${{ github.sha }}
+          path: /tmp/exp282-not-ready-evidence/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish not-ready evidence alias
+        if: steps.prep_state.outputs.status == 'NOT_READY_VARIANCE_EXCEEDS_MAX_N'
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp282-real-ev-e3-evidence-${{ github.sha }}
+          path: /tmp/exp282-not-ready-evidence/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Seal ready EXP-282 ceremony
+        if: steps.prep_state.outputs.status == 'CONFIRMATORY_OPEN_PREPARED'
+        run: >-
+          python scripts/seal_exp282_confirmatory_ceremony.py
+          --execution /tmp/exp282-development.json
+          --prep /tmp/exp282-prep.json
+          --output /tmp/exp282-seal.json
+
+      - name: Validate sealed pre-inference boundary
+        if: steps.prep_state.outputs.status == 'CONFIRMATORY_OPEN_PREPARED'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          from nolane_ai.experiments.exp282_confirmatory_ceremony import validate_exp282_confirmatory_ceremony_seal
+          from nolane_ai.protocol.identity import file_sha256, source_tree_digest
+
+          seal = json.loads(Path('/tmp/exp282-seal.json').read_text(encoding='utf-8'))
+          errors = validate_exp282_confirmatory_ceremony_seal(seal)
+          if errors:
+              raise SystemExit('invalid ceremony seal: ' + '; '.join(errors))
+          if seal.get('evidence_level') != 'EV-E2' or seal.get('decision') != 'UNVERIFIED':
+              raise SystemExit('ceremony seal evidence boundary drift')
+          if seal.get('confirmatory_data_consumed') is not False:
+              raise SystemExit('ceremony seal consumed confirmatory data')
+          if seal.get('seed_materialization_status') != 'NOT_EXECUTED':
+              raise SystemExit('ceremony seal seed materialization drift')
+          if seal.get('challenge_materialized') is not False:
+              raise SystemExit('ceremony seal challenge boundary drift')
+          lineage = seal.get('lineage') or {}
+          if lineage.get('protocol_digest') != file_sha256('protocols/stage_a_v1.json'):
+              raise SystemExit('ceremony seal protocol lineage drift')
+          if lineage.get('ceremony_code_digest') != source_tree_digest(Path.cwd()):
+              raise SystemExit('ceremony seal source-tree lineage drift')
+          PY
+
+      - name: Materialize pre-execution inference-start receipt
+        if: steps.prep_state.outputs.status == 'CONFIRMATORY_OPEN_PREPARED'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          from nolane_ai.protocol.identity import file_sha256, source_tree_digest
+
+          prep = json.loads(Path('/tmp/exp282-prep.json').read_text(encoding='utf-8'))
+          seal = json.loads(Path('/tmp/exp282-seal.json').read_text(encoding='utf-8'))
+          payload = {
+              'schema': 'NLM-EXP-282-REAL-EV-E3-INFERENCE-START-V1',
+              'ceremony_id': os.environ['CEREMONY_ID'],
+              'ceremony_sha': os.environ['GITHUB_SHA'],
+              'scientific_baseline_sha': os.environ['BASELINE_SHA'],
+              'source_tree_digest': source_tree_digest(Path.cwd()),
+              'protocol_digest': file_sha256('protocols/stage_a_v1.json'),
+              'prep_digest': prep['prep_digest'],
+              'ceremony_seal_digest': seal['ceremony_seal_digest'],
+              'confirmatory_n': seal['confirmatory_n'],
+              'reserved_replicate_ids': seal['reserved_replicate_ids'],
+              'inference_started': True,
+              'challenge_materialized': False,
+          }
+          Path('/tmp/exp282-inference-started.json').write_text(
+              json.dumps(payload, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          PY
+
+      - name: Publish irreversible inference-start replay barrier
+        if: steps.prep_state.outputs.status == 'CONFIRMATORY_OPEN_PREPARED'
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp282-real-ev-e3-inference-started-${{ github.sha }}
+          path: /tmp/exp282-inference-started.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Execute frozen EXP-282 confirmatory-open ceremony once
+        if: steps.prep_state.outputs.status == 'CONFIRMATORY_OPEN_PREPARED'
+        run: >-
+          python scripts/execute_exp282_confirmatory_ceremony.py
+          --seal /tmp/exp282-seal.json
+          --execution /tmp/exp282-development.json
+          --checkpoint /tmp/exp282-paired.pt
+          --raw-output /tmp/exp282-raw.json
+          --analysis-output /tmp/exp282-analysis.json
+          --bundle-output /tmp/exp282-result.json
+
+      - name: Reconstruct and stage validated EV-E3 evidence
+        if: steps.prep_state.outputs.status == 'CONFIRMATORY_OPEN_PREPARED'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/exp282-real-evidence
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          from nolane_ai.experiments.exp282_confirmatory_analysis import validate_exp282_confirmatory_analysis
+          from nolane_ai.experiments.exp282_confirmatory_ceremony import (
+              validate_exp282_confirmatory_ceremony_result,
+              validate_exp282_confirmatory_ceremony_seal,
+          )
+          from nolane_ai.experiments.exp282_confirmatory_executor import validate_exp282_confirmatory_open_raw
+          from nolane_ai.protocol.identity import file_sha256, source_tree_digest
+
+          root = Path.cwd()
+          seal = json.loads(Path('/tmp/exp282-seal.json').read_text(encoding='utf-8'))
+          raw = json.loads(Path('/tmp/exp282-raw.json').read_text(encoding='utf-8'))
+          analysis = json.loads(Path('/tmp/exp282-analysis.json').read_text(encoding='utf-8'))
+          result = json.loads(Path('/tmp/exp282-result.json').read_text(encoding='utf-8'))
+          source = json.loads(Path('/tmp/exp282-source-identity.json').read_text(encoding='utf-8'))
+
+          checks = (
+              ('seal', validate_exp282_confirmatory_ceremony_seal(seal)),
+              ('raw', validate_exp282_confirmatory_open_raw(raw)),
+              ('analysis', validate_exp282_confirmatory_analysis(analysis)),
+              ('result', validate_exp282_confirmatory_ceremony_result(result)),
+          )
+          for label, errors in checks:
+              if errors:
+                  raise SystemExit(f'invalid {label}: ' + '; '.join(errors))
+
+          if raw.get('evidence_level') != 'EV-E2' or raw.get('decision') != 'UNVERIFIED':
+              raise SystemExit('raw evidence boundary drift')
+          if raw.get('confirmatory_data_consumed') is not True or raw.get('challenge_materialized') is not False:
+              raise SystemExit('raw confirmatory/challenge boundary drift')
+          if analysis.get('evidence_level') != 'EV-E3':
+              raise SystemExit('analysis evidence level drift')
+          if analysis.get('decision') not in {'PROMOTE_TO_NEXT_STAGE', 'HOLD_UNSTABLE', 'KILL_SUBSYSTEM'}:
+              raise SystemExit(f"invalid frozen analysis decision: {analysis.get('decision')!r}")
+          if analysis.get('challenge_materialized') is not False:
+              raise SystemExit('analysis challenge boundary drift')
+          if result.get('decision') != analysis.get('decision') or result.get('evidence_level') != analysis.get('evidence_level'):
+              raise SystemExit('ceremony result does not carry Analysis Court outcome')
+          if (seal.get('lineage') or {}).get('ceremony_code_digest') != source_tree_digest(root):
+              raise SystemExit('post-execution source-tree drift')
+          if (seal.get('lineage') or {}).get('protocol_digest') != file_sha256('protocols/stage_a_v1.json'):
+              raise SystemExit('post-execution protocol drift')
+
+          summary = {
+              'schema': 'NLM-EXP-282-REAL-EV-E3-CEREMONY-SUMMARY-V1',
+              'ceremony_id': os.environ['CEREMONY_ID'],
+              'ceremony_sha': os.environ['GITHUB_SHA'],
+              'scientific_baseline_sha': os.environ['BASELINE_SHA'],
+              'protocol_digest': source['protocol_digest'],
+              'source_tree_digest': source['source_tree_digest'],
+              'state': 'EXECUTED_AND_ANALYZED',
+              'evidence_level': analysis['evidence_level'],
+              'decision': analysis['decision'],
+              'confirmatory_data_consumed': True,
+              'inference_started': True,
+              'challenge_materialized': False,
+              'confirmatory_n': analysis['confirmatory_n'],
+              'reserved_replicate_ids': analysis['reserved_replicate_ids'],
+              'ceremony_seal_digest': seal['ceremony_seal_digest'],
+              'raw_artifact_digest': raw['artifact_digest'],
+              'analysis_digest': analysis['analysis_digest'],
+              'ceremony_result_digest': result['ceremony_result_digest'],
+              'primary_effect': analysis['primary_effect'],
+              'protected_endpoints': analysis['protected_endpoints'],
+              'remaining_blockers': analysis.get('remaining_blockers') or [],
+              'scope_boundary': 'Frozen EXP-282 small-model partial-observability comparison only; EV-E4 100M challenge replication remains separate.',
+          }
+          Path('/tmp/exp282-real-evidence/ceremony-summary.json').write_text(
+              json.dumps(summary, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          Path('/tmp/exp282-outcome.json').write_text(
+              json.dumps(summary, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          PY
+          cp /tmp/exp282-development.json /tmp/exp282-real-evidence/development-planning-baseline.json
+          cp /tmp/exp282-registry.json /tmp/exp282-real-evidence/development-arm-registry.json
+          cp /tmp/exp282-paired.pt /tmp/exp282-real-evidence/paired-functional-checkpoint.pt
+          cp /tmp/exp282-prep.json /tmp/exp282-real-evidence/confirmatory-prep.json
+          cp /tmp/exp282-seal.json /tmp/exp282-real-evidence/ceremony-seal.json
+          cp /tmp/exp282-raw.json /tmp/exp282-real-evidence/confirmatory-raw.json
+          cp /tmp/exp282-analysis.json /tmp/exp282-real-evidence/confirmatory-analysis.json
+          cp /tmp/exp282-result.json /tmp/exp282-real-evidence/ceremony-result.json
+          cp /tmp/exp282-source-identity.json /tmp/exp282-real-evidence/source-identity.json
+          (cd /tmp/exp282-real-evidence && sha256sum development-planning-baseline.json development-arm-registry.json paired-functional-checkpoint.pt confirmatory-prep.json ceremony-seal.json confirmatory-raw.json confirmatory-analysis.json ceremony-result.json ceremony-summary.json source-identity.json > SHA256SUMS)
+
+      - name: Publish immutable executed EV-E3 evidence
+        if: steps.prep_state.outputs.status == 'CONFIRMATORY_OPEN_PREPARED'
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp282-real-ev-e3-evidence-${{ github.sha }}
+          path: /tmp/exp282-real-evidence/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish authoritative executed outcome marker
+        if: steps.prep_state.outputs.status == 'CONFIRMATORY_OPEN_PREPARED'
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp282-real-ev-e3-outcome-${{ github.sha }}
+          path: /tmp/exp282-outcome.json
+          if-no-files-found: error
+          retention-days: 90
