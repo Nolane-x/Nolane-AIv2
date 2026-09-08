@@ -1,0 +1,282 @@
+name: exp297-real-gate-b-ceremony
+
+on:
+  push:
+    branches: [exp297-real-gate-b-ceremony]
+    paths:
+      - .github/workflows/exp297-real-gate-b-ceremony.yml
+
+permissions:
+  contents: read
+
+jobs:
+  ceremony:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Prove frozen src/scripts identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE_SHA=982e674181b645854c31c9ac9f238fe2830cc44e
+          test -z "$(git diff --name-only "$FREEZE_SHA" HEAD -- src scripts)"
+          printf '%s\n' "$FREEZE_SHA" > /tmp/exp297-freeze-sha.txt
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install frozen model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev,model]'
+
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+
+      - name: Build 32-replicate DEVELOPMENT planning baseline
+        run: >-
+          python scripts/run_exp297_paired_dev.py
+          --eval-replicates 32
+          --eval-start-replicate 50000
+          --output /tmp/exp297-development.json
+          --registry-output /tmp/exp297-registry.json
+
+      - name: Materialize real Gate A seal from merged freeze
+        run: >-
+          python scripts/prepare_exp297_confirmatory_gate_a.py
+          --execution /tmp/exp297-development.json
+          --registry /tmp/exp297-registry.json
+          --freeze-commit-sha 982e674181b645854c31c9ac9f238fe2830cc44e
+          --freeze-commit-timestamp-utc 2026-09-08T09:41:57Z
+          --prep-output /tmp/exp297-gate-a-prep.json
+          --authorization-output /tmp/exp297-gate-a-auth.json
+          --reconstruction-output /tmp/exp297-gate-a-reconstruction.json
+          --seal-output /tmp/exp297-gate-a-seal.json
+
+      - name: Record post-freeze public drand beacon
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+
+          from datetime import datetime, timezone
+          import json
+          from pathlib import Path
+          import time
+          from urllib.request import Request, urlopen
+
+          from nolane_ai.experiments.exp297_beacon import validate_exp297_beacon_receipt
+          from nolane_ai.protocol.evidence import canonical_sha256
+
+          FREEZE = datetime.fromisoformat("2026-09-08T09:41:57+00:00")
+
+          def fetch_json(url: str) -> dict:
+              last = None
+              for attempt in range(5):
+                  try:
+                      req = Request(url, headers={"User-Agent": "Nolane-AIv2-EXP297-GateB/1.0"})
+                      with urlopen(req, timeout=20) as response:
+                          payload = json.loads(response.read().decode("utf-8"))
+                      if not isinstance(payload, dict):
+                          raise RuntimeError(f"non-object JSON from {url}")
+                      return payload
+                  except Exception as exc:  # network evidence retry only
+                      last = exc
+                      if attempt != 4:
+                          time.sleep(2 ** attempt)
+              raise RuntimeError(f"failed to fetch {url}: {last}")
+
+          observed_at = datetime.now(timezone.utc)
+          info = fetch_json("https://api.drand.sh/info")
+          primary = fetch_json("https://api.drand.sh/public/latest")
+          round_id = int(primary["round"])
+          mirror_url = f"https://api2.drand.sh/public/{round_id}"
+          mirror = fetch_json(mirror_url)
+
+          for field in ("round", "randomness", "signature"):
+              if primary.get(field) != mirror.get(field):
+                  raise RuntimeError(f"drand primary/mirror mismatch for {field}")
+
+          period = int(info["period"])
+          genesis = int(info["genesis_time"])
+          published_unix = genesis + (round_id - 1) * period
+          published = datetime.fromtimestamp(published_unix, timezone.utc)
+          if published <= FREEZE:
+              raise RuntimeError("drand round is not strictly post-freeze")
+
+          published_iso = published.isoformat().replace("+00:00", "Z")
+          chain_hash = str(info.get("hash", "unknown"))
+          primary_url = f"https://api.drand.sh/public/{round_id}"
+          receipt = {
+              "schema": "NLM-EXP-297-PUBLIC-BEACON-RECEIPT-V1",
+              "experiment_id": "EXP-297",
+              "source": "drand-public-http-cross-recorded",
+              "beacon_id": f"drand:{chain_hash}:{round_id}",
+              "published_at_utc": published_iso,
+              "entropy_hex": str(primary["randomness"]).lower(),
+              "evidence_reference": f"{primary_url};{mirror_url};chain={chain_hash}",
+              "test_only": False,
+              "scientific_evidence_eligible": True,
+              "authenticity_status": "EXTERNAL_EVIDENCE_RECORDED",
+              "receipt_digest": "",
+          }
+          receipt["receipt_digest"] = canonical_sha256(
+              {k: v for k, v in receipt.items() if k != "receipt_digest"}
+          )
+          errors = validate_exp297_beacon_receipt(
+              receipt,
+              freeze_commit_timestamp_utc="2026-09-08T09:41:57Z",
+          )
+          if errors:
+              raise RuntimeError("invalid real beacon receipt: " + "; ".join(errors))
+
+          external = {
+              "observed_at_utc": observed_at.isoformat().replace("+00:00", "Z"),
+              "freeze_commit_sha": "982e674181b645854c31c9ac9f238fe2830cc44e",
+              "freeze_commit_timestamp_utc": "2026-09-08T09:41:57Z",
+              "primary_url": primary_url,
+              "mirror_url": mirror_url,
+              "chain_info_url": "https://api.drand.sh/info",
+              "chain_info": info,
+              "primary_response": primary,
+              "mirror_response": mirror,
+              "cross_source_fields_checked": ["round", "randomness", "signature"],
+              "cryptographic_signature_verified_by_ceremony": False,
+              "authenticity_status": "EXTERNAL_EVIDENCE_RECORDED",
+              "beacon_receipt_digest": receipt["receipt_digest"],
+          }
+
+          Path("/tmp/exp297-beacon-receipt.json").write_text(
+              json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8"
+          )
+          Path("/tmp/exp297-beacon-external-evidence.json").write_text(
+              json.dumps(external, sort_keys=True, indent=2) + "\n", encoding="utf-8"
+          )
+          print(json.dumps({
+              "beacon_id": receipt["beacon_id"],
+              "published_at_utc": receipt["published_at_utc"],
+              "receipt_digest": receipt["receipt_digest"],
+              "authenticity_status": receipt["authenticity_status"],
+          }, sort_keys=True))
+          PY
+
+      - name: Execute frozen real Gate B challenge and analysis
+        run: >-
+          python scripts/run_exp297_confirmatory_gate_b.py
+          --seal /tmp/exp297-gate-a-seal.json
+          --beacon /tmp/exp297-beacon-receipt.json
+          --raw-output /tmp/exp297-confirmatory-raw.json
+          --analysis-output /tmp/exp297-confirmatory-analysis.json
+
+      - name: Reconstruct and assert scientific ceremony boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+
+          import json
+          from pathlib import Path
+
+          from nolane_ai.experiments.exp297_confirmatory_analysis import validate_exp297_confirmatory_analysis
+          from nolane_ai.experiments.exp297_confirmatory_ceremony import validate_exp297_confirmatory_gate_a_seal
+          from nolane_ai.experiments.exp297_confirmatory_executor import validate_exp297_confirmatory_raw
+          from nolane_ai.protocol.identity import source_tree_digest
+
+          root = Path.cwd()
+          seal = json.loads(Path("/tmp/exp297-gate-a-seal.json").read_text())
+          raw = json.loads(Path("/tmp/exp297-confirmatory-raw.json").read_text())
+          analysis = json.loads(Path("/tmp/exp297-confirmatory-analysis.json").read_text())
+          beacon = json.loads(Path("/tmp/exp297-beacon-receipt.json").read_text())
+
+          assert not validate_exp297_confirmatory_gate_a_seal(seal)
+          assert not validate_exp297_confirmatory_raw(raw)
+          assert not validate_exp297_confirmatory_analysis(analysis)
+          assert seal["code_tree_digest"] == source_tree_digest(root)
+          assert seal["freeze_commit_sha"] == "982e674181b645854c31c9ac9f238fe2830cc44e"
+          assert seal["evidence_level"] == "EV-E2"
+          assert seal["decision"] == "UNVERIFIED"
+          assert seal["confirmatory_data_consumed"] is False
+          assert seal["challenge_materialized"] is False
+          assert raw["test_only"] is False
+          assert raw["scientific_evidence_eligible"] is True
+          assert raw["confirmatory_data_consumed"] is True
+          assert raw["challenge_materialized"] is True
+          assert raw["decision_rule_executed"] is False
+          assert analysis["test_only"] is False
+          assert analysis["evidence_level"] == "EV-E3"
+          assert analysis["scientific_evidence_eligible"] is True
+          assert analysis["confirmatory_data_consumed"] is True
+          assert analysis["decision_rule_executed"] is True
+          assert analysis["semantic_authority_promoted"] is False
+          assert analysis["decision"] in {
+              "PROMOTE_TO_NEXT_STAGE", "HOLD_UNSTABLE", "KILL_SUBSYSTEM"
+          }
+          assert analysis["lineage"]["raw_artifact_digest"] == raw["artifact_digest"]
+          assert analysis["lineage"]["beacon_receipt_digest"] == beacon["receipt_digest"]
+
+          summary = {
+              "schema": "NLM-EXP-297-REAL-GATE-B-CEREMONY-SUMMARY-V1",
+              "freeze_commit_sha": seal["freeze_commit_sha"],
+              "freeze_commit_timestamp_utc": seal["freeze_commit_timestamp_utc"],
+              "code_tree_digest": seal["code_tree_digest"],
+              "gate_a_seal_digest": seal["seal_digest"],
+              "confirmatory_n": analysis["confirmatory_n"],
+              "beacon_id": beacon["beacon_id"],
+              "beacon_published_at_utc": beacon["published_at_utc"],
+              "beacon_receipt_digest": beacon["receipt_digest"],
+              "beacon_authenticity_status": beacon["authenticity_status"],
+              "raw_artifact_digest": raw["artifact_digest"],
+              "analysis_digest": analysis["analysis_digest"],
+              "evidence_level": analysis["evidence_level"],
+              "decision": analysis["decision"],
+              "semantic_authority_promoted": analysis["semantic_authority_promoted"],
+              "primary_effect": analysis["primary_effect"],
+              "protected_endpoints": analysis["protected_endpoints"],
+              "scope_boundary": (
+                  "Frozen synthetic EXP-297 semantic-formalization challenge only; "
+                  "not unrestricted open-language semantic authority."
+              ),
+          }
+          Path("/tmp/exp297-ceremony-summary.json").write_text(
+              json.dumps(summary, sort_keys=True, indent=2) + "\n", encoding="utf-8"
+          )
+          print(json.dumps({
+              "decision": summary["decision"],
+              "evidence_level": summary["evidence_level"],
+              "confirmatory_n": summary["confirmatory_n"],
+              "beacon_id": summary["beacon_id"],
+              "analysis_digest": summary["analysis_digest"],
+          }, sort_keys=True))
+          PY
+
+      - name: Stage immutable ceremony evidence bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p exp297-real-gate-b-evidence
+          cp /tmp/exp297-development.json exp297-real-gate-b-evidence/development-planning-baseline.json
+          cp /tmp/exp297-registry.json exp297-real-gate-b-evidence/development-arm-registry.json
+          cp /tmp/exp297-gate-a-prep.json exp297-real-gate-b-evidence/gate-a-prep.json
+          cp /tmp/exp297-gate-a-auth.json exp297-real-gate-b-evidence/gate-a-execution-authorization.json
+          cp /tmp/exp297-gate-a-reconstruction.json exp297-real-gate-b-evidence/gate-a-reconstruction-authorization.json
+          cp /tmp/exp297-gate-a-seal.json exp297-real-gate-b-evidence/gate-a-seal.json
+          cp /tmp/exp297-beacon-receipt.json exp297-real-gate-b-evidence/public-beacon-receipt.json
+          cp /tmp/exp297-beacon-external-evidence.json exp297-real-gate-b-evidence/public-beacon-external-evidence.json
+          cp /tmp/exp297-confirmatory-raw.json exp297-real-gate-b-evidence/confirmatory-raw.json
+          cp /tmp/exp297-confirmatory-analysis.json exp297-real-gate-b-evidence/confirmatory-analysis.json
+          cp /tmp/exp297-ceremony-summary.json exp297-real-gate-b-evidence/ceremony-summary.json
+          sha256sum exp297-real-gate-b-evidence/* > exp297-real-gate-b-evidence/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp297-real-gate-b-evidence
+          path: exp297-real-gate-b-evidence/
+          if-no-files-found: error
+          retention-days: 90
