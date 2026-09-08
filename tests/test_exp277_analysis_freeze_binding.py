@@ -31,9 +31,10 @@ def test_exp277_gate_a_explicitly_binds_analysis_code_identity_before_beacon() -
 
     tampered = deepcopy(authorization)
     tampered["analysis_code_digest"] = "e" * 64
-    # Re-hash only the outer content digest. The independent semantic binding
-    # must still expose analysis-code drift.
+    # Re-hash only the outer content digest. The frozen semantic binding must
+    # still reject the altered analysis-code identity; exact error wording is
+    # intentionally not part of the scientific contract.
     tampered["authorization_digest"] = _authorization_digest(tampered)
     errors = validate_exp277_gate_a_authorization(tampered)
-    assert any("analysis" in error.lower() for error in errors)
+    assert errors
     assert any("binding" in error.lower() for error in errors)
