@@ -184,9 +184,10 @@ jobs:
           assert analysis['protected_endpoints']['compute']['pass'] is True
 
           assert validate_exp282_confirmatory_ceremony_result(result) == []
-          assert result['analysis']['analysis_digest'] == analysis['analysis_digest']
-          assert result['raw_artifact']['artifact_digest'] == raw['artifact_digest']
-          assert result['ceremony_seal']['ceremony_seal_digest'] == seal['ceremony_seal_digest']
+          result_artifacts = result['artifacts']
+          assert result_artifacts['analysis']['analysis_digest'] == analysis['analysis_digest']
+          assert result_artifacts['raw']['artifact_digest'] == raw['artifact_digest']
+          assert result_artifacts['seal']['ceremony_seal_digest'] == seal['ceremony_seal_digest']
 
           assert summary['schema'] == 'NLM-EXP-282-REAL-EV-E3-CEREMONY-SUMMARY-V1'
           assert summary['state'] == 'EXECUTED_AND_ANALYZED'
