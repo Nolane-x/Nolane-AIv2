@@ -40,6 +40,15 @@ ROUTING_SUPERVISION = {
         "branch_only": "arm_exact_failure",
         "hybrid": "propagation_stop_exact_failure",
     },
+    "hybrid_stop_path_supervision": {
+        "loss": "cross_entropy",
+        "final_path_weight": 0.5,
+        "stop_path_weight": 0.5,
+        "normalization": "weights_sum_to_one",
+        "uses_same_paired_training_targets": True,
+        "external_examples_added": False,
+        "training_compute_match_claimed": False,
+    },
     "development_targets_used": True,
     "evaluation_targets_used_for_routing": False,
 }
@@ -135,16 +144,28 @@ def _train_step(
     else:
         output = arm(surface_events, variable_states, incidence)
 
-    decision_loss = F.cross_entropy(
+    final_decision_loss = F.cross_entropy(
         output.decision_logits.reshape(-1, 2),
         targets.reshape(-1),
     )
+    decision_loss = final_decision_loss
     if arm_id == "hybrid":
         stop_logits = _hybrid_stop_decision_logits(
             arm,
             surface_events=surface_events,
             variable_states=variable_states,
             incidence=incidence,
+        )
+        stop_path = ROUTING_SUPERVISION["hybrid_stop_path_supervision"]
+        final_path_weight = float(stop_path["final_path_weight"])
+        stop_path_weight = float(stop_path["stop_path_weight"])
+        stop_decision_loss = F.cross_entropy(
+            stop_logits.reshape(-1, 2),
+            targets.reshape(-1),
+        )
+        decision_loss = (
+            final_path_weight * final_decision_loss
+            + stop_path_weight * stop_decision_loss
         )
         routing_target = _episode_failure_target(stop_logits, targets)
     else:

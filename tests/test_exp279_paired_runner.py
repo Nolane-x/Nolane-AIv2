@@ -39,6 +39,15 @@ EXPECTED_ROUTING_SUPERVISION = {
         "branch_only": "arm_exact_failure",
         "hybrid": "propagation_stop_exact_failure",
     },
+    "hybrid_stop_path_supervision": {
+        "loss": "cross_entropy",
+        "final_path_weight": 0.5,
+        "stop_path_weight": 0.5,
+        "normalization": "weights_sum_to_one",
+        "uses_same_paired_training_targets": True,
+        "external_examples_added": False,
+        "training_compute_match_claimed": False,
+    },
     "development_targets_used": True,
     "evaluation_targets_used_for_routing": False,
 }
