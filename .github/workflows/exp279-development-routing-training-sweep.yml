@@ -1,11 +1,15 @@
 name: exp279-development-routing-training-sweep
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - exp279-confirmatory-gate-a
     paths:
       - .github/workflows/exp279-development-routing-training-sweep.yml
+      - src/nolane_ai/experiments/exp279_paired_runner.py
+      - src/nolane_ai/experiments/matched_routing_arms.py
+      - tests/test_exp279_routing_gradient_isolation.py
 
 permissions:
   contents: read
