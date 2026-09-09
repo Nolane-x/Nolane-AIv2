@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
@@ -76,7 +77,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--freeze-commit-sha", required=True)
     parser.add_argument("--freeze-commit-timestamp-utc", required=True)
-    parser.add_argument("--checkpoint-seal-created-at-utc", required=True)
+    parser.add_argument(
+        "--checkpoint-seal-created-at-utc",
+        help=(
+            "optional deterministic TEST-ONLY/replay override; when omitted, Gate A "
+            "captures runtime UTC immediately after the trained checkpoint is validated"
+        ),
+    )
     parser.add_argument("--checkpoint-output", type=Path, required=True)
     parser.add_argument("--checkpoint-receipt-output", type=Path, required=True)
     parser.add_argument("--prep-output", type=Path, required=True)
@@ -172,6 +179,10 @@ def _require_valid(label: str, errors: list[str]) -> None:
         raise RuntimeError(f"invalid {label}: " + "; ".join(errors))
 
 
+def _runtime_utc() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     outputs = (
@@ -228,6 +239,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         if file_sha256(checkpoint_stage) != checkpoint_receipt.get("checkpoint_file_sha256"):
             raise RuntimeError("EXP-277 staged checkpoint SHA256 does not match its receipt")
 
+        checkpoint_seal_created_at_utc = (
+            args.checkpoint_seal_created_at_utc or _runtime_utc()
+        )
+
         prep = build_exp277_confirmatory_prep(
             experiment=_exp277(protocol),
             execution_artifact=execution,
@@ -254,7 +269,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             source_tree_digest=code_tree_digest,
             freeze_commit_sha=args.freeze_commit_sha,
             freeze_commit_timestamp_utc=args.freeze_commit_timestamp_utc,
-            checkpoint_seal_created_at_utc=args.checkpoint_seal_created_at_utc,
+            checkpoint_seal_created_at_utc=checkpoint_seal_created_at_utc,
             machinery_digests=machinery_digests,
         )
         _require_valid(
