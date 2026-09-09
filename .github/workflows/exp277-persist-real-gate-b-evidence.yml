@@ -16,14 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Prove persistence commit cannot alter frozen scientific source
         shell: bash
         run: |
           set -euo pipefail
           FREEZE_SHA=b449099f4a8ac5673a9bb55be6c735511ebd786d
-          test -z "$(git diff --name-only "$FREEZE_SHA" HEAD -- src scripts protocols/stage_a_v1.json protocols/stage_a_v1.sha256)"
+          git cat-file -e "$FREEZE_SHA^{commit}"
+          changed="$(git diff --name-only "$FREEZE_SHA" HEAD -- src scripts protocols/stage_a_v1.json protocols/stage_a_v1.sha256)"
+          test -z "$changed"
 
       - name: Verify immutable source artifact and ceremony metadata
         env:
@@ -221,7 +223,9 @@ jobs:
           assert summary['evidence_level'] == 'EV-E3'
           assert summary['decision'] == 'KILL_SUBSYSTEM'
           assert summary['scientific_evidence_eligible'] is True
-          assert summary['analysis_digest'] == analysis['analysis_digest']
+          assert summary['seal_digest'] == analysis['lineage']['seal_digest']
+          assert summary['beacon_receipt_digest'] == analysis['lineage']['beacon_receipt_digest']
+          assert summary['source_tree_digest'] == analysis['lineage']['source_tree_digest']
           assert summary['ceremony_sha'] == ceremony
           assert summary['scientific_baseline_sha'] == baseline
           PY
@@ -278,7 +282,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -z "$(git diff --name-only b449099f4a8ac5673a9bb55be6c735511ebd786d -- src scripts protocols/stage_a_v1.json protocols/stage_a_v1.sha256)"
+          FREEZE_SHA=b449099f4a8ac5673a9bb55be6c735511ebd786d
+          git cat-file -e "$FREEZE_SHA^{commit}"
+          changed="$(git diff --name-only "$FREEZE_SHA" HEAD -- src scripts protocols/stage_a_v1.json protocols/stage_a_v1.sha256)"
+          test -z "$changed"
           git status --short
 
       - name: Commit persisted evidence to feature branch
