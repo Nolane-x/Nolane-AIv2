@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: exp277-real-gate-b-${{ github.ref }}
+  group: exp277-real-gate-b-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 env:
@@ -349,7 +349,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          FREEZE_COMMIT_TIMESTAMP_UTC="$(git show -s --format=%cI "$BASELINE_SHA")"
+          FREEZE_COMMIT_TIMESTAMP_RAW="$(git show -s --format=%cI "$BASELINE_SHA")"
+          FREEZE_COMMIT_TIMESTAMP_UTC="$(FREEZE_COMMIT_TIMESTAMP_RAW="$FREEZE_COMMIT_TIMESTAMP_RAW" python - <<'PY'
+          from datetime import datetime, timezone
+          import os
+
+          raw = os.environ['FREEZE_COMMIT_TIMESTAMP_RAW']
+          normalized = datetime.fromisoformat(raw.replace('Z', '+00:00')).astimezone(timezone.utc)
+          print(normalized.isoformat().replace('+00:00', 'Z'))
+          PY
+          )"
           python scripts/prepare_exp277_confirmatory_gate_a.py \
             --execution /tmp/exp277-development.json \
             --registry /tmp/exp277-registry.json \
