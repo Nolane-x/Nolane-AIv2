@@ -1,0 +1,782 @@
+name: exp279-real-gate-b-ceremony
+
+on:
+  push:
+    branches: [exp279-real-gate-b-ceremony]
+    paths:
+      - .github/ceremony/exp279-real-gate-b-arm.json
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: exp279-real-gate-b-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PROTOCOL_SHA: c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440
+  CEREMONY_ID: EXP-279-REAL-GATE-B-2026-09-09
+  ARM_PATH: .github/ceremony/exp279-real-gate-b-arm.json
+  INFERENCE_MARKER_NAME: exp279-real-gate-b-inference-started-${{ github.sha }}
+  OUTCOME_NAME: exp279-real-gate-b-outcome-${{ github.sha }}
+  EVIDENCE_NAME: exp279-real-gate-b-evidence-${{ github.sha }}
+
+jobs:
+  ceremony:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate arm-only commit and frozen scientific scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          arm = json.loads(Path(os.environ['ARM_PATH']).read_text(encoding='utf-8'))
+          if arm.get('schema') != 'NLM-EXP-279-REAL-GATE-B-ARM-V1':
+              raise SystemExit(f"invalid EXP-279 arm schema: {arm!r}")
+          if arm.get('ceremony_id') != os.environ['CEREMONY_ID']:
+              raise SystemExit(f"invalid EXP-279 ceremony id: {arm!r}")
+          if arm.get('protocol_digest') != os.environ['PROTOCOL_SHA']:
+              raise SystemExit(f"invalid EXP-279 protocol identity in arm marker: {arm!r}")
+          if arm.get('armed') is not True:
+              raise SystemExit('EXP-279 scientific lane is not armed')
+          if os.environ.get('GITHUB_REF_NAME') != 'exp279-real-gate-b-ceremony':
+              raise SystemExit('EXP-279 ceremony must run only on the immutable ceremony branch')
+          baseline = arm.get('source_baseline_sha')
+          if not isinstance(baseline, str) or len(baseline) != 40:
+              raise SystemExit('EXP-279 source_baseline_sha missing or invalid')
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as fh:
+              fh.write(f'BASELINE_SHA={baseline}\n')
+          PY
+          test "${GITHUB_REF_NAME}" = "exp279-real-gate-b-ceremony"
+          PARENT_SHA="$(git rev-parse HEAD^)"
+          BASELINE_FROM_MARKER="$(python - <<'PY'
+          import json
+          from pathlib import Path
+          print(json.loads(Path('.github/ceremony/exp279-real-gate-b-arm.json').read_text())['source_baseline_sha'])
+          PY
+          )"
+          test "$PARENT_SHA" = "$BASELINE_FROM_MARKER"
+          mapfile -t changed < <(git diff --name-only "$BASELINE_FROM_MARKER" HEAD)
+          test "${#changed[@]}" -eq 1
+          test "${changed[0]}" = ".github/ceremony/exp279-real-gate-b-arm.json"
+          test -z "$(git diff --name-only "$BASELINE_FROM_MARKER" HEAD -- src scripts protocols/stage_a_v1.json protocols/stage_a_v1.sha256)"
+
+      - name: Reject replay after authoritative inference or outcome
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in "$INFERENCE_MARKER_NAME" "$OUTCOME_NAME"; do
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${name}&per_page=100" > /tmp/exp279-artifacts.json
+            python - "$name" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          name = sys.argv[1]
+          payload = json.loads(Path('/tmp/exp279-artifacts.json').read_text(encoding='utf-8'))
+          active = [
+              artifact for artifact in payload.get('artifacts', [])
+              if artifact.get('name') == name and not artifact.get('expired', False)
+          ]
+          if active:
+              raise SystemExit(f'authoritative EXP-279 artifact already exists for this exact arm SHA: {name}')
+          PY
+          done
+
+      - name: Require exact baseline normal and focused CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          wait_run() {
+            local workflow="$1"
+            local endpoint="$2"
+            local output="$3"
+            local state=""
+            for attempt in $(seq 1 120); do
+              gh api "$endpoint" > /tmp/exp279-ci-runs.json
+              state="$(python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = json.loads(Path('/tmp/exp279-ci-runs.json').read_text(encoding='utf-8'))
+          sha = os.environ['BASELINE_SHA']
+          runs = [
+              run for run in payload.get('workflow_runs', [])
+              if run.get('head_sha') == sha and run.get('event') == 'pull_request'
+          ]
+          if not runs:
+              print('WAIT')
+          else:
+              run = sorted(runs, key=lambda item: int(item['id']), reverse=True)[0]
+              if run.get('status') != 'completed':
+                  print('WAIT')
+              elif run.get('conclusion') != 'success':
+                  print(f"FAIL:{run['id']}:{run.get('conclusion')}")
+              else:
+                  print(f"RUN:{run['id']}")
+          PY
+          )"
+              case "$state" in
+                WAIT) sleep 15 ;;
+                FAIL:*) echo "exact baseline CI failed: $workflow $state" >&2; exit 1 ;;
+                RUN:*) printf '%s\n' "${state#RUN:}" > "$output"; return 0 ;;
+                *) echo "unexpected CI state: $state" >&2; exit 1 ;;
+              esac
+            done
+            echo "timed out waiting for exact baseline CI: $workflow" >&2
+            exit 1
+          }
+
+          wait_run "ci.yml" "/repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${BASELINE_SHA}&event=pull_request&per_page=20" /tmp/exp279-normal-ci-run-id.txt
+          wait_run "exp279-confirmatory-ci.yml" "/repos/${GITHUB_REPOSITORY}/actions/workflows/exp279-confirmatory-ci.yml/runs?head_sha=${BASELINE_SHA}&event=pull_request&per_page=20" /tmp/exp279-focused-ci-run-id.txt
+
+          normal_run="$(cat /tmp/exp279-normal-ci-run-id.txt)"
+          focused_run="$(cat /tmp/exp279-focused-ci-run-id.txt)"
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${normal_run}/jobs?per_page=100" > /tmp/exp279-normal-ci-jobs.json
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${focused_run}/jobs?per_page=100" > /tmp/exp279-focused-ci-jobs.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          normal = json.loads(Path('/tmp/exp279-normal-ci-jobs.json').read_text(encoding='utf-8'))
+          focused = json.loads(Path('/tmp/exp279-focused-ci-jobs.json').read_text(encoding='utf-8'))
+          normal_observed = {job.get('name'): job.get('conclusion') for job in normal.get('jobs', [])}
+          required_normal = ('core (3.11)', 'core (3.13)', 'model-smoke')
+          failed = [name for name in required_normal if normal_observed.get(name) != 'success']
+          if failed:
+              raise SystemExit(f'EXP-279 exact baseline normal CI court failed: {failed!r}; observed={normal_observed!r}')
+          focused_observed = {job.get('name'): job.get('conclusion') for job in focused.get('jobs', [])}
+          if focused_observed.get('contract') != 'success':
+              raise SystemExit(f"EXP-279 exact baseline focused CI court failed: observed={focused_observed!r}")
+          PY
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install frozen model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev,model]'
+
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+
+      - name: Capture scientific source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from nolane_ai.protocol.identity import file_sha256, source_tree_digest
+
+          protocol_digest = file_sha256('protocols/stage_a_v1.json')
+          if protocol_digest != os.environ['PROTOCOL_SHA']:
+              raise SystemExit(f'canonical Stage-A protocol drift: {protocol_digest}')
+          payload = {
+              'schema': 'NLM-EXP-279-REAL-GATE-B-SOURCE-IDENTITY-V1',
+              'ceremony_id': os.environ['CEREMONY_ID'],
+              'ceremony_sha': os.environ['GITHUB_SHA'],
+              'scientific_baseline_sha': os.environ['BASELINE_SHA'],
+              'protocol_digest': protocol_digest,
+              'source_tree_digest': source_tree_digest(Path.cwd()),
+              'normal_ci_run_id': int(Path('/tmp/exp279-normal-ci-run-id.txt').read_text().strip()),
+              'focused_ci_run_id': int(Path('/tmp/exp279-focused-ci-run-id.txt').read_text().strip()),
+          }
+          Path('/tmp/exp279-source-identity.json').write_text(
+              json.dumps(payload, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          print(json.dumps(payload, sort_keys=True))
+          PY
+
+      - name: Build fixed non-tiny EXP-279 DEVELOPMENT planning baseline
+        run: >-
+          python scripts/run_exp279_paired_dev.py
+          --root-seed 20260906-exp279-paired-dev
+          --d-model 64
+          --hidden-size 48
+          --target-parameters 500000
+          --route-threshold 0.5
+          --train-replicates 16
+          --eval-replicates 32
+          --eval-start-replicate 10000
+          --batch-size 8
+          --timesteps 4
+          --variables 6
+          --constraints 3
+          --noise-std 0.05
+          --lr 0.002
+          --weight-decay 0.0
+          --output /tmp/exp279-development.json
+          --registry-output /tmp/exp279-registry.json
+
+      - name: Preflight sample-size readiness without beacon
+        id: prep_state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          from nolane_ai.experiments.exp279_confirmatory_prep import (
+              build_exp279_confirmatory_prep,
+              validate_exp279_confirmatory_prep,
+          )
+          from nolane_ai.experiments.exp279_paired_runner import validate_exp279_paired_development
+          from nolane_ai.experiments.neural_arm_registry import validate_neural_arm_registry
+          from nolane_ai.protocol.identity import source_tree_digest
+
+          execution = json.loads(Path('/tmp/exp279-development.json').read_text(encoding='utf-8'))
+          registry = json.loads(Path('/tmp/exp279-registry.json').read_text(encoding='utf-8'))
+          errors = validate_exp279_paired_development(execution)
+          if errors:
+              raise SystemExit('invalid EXP-279 DEVELOPMENT execution: ' + '; '.join(errors))
+          errors = validate_neural_arm_registry(registry)
+          if errors:
+              raise SystemExit('invalid EXP-279 arm registry: ' + '; '.join(errors))
+          current_source = source_tree_digest(Path.cwd())
+          if execution.get('code_digest') != current_source:
+              raise SystemExit('EXP-279 DEVELOPMENT source-tree identity drift')
+
+          protocol = json.loads(Path('protocols/stage_a_v1.json').read_text(encoding='utf-8'))
+          experiment = next(
+              item for item in protocol.get('experiments', [])
+              if item.get('experiment_id') == 'EXP-279'
+          )
+          prep = build_exp279_confirmatory_prep(
+              experiment=experiment,
+              execution_artifact=execution,
+              arm_registry=registry,
+              analysis_code_digest=current_source,
+          )
+          errors = validate_exp279_confirmatory_prep(prep)
+          if errors:
+              raise SystemExit('invalid EXP-279 preflight prep: ' + '; '.join(errors))
+          status = prep.get('status')
+          allowed = {
+              'CONFIRMATORY_GATE_A_PREPARED',
+              'NOT_READY_SIMPLE_BLOCKED_MEAN_NONPOSITIVE',
+              'NOT_READY_VARIANCE_EXCEEDS_MAX_N',
+          }
+          if status not in allowed:
+              raise SystemExit(f'unexpected EXP-279 prep status: {status!r}')
+          Path('/tmp/exp279-preflight-prep.json').write_text(
+              json.dumps(prep, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as fh:
+              fh.write(f'status={status}\n')
+          print(json.dumps({
+              'status': status,
+              'confirmatory_n': (prep.get('sample_size_freeze') or {}).get('confirmatory_n'),
+              'unclamped_required_n': (prep.get('sample_size_freeze') or {}).get('unclamped_required_n'),
+              'confirmatory_data_consumed': prep.get('confirmatory_data_consumed'),
+              'challenge_materialized': prep.get('challenge_materialized'),
+          }, sort_keys=True))
+          PY
+
+      - name: Stage authoritative NOT_READY result
+        if: steps.prep_state.outputs.status != 'CONFIRMATORY_GATE_A_PREPARED'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/exp279-final-evidence
+          cp /tmp/exp279-development.json /tmp/exp279-final-evidence/development-planning-baseline.json
+          cp /tmp/exp279-registry.json /tmp/exp279-final-evidence/development-arm-registry.json
+          cp /tmp/exp279-preflight-prep.json /tmp/exp279-final-evidence/gate-a-preflight-prep.json
+          cp /tmp/exp279-source-identity.json /tmp/exp279-final-evidence/source-identity.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          prep = json.loads(Path('/tmp/exp279-preflight-prep.json').read_text(encoding='utf-8'))
+          source = json.loads(Path('/tmp/exp279-source-identity.json').read_text(encoding='utf-8'))
+          status = prep['status']
+          if status not in {
+              'NOT_READY_SIMPLE_BLOCKED_MEAN_NONPOSITIVE',
+              'NOT_READY_VARIANCE_EXCEEDS_MAX_N',
+          }:
+              raise SystemExit(f'not-ready staging received invalid status: {status}')
+          summary = {
+              'schema': 'NLM-EXP-279-REAL-GATE-B-CEREMONY-SUMMARY-V1',
+              'ceremony_id': os.environ['CEREMONY_ID'],
+              'ceremony_sha': os.environ['GITHUB_SHA'],
+              'scientific_baseline_sha': os.environ['BASELINE_SHA'],
+              'protocol_digest': source['protocol_digest'],
+              'source_tree_digest': source['source_tree_digest'],
+              'state': status,
+              'evidence_level': 'EV-E2',
+              'decision': 'UNVERIFIED',
+              'scientific_evidence_eligible': False,
+              'confirmatory_data_consumed': False,
+              'challenge_materialized': False,
+              'inference_started': False,
+              'confirmatory_n': (prep.get('sample_size_freeze') or {}).get('confirmatory_n'),
+              'unclamped_required_n': (prep.get('sample_size_freeze') or {}).get('unclamped_required_n'),
+              'primary_contrasts': (prep.get('frozen_analysis') or {}).get('primary_contrasts'),
+              'holm_family': {
+                  'familywise_alpha': (prep.get('frozen_analysis') or {}).get('familywise_alpha'),
+                  'step_down_thresholds': (prep.get('frozen_analysis') or {}).get('holm_step_down_thresholds'),
+              },
+              'protected_solution_rate': (prep.get('frozen_analysis') or {}).get('protected_solution_floor'),
+              'wall_energy_per_episode': {
+                  'measurement_status': 'UNAVAILABLE_ON_HOSTED_RUNNER',
+                  'value_joules': None,
+                  'reason': 'GitHub-hosted runner has no frozen calibrated physical joule backend',
+                  'used_for_decision': False,
+              },
+              'scope_boundary': 'Frozen EXP-279 propagation/branch/hybrid routing challenge family only; no integrated NLM or open-domain reasoning authority.',
+          }
+          Path('/tmp/exp279-final-evidence/ceremony-summary.json').write_text(
+              json.dumps(summary, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          PY
+          (cd /tmp/exp279-final-evidence && sha256sum $(find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | sort) > SHA256SUMS)
+
+      - name: Freeze real Gate A checkpoint and machinery before beacon
+        if: steps.prep_state.outputs.status == 'CONFIRMATORY_GATE_A_PREPARED'
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE_COMMIT_TIMESTAMP_RAW="$(git show -s --format=%cI "$BASELINE_SHA")"
+          FREEZE_COMMIT_TIMESTAMP_UTC="$(FREEZE_COMMIT_TIMESTAMP_RAW="$FREEZE_COMMIT_TIMESTAMP_RAW" python - <<'PY'
+          from datetime import datetime, timezone
+          import os
+
+          raw = os.environ['FREEZE_COMMIT_TIMESTAMP_RAW']
+          normalized = datetime.fromisoformat(raw.replace('Z', '+00:00')).astimezone(timezone.utc)
+          print(normalized.isoformat().replace('+00:00', 'Z'))
+          PY
+          )"
+          python scripts/prepare_exp279_confirmatory_gate_a.py \
+            --execution /tmp/exp279-development.json \
+            --registry /tmp/exp279-registry.json \
+            --freeze-commit-sha "$BASELINE_SHA" \
+            --freeze-commit-timestamp-utc "$FREEZE_COMMIT_TIMESTAMP_UTC" \
+            --checkpoint-output /tmp/exp279-checkpoint.pt \
+            --checkpoint-receipt-output /tmp/exp279-checkpoint-receipt.json \
+            --prep-output /tmp/exp279-gate-a-prep.json \
+            --authorization-output /tmp/exp279-gate-a-authorization.json \
+            --seal-output /tmp/exp279-gate-a-seal.json \
+            --reconstruction-output /tmp/exp279-reconstruction-authorization.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from nolane_ai.experiments.exp279_checkpoint import validate_exp279_checkpoint_receipt
+          from nolane_ai.experiments.exp279_confirmatory_authorization import validate_exp279_gate_a_seal
+          from nolane_ai.experiments.exp279_reconstruction_court import validate_exp279_reconstruction_authorization
+
+          preflight = json.loads(Path('/tmp/exp279-preflight-prep.json').read_text())
+          prep = json.loads(Path('/tmp/exp279-gate-a-prep.json').read_text())
+          seal = json.loads(Path('/tmp/exp279-gate-a-seal.json').read_text())
+          reconstruction = json.loads(Path('/tmp/exp279-reconstruction-authorization.json').read_text())
+          receipt = json.loads(Path('/tmp/exp279-checkpoint-receipt.json').read_text())
+          if preflight.get('prep_digest') != prep.get('prep_digest'):
+              raise SystemExit('EXP-279 Gate A prep differs from preflight sample-size freeze')
+          errors = validate_exp279_checkpoint_receipt(receipt)
+          if errors:
+              raise SystemExit('EXP-279 checkpoint receipt failed validation: ' + '; '.join(errors))
+          errors = validate_exp279_gate_a_seal(seal)
+          if errors:
+              raise SystemExit('EXP-279 Gate A seal failed validation: ' + '; '.join(errors))
+          errors = validate_exp279_reconstruction_authorization(reconstruction)
+          if errors:
+              raise SystemExit('EXP-279 reconstruction authorization failed validation: ' + '; '.join(errors))
+          if seal.get('evidence_level') != 'EV-E2' or seal.get('decision') != 'UNVERIFIED':
+              raise SystemExit('EXP-279 Gate A scientific boundary drift')
+          if seal.get('confirmatory_data_consumed') is not False or seal.get('challenge_materialized') is not False:
+              raise SystemExit('EXP-279 Gate A consumed challenge evidence')
+          PY
+
+      - name: Record first future public drand beacon after both freeze boundaries
+        if: steps.prep_state.outputs.status == 'CONFIRMATORY_GATE_A_PREPARED'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import json
+          import os
+          from pathlib import Path
+          import time
+          from urllib.request import Request, urlopen
+
+          from nolane_ai.experiments.exp279_beacon import SEED_RULE, validate_exp279_beacon_receipt
+          from nolane_ai.protocol.evidence import canonical_sha256
+
+          authorization = json.loads(Path('/tmp/exp279-gate-a-authorization.json').read_text(encoding='utf-8'))
+          freeze_commit_timestamp_utc = authorization['freeze_commit_timestamp_utc']
+          checkpoint_seal_created_at_utc = authorization['checkpoint_seal_created_at_utc']
+
+          def parse_utc(value: str) -> datetime:
+              return datetime.fromisoformat(value.replace('Z', '+00:00')).astimezone(timezone.utc)
+
+          boundary = max(
+              parse_utc(freeze_commit_timestamp_utc),
+              parse_utc(checkpoint_seal_created_at_utc),
+          )
+
+          def fetch_json(url: str) -> dict:
+              last = None
+              for attempt in range(5):
+                  try:
+                      request = Request(url, headers={'User-Agent': 'Nolane-AIv2-EXP279-GateB/1.0'})
+                      with urlopen(request, timeout=20) as response:
+                          payload = json.loads(response.read().decode('utf-8'))
+                      if not isinstance(payload, dict):
+                          raise RuntimeError(f'non-object JSON from {url}')
+                      return payload
+                  except Exception as exc:
+                      last = exc
+                      if attempt != 4:
+                          time.sleep(2 ** attempt)
+              raise RuntimeError(f'failed to fetch {url}: {last}')
+
+          info = fetch_json('https://api.drand.sh/info')
+          selected = None
+          for _ in range(60):
+              observed_at = datetime.now(timezone.utc)
+              candidate = fetch_json('https://api.drand.sh/public/latest')
+              round_id = int(candidate['round'])
+              published_unix = int(info['genesis_time']) + (round_id - 1) * int(info['period'])
+              published = datetime.fromtimestamp(published_unix, timezone.utc)
+              if published > boundary:
+                  selected = (observed_at, candidate, round_id, published)
+                  break
+              time.sleep(2)
+          if selected is None:
+              raise RuntimeError('no drand round became strictly later than EXP-279 Gate A checkpoint seal')
+
+          observed_at, primary, round_id, published = selected
+          mirror_url = f'https://api2.drand.sh/public/{round_id}'
+          mirror = fetch_json(mirror_url)
+          for field in ('round', 'randomness', 'signature'):
+              if primary.get(field) != mirror.get(field):
+                  raise RuntimeError(f'drand primary/mirror mismatch for {field}')
+
+          chain_hash = str(info.get('hash', 'unknown'))
+          primary_url = f'https://api.drand.sh/public/{round_id}'
+          published_iso = published.isoformat().replace('+00:00', 'Z')
+          receipt = {
+              'schema': 'NLM-EXP-279-PUBLIC-BEACON-RECEIPT-V1',
+              'experiment_id': 'EXP-279',
+              'source': 'drand-public-http-cross-recorded',
+              'beacon_id': f'drand:{chain_hash}:{round_id}',
+              'published_at_utc': published_iso,
+              'entropy_hex': str(primary['randomness']).lower(),
+              'evidence_reference': f'{primary_url};{mirror_url};chain={chain_hash}',
+              'test_only': False,
+              'scientific_evidence_eligible': True,
+              'authenticity_status': 'EXTERNAL_EVIDENCE_RECORDED',
+              'seed_rule': SEED_RULE,
+              'receipt_digest': '',
+          }
+          receipt['receipt_digest'] = canonical_sha256(
+              {key: value for key, value in receipt.items() if key != 'receipt_digest'}
+          )
+          errors = validate_exp279_beacon_receipt(
+              receipt,
+              freeze_commit_timestamp_utc=freeze_commit_timestamp_utc,
+              checkpoint_seal_created_at_utc=checkpoint_seal_created_at_utc,
+          )
+          if errors:
+              raise RuntimeError('invalid EXP-279 real beacon receipt: ' + '; '.join(errors))
+
+          external = {
+              'schema': 'NLM-EXP-279-PUBLIC-BEACON-EXTERNAL-EVIDENCE-V1',
+              'ceremony_sha': os.environ['GITHUB_SHA'],
+              'scientific_baseline_sha': os.environ['BASELINE_SHA'],
+              'observed_at_utc': observed_at.isoformat().replace('+00:00', 'Z'),
+              'freeze_commit_timestamp_utc': freeze_commit_timestamp_utc,
+              'checkpoint_seal_created_at_utc': checkpoint_seal_created_at_utc,
+              'primary_url': primary_url,
+              'mirror_url': mirror_url,
+              'chain_info_url': 'https://api.drand.sh/info',
+              'chain_info': info,
+              'primary_response': primary,
+              'mirror_response': mirror,
+              'signature_recorded': primary.get('signature'),
+              'cross_source_fields_checked': ['round', 'randomness', 'signature'],
+              'cryptographic_signature_verified_by_ceremony': False,
+              'authenticity_status': 'EXTERNAL_EVIDENCE_RECORDED',
+              'beacon_receipt_digest': receipt['receipt_digest'],
+          }
+          Path('/tmp/exp279-public-beacon-receipt.json').write_text(
+              json.dumps(receipt, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          Path('/tmp/exp279-public-beacon-external-evidence.json').write_text(
+              json.dumps(external, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          print(json.dumps({
+              'beacon_id': receipt['beacon_id'],
+              'published_at_utc': receipt['published_at_utc'],
+              'authenticity_status': receipt['authenticity_status'],
+              'receipt_digest': receipt['receipt_digest'],
+          }, sort_keys=True))
+          PY
+
+      - name: Materialize irreversible inference-start receipt
+        if: steps.prep_state.outputs.status == 'CONFIRMATORY_GATE_A_PREPARED'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          source = json.loads(Path('/tmp/exp279-source-identity.json').read_text())
+          seal = json.loads(Path('/tmp/exp279-gate-a-seal.json').read_text())
+          reconstruction = json.loads(Path('/tmp/exp279-reconstruction-authorization.json').read_text())
+          checkpoint = json.loads(Path('/tmp/exp279-checkpoint-receipt.json').read_text())
+          beacon = json.loads(Path('/tmp/exp279-public-beacon-receipt.json').read_text())
+          payload = {
+              'schema': 'NLM-EXP-279-REAL-GATE-B-INFERENCE-START-V1',
+              'ceremony_id': os.environ['CEREMONY_ID'],
+              'ceremony_sha': os.environ['GITHUB_SHA'],
+              'scientific_baseline_sha': os.environ['BASELINE_SHA'],
+              'protocol_digest': source['protocol_digest'],
+              'source_tree_digest': source['source_tree_digest'],
+              'seal_digest': seal['seal_digest'],
+              'reconstruction_digest': reconstruction['reconstruction_digest'],
+              'checkpoint_receipt_digest': checkpoint['receipt_digest'],
+              'checkpoint_scientific_identity_digest': checkpoint['scientific_identity_digest'],
+              'beacon_receipt_digest': beacon['receipt_digest'],
+              'confirmatory_n': reconstruction['confirmatory_n'],
+              'reserved_replicate_ids': reconstruction['reserved_replicate_ids'],
+              'stratum_schedule': reconstruction['stratum_schedule'],
+              'inference_started': True,
+              'challenge_materialized': False,
+          }
+          Path('/tmp/exp279-inference-started.json').write_text(
+              json.dumps(payload, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          PY
+
+      - name: Publish irreversible inference-start replay barrier
+        if: steps.prep_state.outputs.status == 'CONFIRMATORY_GATE_A_PREPARED'
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-real-gate-b-inference-started-${{ github.sha }}
+          path: /tmp/exp279-inference-started.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Execute frozen real Gate B once
+        id: gate_b
+        if: steps.prep_state.outputs.status == 'CONFIRMATORY_GATE_A_PREPARED'
+        continue-on-error: true
+        run: >-
+          python scripts/run_exp279_confirmatory_gate_b.py
+          --seal /tmp/exp279-gate-a-seal.json
+          --reconstruction /tmp/exp279-reconstruction-authorization.json
+          --beacon /tmp/exp279-public-beacon-receipt.json
+          --checkpoint /tmp/exp279-checkpoint.pt
+          --checkpoint-receipt /tmp/exp279-checkpoint-receipt.json
+          --arm-scientific-lane
+          --raw-output /tmp/exp279-confirmatory-raw.json
+          --analysis-output /tmp/exp279-confirmatory-analysis.json
+
+      - name: Stage authoritative post-inference outcome
+        if: ${{ always() && steps.prep_state.outputs.status == 'CONFIRMATORY_GATE_A_PREPARED' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f /tmp/exp279-inference-started.json ]; then
+            echo "EXP-279 inference barrier was never published; no outcome marker will be created"
+            exit 0
+          fi
+          mkdir -p /tmp/exp279-final-evidence
+          cp /tmp/exp279-development.json /tmp/exp279-final-evidence/development-planning-baseline.json
+          cp /tmp/exp279-registry.json /tmp/exp279-final-evidence/development-arm-registry.json
+          cp /tmp/exp279-source-identity.json /tmp/exp279-final-evidence/source-identity.json
+          cp /tmp/exp279-preflight-prep.json /tmp/exp279-final-evidence/gate-a-preflight-prep.json
+          cp /tmp/exp279-gate-a-prep.json /tmp/exp279-final-evidence/gate-a-prep.json
+          cp /tmp/exp279-checkpoint.pt /tmp/exp279-final-evidence/trained-checkpoint.pt
+          cp /tmp/exp279-checkpoint-receipt.json /tmp/exp279-final-evidence/checkpoint-receipt.json
+          cp /tmp/exp279-gate-a-authorization.json /tmp/exp279-final-evidence/gate-a-authorization.json
+          cp /tmp/exp279-gate-a-seal.json /tmp/exp279-final-evidence/gate-a-seal.json
+          cp /tmp/exp279-reconstruction-authorization.json /tmp/exp279-final-evidence/reconstruction-authorization.json
+          cp /tmp/exp279-public-beacon-receipt.json /tmp/exp279-final-evidence/public-beacon-receipt.json
+          cp /tmp/exp279-public-beacon-external-evidence.json /tmp/exp279-final-evidence/public-beacon-external-evidence.json
+          cp /tmp/exp279-inference-started.json /tmp/exp279-final-evidence/inference-start-receipt.json
+          test ! -f /tmp/exp279-confirmatory-raw.json || cp /tmp/exp279-confirmatory-raw.json /tmp/exp279-final-evidence/confirmatory-raw.json
+          test ! -f /tmp/exp279-confirmatory-analysis.json || cp /tmp/exp279-confirmatory-analysis.json /tmp/exp279-final-evidence/confirmatory-analysis.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          from nolane_ai.experiments.exp279_confirmatory_executor import validate_exp279_confirmatory_raw
+          from nolane_ai.experiments.exp279_confirmatory_analysis import validate_exp279_confirmatory_analysis
+
+          evidence = Path('/tmp/exp279-final-evidence')
+          source = json.loads((evidence / 'source-identity.json').read_text())
+          prep = json.loads((evidence / 'gate-a-prep.json').read_text())
+          seal = json.loads((evidence / 'gate-a-seal.json').read_text())
+          reconstruction = json.loads((evidence / 'reconstruction-authorization.json').read_text())
+          checkpoint_receipt = json.loads((evidence / 'checkpoint-receipt.json').read_text())
+          beacon = json.loads((evidence / 'public-beacon-receipt.json').read_text())
+
+          raw_path = evidence / 'confirmatory-raw.json'
+          analysis_path = evidence / 'confirmatory-analysis.json'
+          state = 'INVALID_RUN'
+          decision = 'INVALID_RUN'
+          evidence_level = 'EV-E2'
+          scientific_eligible = False
+          confirmatory_consumed = None
+          challenge_materialized = None
+          diagnostics = {}
+          primary_contrasts = None
+          holm_family = None
+          best_simple_selection = None
+          protected_solution_rate = None
+          wall_energy_per_episode = {
+              'stage_a_role': 'report-only',
+              'numeric_measurement': None,
+              'fabricated': False,
+              'decision_use': False,
+              'note': 'not measured by EXP-279 confirmatory executor; no numeric value fabricated',
+          }
+
+          if not raw_path.is_file():
+              diagnostics['integrity_errors'] = ['post-inference Gate B failed before a raw artifact was durably published']
+          else:
+              raw = json.loads(raw_path.read_text(encoding='utf-8'))
+              raw_errors = validate_exp279_confirmatory_raw(
+                  raw,
+                  checkpoint_path=evidence / 'trained-checkpoint.pt',
+                  checkpoint_receipt=checkpoint_receipt,
+              )
+              if raw_errors:
+                  diagnostics['integrity_errors'] = ['persisted raw validation failed: ' + '; '.join(raw_errors)]
+              elif raw.get('status') == 'INVALID_RUN' or raw.get('decision') == 'INVALID_RUN':
+                  state = 'INVALID_RUN'
+                  decision = 'INVALID_RUN'
+                  evidence_level = raw.get('evidence_level', 'EV-E2')
+                  scientific_eligible = False
+                  confirmatory_consumed = raw.get('confirmatory_data_consumed')
+                  challenge_materialized = raw.get('challenge_materialized')
+                  diagnostics['integrity_errors'] = raw.get('integrity_errors') or []
+              elif not analysis_path.is_file():
+                  evidence_level = raw.get('evidence_level', 'EV-E2')
+                  confirmatory_consumed = raw.get('confirmatory_data_consumed')
+                  challenge_materialized = raw.get('challenge_materialized')
+                  diagnostics['integrity_errors'] = ['raw evidence persisted, but frozen analysis did not produce an artifact']
+              else:
+                  analysis = json.loads(analysis_path.read_text(encoding='utf-8'))
+                  analysis_errors = validate_exp279_confirmatory_analysis(
+                      analysis,
+                      raw_artifact=raw,
+                      checkpoint_path=evidence / 'trained-checkpoint.pt',
+                      checkpoint_receipt=checkpoint_receipt,
+                  )
+                  if analysis_errors:
+                      evidence_level = raw.get('evidence_level', 'EV-E2')
+                      confirmatory_consumed = raw.get('confirmatory_data_consumed')
+                      challenge_materialized = raw.get('challenge_materialized')
+                      diagnostics['integrity_errors'] = ['analysis validation failed: ' + '; '.join(analysis_errors)]
+                  elif analysis.get('decision') not in {
+                      'PROMOTE_TO_NEXT_STAGE', 'HOLD_UNSTABLE', 'KILL_SUBSYSTEM'
+                  }:
+                      diagnostics['integrity_errors'] = [f"unexpected frozen scientific decision: {analysis.get('decision')!r}"]
+                  elif (
+                      analysis.get('evidence_level') != 'EV-E3'
+                      or analysis.get('decision_rule_executed') is not True
+                      or analysis.get('scientific_evidence_eligible') is not True
+                      or analysis.get('confirmatory_data_consumed') is not True
+                  ):
+                      diagnostics['integrity_errors'] = ['scientific analysis evidence boundary drift']
+                  else:
+                      state = 'EXECUTED_AND_ANALYZED'
+                      decision = analysis['decision']
+                      evidence_level = analysis['evidence_level']
+                      scientific_eligible = True
+                      confirmatory_consumed = analysis.get('confirmatory_data_consumed')
+                      challenge_materialized = analysis.get('challenge_materialized')
+                      primary_contrasts = analysis.get('contrasts')
+                      holm_family = analysis.get('holm_family')
+                      best_simple_selection = analysis.get('best_simple_selection')
+                      protected_solution_rate = analysis.get('protected_solution_rate')
+                      wall_energy_per_episode = analysis.get('wall_energy_per_episode')
+
+          summary = {
+              'schema': 'NLM-EXP-279-REAL-GATE-B-CEREMONY-SUMMARY-V1',
+              'ceremony_id': os.environ['CEREMONY_ID'],
+              'ceremony_sha': os.environ['GITHUB_SHA'],
+              'scientific_baseline_sha': os.environ['BASELINE_SHA'],
+              'protocol_digest': source['protocol_digest'],
+              'source_tree_digest': source['source_tree_digest'],
+              'state': state,
+              'evidence_level': evidence_level,
+              'decision': decision,
+              'scientific_evidence_eligible': scientific_eligible,
+              'confirmatory_data_consumed': confirmatory_consumed,
+              'challenge_materialized': challenge_materialized,
+              'inference_started': True,
+              'confirmatory_n': reconstruction.get('confirmatory_n'),
+              'reserved_replicate_ids': reconstruction.get('reserved_replicate_ids'),
+              'stratum_schedule': reconstruction.get('stratum_schedule'),
+              'prep_digest': prep.get('prep_digest'),
+              'seal_digest': seal.get('seal_digest'),
+              'checkpoint_receipt_digest': checkpoint_receipt.get('receipt_digest'),
+              'beacon_id': beacon.get('beacon_id'),
+              'beacon_receipt_digest': beacon.get('receipt_digest'),
+              'beacon_authenticity_status': beacon.get('authenticity_status'),
+              'primary_contrasts': primary_contrasts,
+              'holm_family': holm_family,
+              'best_simple_selection': best_simple_selection,
+              'protected_solution_rate': protected_solution_rate,
+              'wall_energy_per_episode': wall_energy_per_episode,
+              'diagnostics': diagnostics,
+              'scope_boundary': 'Frozen EXP-279 propagation/branch/hybrid routing challenge family only; no integrated NLM or open-domain reasoning authority.',
+          }
+          (evidence / 'ceremony-summary.json').write_text(
+              json.dumps(summary, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          print(json.dumps({
+              'state': state,
+              'decision': decision,
+              'evidence_level': evidence_level,
+              'confirmatory_n': reconstruction.get('confirmatory_n'),
+          }, sort_keys=True))
+          PY
+          (cd /tmp/exp279-final-evidence && sha256sum $(find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%f\n' | sort) > SHA256SUMS)
+
+      - name: Publish authoritative EXP-279 outcome marker
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-real-gate-b-outcome-${{ github.sha }}
+          path: /tmp/exp279-final-evidence/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish outcome-agnostic EXP-279 evidence bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-real-gate-b-evidence-${{ github.sha }}
+          path: /tmp/exp279-final-evidence/
+          if-no-files-found: error
+          retention-days: 90
