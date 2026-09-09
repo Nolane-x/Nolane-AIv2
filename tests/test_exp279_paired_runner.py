@@ -28,6 +28,18 @@ RUN_KWARGS = dict(
     code_digest="c" * 64,
 )
 
+EXPECTED_ROUTING_SUPERVISION = {
+    "loss": "binary_cross_entropy",
+    "weight": 1.0,
+    "episode_targets": {
+        "propagation_only": "arm_exact_failure",
+        "branch_only": "arm_exact_failure",
+        "hybrid": "propagation_stop_exact_failure",
+    },
+    "development_targets_used": True,
+    "evaluation_targets_used_for_routing": False,
+}
+
 
 def _run():
     from nolane_ai.experiments.exp279_paired_runner import run_exp279_paired_development
@@ -72,6 +84,7 @@ def test_exp279_paired_runner_closes_development_lineage_without_promotion() -> 
     assert artifact["route_config"] == {
         "strategy": "propagation_then_branch_on_residual_uncertainty",
         "threshold": 0.5,
+        "residual_statistic": "mean_predicted_episode_stop_failure_probability",
         "frozen_before_evaluation": True,
     }
     assert artifact["primary_endpoint"] == {
@@ -87,6 +100,7 @@ def test_exp279_paired_runner_closes_development_lineage_without_promotion() -> 
     assert training["replicates"] == 3
     assert training["strata"] == STRATA
     assert len(set(training["paired_batch_digests"])) == 3
+    assert training["routing_supervision"] == EXPECTED_ROUTING_SUPERVISION
 
     evaluation = artifact["evaluation"]
     assert evaluation["rng_stream"] == "evaluation"
@@ -117,36 +131,41 @@ def test_exp279_paired_runner_closes_development_lineage_without_promotion() -> 
     assert validate_exp279_paired_development(artifact) == []
 
 
-def test_exp279_hybrid_training_updates_routing_head() -> None:
+def test_exp279_training_updates_confidence_scorer_for_every_arm() -> None:
     from nolane_ai.experiments.exp279_paired_runner import _build_seeded_triplet, _train_step
 
-    _, _, hybrid, _ = _build_seeded_triplet(
+    propagation, branch, hybrid, _ = _build_seeded_triplet(
         root_seed="exp279-routing-gradient-test",
         d_model=8,
         hidden_size=6,
         target_parameters=5_000,
         route_threshold=0.5,
     )
-    optimizer = torch.optim.SGD(hybrid.parameters(), lr=0.05)
+    arms = {
+        "propagation_only": propagation,
+        "branch_only": branch,
+        "hybrid": hybrid,
+    }
     surface = torch.randn(2, 3, 8)
     variables = torch.randn(2, 4, 8)
     incidence = torch.ones(2, 2, 4)
     targets = torch.tensor([[0, 1, 0, 1], [1, 0, 1, 0]], dtype=torch.long)
 
-    before_weight = hybrid.routing_head.weight.detach().clone()
-    before_bias = hybrid.routing_head.bias.detach().clone()
-    _train_step(
-        hybrid,
-        optimizer,
-        arm_id="hybrid",
-        surface_events=surface,
-        variable_states=variables,
-        incidence=incidence,
-        targets=targets,
-    )
-
-    assert not torch.equal(hybrid.routing_head.weight.detach(), before_weight)
-    assert not torch.equal(hybrid.routing_head.bias.detach(), before_bias)
+    for arm_id, arm in arms.items():
+        optimizer = torch.optim.SGD(arm.parameters(), lr=0.05)
+        before_weight = arm.routing_head.weight.detach().clone()
+        before_bias = arm.routing_head.bias.detach().clone()
+        _train_step(
+            arm,
+            optimizer,
+            arm_id=arm_id,
+            surface_events=surface,
+            variable_states=variables,
+            incidence=incidence,
+            targets=targets,
+        )
+        assert not torch.equal(arm.routing_head.weight.detach(), before_weight)
+        assert not torch.equal(arm.routing_head.bias.detach(), before_bias)
 
 
 def test_exp279_runner_requires_all_predeclared_strata_and_disjoint_lineage() -> None:
@@ -190,6 +209,14 @@ def test_exp279_validator_rejects_semantic_tamper_even_after_rehash() -> None:
 
     bad = deepcopy(original)
     bad["route_config"]["threshold"] = 0.25
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    bad["route_config"]["residual_statistic"] = "entropy_proxy"
+    mutations.append(bad)
+
+    bad = deepcopy(original)
+    bad["training"]["routing_supervision"]["weight"] = 0.0
     mutations.append(bad)
 
     bad = deepcopy(original)
