@@ -6,12 +6,14 @@ from hashlib import sha256
 from typing import Any
 
 from nolane_ai.protocol.evidence import canonical_sha256
-from .exp279_routing_worlds import STRATA
 
 
 SCHEMA = "NLM-EXP-279-PUBLIC-BEACON-RECEIPT-V1"
 EXPERIMENT_ID = "EXP-279"
 CHALLENGE_STREAM = "challenge"
+# Keep the public-beacon/seed court importable in the core (non-model) runtime.
+# The same predeclared schedule is independently sealed and validated by Gate A.
+STRATA = ("PROPAGATION_FIT", "BRANCH_FIT", "MIXED_RESIDUAL")
 SEED_RULE = (
     "SHA256(protocol_digest|beacon_receipt_digest|EXP-279|challenge|replicate|stratum)"
 )
