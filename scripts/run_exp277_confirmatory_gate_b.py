@@ -188,6 +188,14 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     current_source = source_tree_digest(ROOT)
     executor_code_digest = _sealed_executor_digest(seal)
+
+    def publish_raw(raw: dict[str, Any]) -> None:
+        # Once inference has produced a validated raw artifact it becomes the
+        # durable first-valid-attempt record. Analysis is deliberately a later
+        # publication boundary and cannot erase this evidence.
+        _preflight_outputs((args.raw_output,))
+        _commit_outputs(((args.raw_output, raw),))
+
     ceremony = execute_exp277_gate_b_ceremony(
         seal=seal,
         reconstruction_authorization=reconstruction,
@@ -198,6 +206,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         executor_code_digest=executor_code_digest,
         test_only=bool(args.test_only),
         arm_scientific_lane=bool(args.arm_scientific_lane),
+        raw_publisher=publish_raw,
     )
     ceremony_errors = validate_exp277_gate_b_ceremony(
         ceremony,
@@ -211,8 +220,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     raw = ceremony["raw"]
     analysis = ceremony["analysis"]
-    _preflight_outputs(outputs)
-    _commit_outputs(((args.raw_output, raw), (args.analysis_output, analysis)))
+    persisted_raw = _load_json(args.raw_output, label="persisted EXP-277 raw evidence")
+    if persisted_raw.get("artifact_digest") != raw.get("artifact_digest") or persisted_raw != raw:
+        raise RuntimeError("persisted EXP-277 raw evidence differs from analyzed raw artifact")
+    _preflight_outputs((args.analysis_output,))
+    _commit_outputs(((args.analysis_output, analysis),))
 
     print(
         json.dumps(
