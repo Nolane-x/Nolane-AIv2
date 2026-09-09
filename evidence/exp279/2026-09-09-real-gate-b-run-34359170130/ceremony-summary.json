@@ -1,0 +1,36 @@
+{
+  "ceremony_id": "EXP-279-REAL-GATE-B-2026-09-09",
+  "ceremony_sha": "f0faf3c47674df3933e62fe7f4e6bdd1aa79805f",
+  "challenge_materialized": false,
+  "confirmatory_data_consumed": false,
+  "confirmatory_n": null,
+  "decision": "UNVERIFIED",
+  "evidence_level": "EV-E2",
+  "holm_family": {
+    "familywise_alpha": 0.05,
+    "step_down_thresholds": [
+      0.025,
+      0.05
+    ]
+  },
+  "inference_started": false,
+  "primary_contrasts": [
+    "hybrid_vs_propagation_only",
+    "hybrid_vs_branch_only"
+  ],
+  "protected_solution_rate": "hybrid >= best_simple - 0.01",
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "schema": "NLM-EXP-279-REAL-GATE-B-CEREMONY-SUMMARY-V1",
+  "scientific_baseline_sha": "2d8532371f05798d2d8be5fb19731503192363e0",
+  "scientific_evidence_eligible": false,
+  "scope_boundary": "Frozen EXP-279 propagation/branch/hybrid routing challenge family only; no integrated NLM or open-domain reasoning authority.",
+  "source_tree_digest": "157ec83aced2462aa64ae1b26e27ba16302931ddad2114d32998babb50fd8b5f",
+  "state": "NOT_READY_VARIANCE_EXCEEDS_MAX_N",
+  "unclamped_required_n": 286,
+  "wall_energy_per_episode": {
+    "measurement_status": "UNAVAILABLE_ON_HOSTED_RUNNER",
+    "reason": "GitHub-hosted runner has no frozen calibrated physical joule backend",
+    "used_for_decision": false,
+    "value_joules": null
+  }
+}
