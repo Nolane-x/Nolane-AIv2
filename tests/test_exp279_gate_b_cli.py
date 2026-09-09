@@ -44,6 +44,30 @@ def _inputs(tmp_path: Path) -> tuple[dict, dict[str, Path]]:
     return fixture, paths
 
 
+def _bind_synthetic_fixture_identity(
+    module,
+    fixture: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    source_tree_digest: str | None = None,
+) -> None:
+    # Unit fixtures intentionally use synthetic protocol/source identities. The
+    # CLI's real canonical protocol court is tested separately below; these
+    # persistence tests bind the synthetic fixture lineage so execution can
+    # reach the raw-before-analysis boundary they are designed to exercise.
+    monkeypatch.setattr(
+        module,
+        "_verified_protocol",
+        lambda _protocol, _digest: fixture["reconstruction"]["protocol_digest"],
+    )
+    effective_source = (
+        fixture["reconstruction"]["source_tree_digest"]
+        if source_tree_digest is None
+        else source_tree_digest
+    )
+    monkeypatch.setattr(module, "source_tree_digest", lambda _root: effective_source)
+
+
 def _args(
     *,
     fixture: dict,
@@ -65,8 +89,11 @@ def _args(
     ]
 
 
-def test_exp279_gate_b_cli_surface_is_explicit_mutually_exclusive_and_seedless() -> None:
+def test_exp279_gate_b_cli_surface_is_explicit_mutually_exclusive_seedless_and_canonical() -> None:
     module = _load_gate_b("exp279_gate_b_cli_surface")
+
+    expected_protocol_digest = PROTOCOL_DIGEST.read_text(encoding="utf-8").strip()
+    assert module._verified_protocol(PROTOCOL, PROTOCOL_DIGEST) == expected_protocol_digest
 
     with pytest.raises(SystemExit, match="unrecognized arguments"):
         module.parse_args(["--seed", "123"])
@@ -117,11 +144,7 @@ def test_exp279_gate_b_cli_persists_valid_test_only_raw_then_analysis(
     raw_path = tmp_path / "raw.json"
     analysis_path = tmp_path / "analysis.json"
     module = _load_gate_b("exp279_gate_b_cli_valid")
-    monkeypatch.setattr(
-        module,
-        "source_tree_digest",
-        lambda _root: fixture["reconstruction"]["source_tree_digest"],
-    )
+    _bind_synthetic_fixture_identity(module, fixture, monkeypatch)
 
     assert module.main(
         _args(
@@ -172,7 +195,12 @@ def test_exp279_gate_b_cli_persists_invalid_raw_and_never_analysis(
     raw_path = tmp_path / "invalid-raw.json"
     analysis_path = tmp_path / "invalid-analysis.json"
     module = _load_gate_b("exp279_gate_b_cli_invalid")
-    monkeypatch.setattr(module, "source_tree_digest", lambda _root: "9" * 64)
+    _bind_synthetic_fixture_identity(
+        module,
+        fixture,
+        monkeypatch,
+        source_tree_digest="9" * 64,
+    )
 
     with pytest.raises(RuntimeError, match="INVALID_RUN"):
         module.main(
@@ -212,11 +240,7 @@ def test_exp279_gate_b_cli_keeps_raw_when_analysis_fails(
     raw_path = tmp_path / "raw-before-analysis.json"
     analysis_path = tmp_path / "analysis-never-written.json"
     module = _load_gate_b("exp279_gate_b_cli_analysis_failure")
-    monkeypatch.setattr(
-        module,
-        "source_tree_digest",
-        lambda _root: fixture["reconstruction"]["source_tree_digest"],
-    )
+    _bind_synthetic_fixture_identity(module, fixture, monkeypatch)
 
     def fail_analysis(**_kwargs):
         raise RuntimeError("analysis sentinel failure")
