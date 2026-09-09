@@ -86,6 +86,17 @@ def test_exp277_real_gate_a_precedes_future_public_beacon_and_uses_runtime_seal_
     assert "False" in text or "false" in text
 
 
+def test_exp277_real_gate_a_normalizes_git_commit_time_to_utc_before_sealing() -> None:
+    text = _workflow_text()
+    start = text.index("- name: Freeze real Gate A checkpoint and machinery before beacon")
+    end = text.index("- name: Record first future public drand beacon after both freeze boundaries")
+    block = text[start:end]
+    assert "git show -s --format=%cI" in block
+    assert "datetime.fromisoformat" in block
+    assert "astimezone(timezone.utc)" in block
+    assert "replace('+00:00', 'Z')" in block
+
+
 def test_exp277_real_gate_b_writes_inference_marker_before_scientific_cli() -> None:
     text = _workflow_text()
     marker = "exp277-real-gate-b-inference-started-${{ github.sha }}"
