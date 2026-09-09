@@ -1,0 +1,67 @@
+{
+  "arcs_branch_final_digest": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+  "checkpoint_file_sha256": "383f1715702743e8ca9ec77a3a7744731e287ae15496c96c62ff1a63f033c7a3",
+  "decision": "UNVERIFIED",
+  "evidence_level": "EV-E2",
+  "execution_contract": {
+    "arm_geometry": {
+      "d_model": 64,
+      "hidden_size": 48,
+      "target_parameters": 500000
+    },
+    "declared_max_accounted_flops_per_episode": 207192,
+    "development_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+    "development_final_state": {
+      "arcs_branch_digest": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+      "oracle_cbrf_digest": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+    },
+    "model_init_seed": 8673022444806698961,
+    "optimizer": {
+      "lr": 0.002,
+      "type": "AdamW",
+      "weight_decay": 0.0
+    },
+    "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+    "root_seed": "20260906-exp277-paired-dev",
+    "train_replicates": 16,
+    "training_lineage": {
+      "paired_batch_digests": [
+        "619213754382c0ab5e22867e8f3b15bc8f91a78704cad31d3302cc73ffb74730",
+        "971932fd7855fc6ad351e060b78d07b15479cf33697e2dcbee04a54da147e0ac",
+        "d962f0e9b9ac3196b3bd3ce03abfb54816cbcdbf21923e10d10971fc113e8ae8",
+        "51b210dd6d86ae14e944f622f69b21ab7e08aa04f8a763ef578a6a0416900468",
+        "b4ddb9654258733433a62ef8cc1f4d78a95637dd16c4d11bdf5b106e901612de",
+        "f308fd6aa0bd17d64594399990081b7de1cb608edc40c04afd582896d0b7bde0",
+        "783f0c13ac8dd485d7912d86dcd3ae10a30e160bce1920e55993f2fbb7f1539b",
+        "31837bc49ce13a15c488530641fc9854f873f3126ff29fdd979a7e026305b642",
+        "2dc88f417e033c4182a481c515bc603b171ec1e0226726ece89fb6609eef17d3",
+        "63eacbdac8c27aa1263ffc8ad2e243c0f0ab871b78fc552f7e0b6ce909a95f0b",
+        "eb992c8aa96a15b8db429811cf580ce4471a71b24fbca82473d0b93f073a3d38",
+        "81e4008977e910978b6bea777404272868d239d84453b333f1f1491f2eca74cb",
+        "ddfa3ea36df2ec15a15e36b80c5aacf55185b41b621fb98f478fd85ba17575b9",
+        "5945ca21f6a9c59d62d753486991db7f146848d6bf5552f253c7f1a29debc32c",
+        "9fa87c8ef191f5780f1770cec334eb3d92532f5ddcbcdee0bdcb2d3463a03a85",
+        "99d1a494528b0c5c391feb1ef0d24643c5c32b08a1fd6affdbfa4569f8d596f3"
+      ],
+      "replicates": 16,
+      "rng_stream": "augmentation",
+      "start_replicate": 0
+    },
+    "world_geometry": {
+      "batch_size": 8,
+      "constraints": 3,
+      "d_model": 64,
+      "noise_std": 0.05,
+      "timesteps": 4,
+      "variables": 6
+    }
+  },
+  "execution_contract_digest": "cdc723e44a122603916499ce7750421292e5005b3ad9499c114871062cb6c863",
+  "experiment_id": "EXP-277",
+  "oracle_cbrf_final_digest": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b",
+  "receipt_digest": "1f5af2137c7270da68a05f405d0fad4f3d28cf8a009b59527f3684f45ffe3ee6",
+  "schema": "NLM-EXP-277-TRAINED-CHECKPOINT-V1",
+  "scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+  "state_policy": "functional-only",
+  "training_replay_verified": true
+}

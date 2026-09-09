@@ -1,0 +1,6899 @@
+{
+  "artifact_digest": "f3f84f2c4f3266cdf8db48bc0c055da955149272de1ea9accc3e86575f0e399b",
+  "beacon_receipt": {
+    "authenticity_status": "EXTERNAL_EVIDENCE_RECORDED",
+    "beacon_id": "drand:8990e7a9aaed2ffed73dbd7092123d6f289930540d7651336225dc172e51b2ce:6450263",
+    "entropy_hex": "2fc158476c1c8199cb5efd212827935fa33acba9ca7ee6e7e722db3b2d0f91d6",
+    "evidence_reference": "https://api.drand.sh/public/6450263;https://api2.drand.sh/public/6450263;chain=8990e7a9aaed2ffed73dbd7092123d6f289930540d7651336225dc172e51b2ce",
+    "experiment_id": "EXP-277",
+    "published_at_utc": "2026-09-09T07:28:30Z",
+    "receipt_digest": "ebb7556330f27f446aeb2e2bc065a79b41f3af09c41c9594bab56808cac6e7b3",
+    "schema": "NLM-EXP-277-PUBLIC-BEACON-RECEIPT-V1",
+    "scientific_evidence_eligible": true,
+    "source": "drand-public-http-cross-recorded",
+    "test_only": false
+  },
+  "challenge_materialized": true,
+  "challenge_stream": "challenge",
+  "confirmatory_data_consumed": true,
+  "confirmatory_n": 32,
+  "current_source_tree_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+  "decision": "UNVERIFIED",
+  "decision_rule_executed": false,
+  "evidence_level": "EV-E2",
+  "executor_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+  "experiment_id": "EXP-277",
+  "integrity_errors": [],
+  "lineage": {
+    "beacon_receipt_digest": "ebb7556330f27f446aeb2e2bc065a79b41f3af09c41c9594bab56808cac6e7b3",
+    "checkpoint_receipt_digest": "1f5af2137c7270da68a05f405d0fad4f3d28cf8a009b59527f3684f45ffe3ee6",
+    "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+    "executor_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+    "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+    "reconstruction_digest": "210d16fee3e61901035339dd56f94037bb61d0ece894f0adbbc83021b79e463b",
+    "seal_digest": "d79ae1d6b902b07137d0309041727263ce93c24dc4984704120fa51b996704bd",
+    "source_tree_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900"
+  },
+  "per_replicate": [
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4708528220653534,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.6666666865348816,
+        "verified_solution_rate": 0.375,
+        "verified_utility_per_accounted_flop": 1.8099154407506081e-06
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "653438a6a7bebe3dfd262cb7775829a7d1233993dc9425271a7d8b2c44a181a6",
+      "challenge_seed": 3074439412324043563,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46235179901123047,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.6666666865348816,
+        "verified_solution_rate": 0.375,
+        "verified_utility_per_accounted_flop": 1.9136558481322717e-06
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 1.0374040738166362e-07,
+        "world_pairing_closed": true
+      },
+      "replicate": 10032,
+      "replicate_ordinal": 0,
+      "row_digest": "fb7bd989238192691c642d23f6655c07e1cd3f56999b3562bb68ee253d9cfc5b",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4701707363128662,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.033051469168694e-07
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "ac066d1f8339d82607af5d67f87a2701e0a70b0c6a7a850bd48910b493c1d90e",
+      "challenge_seed": 4542875683025153883,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46349963545799255,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.378852827107572e-07
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 3.458013579388787e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10033,
+      "replicate_ordinal": 1,
+      "row_digest": "a95f0dc0d63986cbd80c2df8ffa42e93b010ec9aa8aef38e1754f6e60a77c6a7",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.47125276923179626,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5833333134651184,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.033051469168694e-07
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "d59dfac95a95a9588260435100c3b3b1270eee7c31ef7a1105b4856bdbd67d9d",
+      "challenge_seed": 7927731251119426756,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4646719694137573,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5833333134651184,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.378852827107572e-07
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 3.458013579388787e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10034,
+      "replicate_ordinal": 2,
+      "row_digest": "6a83c4511bb6cb93493a1eac8b245ad5a56630b47f7f81d674931ccf4d7655ad",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46981823444366455,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.6666666865348816,
+        "verified_solution_rate": 0.25,
+        "verified_utility_per_accounted_flop": 1.2066102938337387e-06
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "5b4b11e434df33eaf3af7b88c4f407a60155f74f9dc618d725c670eec2f66153",
+      "challenge_seed": 17117177004800967894,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4631013572216034,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.6666666865348816,
+        "verified_solution_rate": 0.25,
+        "verified_utility_per_accounted_flop": 1.2757705654215145e-06
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 6.916027158777575e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10035,
+      "replicate_ordinal": 3,
+      "row_digest": "1f37df69c761f29c0b3ce5cc52b9d3ebbeb721f46355f69cfa31e983cb62bc71",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4712192714214325,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.375,
+        "verified_utility_per_accounted_flop": 1.8099154407506081e-06
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "3428729aeaf7a1d9f28546a70d57736aa89032cd2deebc46dff868a6d1edb63d",
+      "challenge_seed": 17485965077113732854,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46351495385169983,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.375,
+        "verified_utility_per_accounted_flop": 1.9136558481322717e-06
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 1.0374040738166362e-07,
+        "world_pairing_closed": true
+      },
+      "replicate": 10036,
+      "replicate_ordinal": 4,
+      "row_digest": "b5e25d6f052f493e4db85ba7ee52d70794560194fb553b1eb71e2f9071397cd7",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.47106707096099854,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.4166666567325592,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "437bee233b36578f7b56e76b871b6daf0347b6c7e43b36803cee01653de714ea",
+      "challenge_seed": 13255387919847404471,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46363139152526855,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.4166666567325592,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": false,
+        "relative_utility_gain": null,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 0.0,
+        "world_pairing_closed": true
+      },
+      "replicate": 10037,
+      "replicate_ordinal": 5,
+      "row_digest": "0f791fec574fecc9e00fbcabc7c40b6b72ee53cf0e269bb4927756f43381072d",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4731902778148651,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.033051469168694e-07
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "f1045267e85d848fe96b6edcf4de06314d4702b4e900fb3a0ea430e4bebd67d9",
+      "challenge_seed": 2412443580952439236,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4660484790802002,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.378852827107572e-07
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 3.458013579388787e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10038,
+      "replicate_ordinal": 6,
+      "row_digest": "4a264dc9a208a9675f54ab7d713842bb75fffda48d40d8e654ad15d8c9282cc7",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4712742269039154,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.375,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "505ef6e34253a29a83b66fcad26b5ca8c23c16924fdad782d5a826d529a04d37",
+      "challenge_seed": 3387197629639452062,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4649033546447754,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.375,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": false,
+        "relative_utility_gain": null,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 0.0,
+        "world_pairing_closed": true
+      },
+      "replicate": 10039,
+      "replicate_ordinal": 7,
+      "row_digest": "dcc06bcfa0ed483d964b6b4d3a58115f059a0e34d1a1f36488631bfe015f4659",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4727679193019867,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.033051469168694e-07
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "5256432f90c18240f0e0e5c2c9f419f09c63d1486d46c5853af87499974eab9d",
+      "challenge_seed": 15841263469409465299,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46564921736717224,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.378852827107572e-07
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 3.458013579388787e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10040,
+      "replicate_ordinal": 8,
+      "row_digest": "8af717f6abf1f0c727b92476e8c6b0e49508502afd3c9768c8c7460209545f60",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4702627658843994,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.033051469168694e-07
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "9a6b29a291eab25c371dfd5902c247aa53977313663e4a124af58d18d7072ba3",
+      "challenge_seed": 11300911890034941912,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46456632018089294,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.378852827107572e-07
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 3.458013579388787e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10041,
+      "replicate_ordinal": 9,
+      "row_digest": "14b1933798083d67d017004af369a8fbab4a6946b826620b1b3acda50197cd47",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.47079864144325256,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.625,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.033051469168694e-07
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "a73dec7acb046df616abcdf45d4965a45833e851b68c4b08874035c00492baa2",
+      "challenge_seed": 14638077475997392137,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4643642008304596,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.625,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.378852827107572e-07
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 3.458013579388787e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10042,
+      "replicate_ordinal": 10,
+      "row_digest": "e9c5ddbbd30ad66c4cde5c65e3fcd118945969ead23df3b8866249e4e20048dc",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46975448727607727,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.4583333432674408,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "211f5154144d33531b7556dab5de2c9a5e4309d0a6583974c6b21b9282b3d92c",
+      "challenge_seed": 14459524640896384681,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4625173807144165,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.4583333432674408,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": false,
+        "relative_utility_gain": null,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 0.0,
+        "world_pairing_closed": true
+      },
+      "replicate": 10043,
+      "replicate_ordinal": 11,
+      "row_digest": "563eb98ceca2ff38fd46ddf797f977b3b934e538f9e8a8b4b883a17f01c9ed0b",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.47064635157585144,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.4166666567325592,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.033051469168694e-07
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "b0b10b1b2bb327993ee9362c951f6401b8dfcb0e37e41b4b2a51c15da75ff48e",
+      "challenge_seed": 1513022329364459670,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46429768204689026,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.4166666567325592,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.378852827107572e-07
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 3.458013579388787e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10044,
+      "replicate_ordinal": 12,
+      "row_digest": "9ff8a2ebc5c51ea44c00a20f110746c6af836e6b9712beb213b9958e8ad139df",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4730090796947479,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.7083333134651184,
+        "verified_solution_rate": 0.25,
+        "verified_utility_per_accounted_flop": 1.2066102938337387e-06
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "cc22b536176679c55280a35bb55213739210db2be925570d2d61299804c77e11",
+      "challenge_seed": 8756670797350542760,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4681945741176605,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.7083333134651184,
+        "verified_solution_rate": 0.25,
+        "verified_utility_per_accounted_flop": 1.2757705654215145e-06
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 6.916027158777575e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10045,
+      "replicate_ordinal": 13,
+      "row_digest": "58e23b5899f316f84d37dd2a5f4e0c0ebdd159df04938fd730b78be7564a0ca1",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4714283049106598,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.4583333432674408,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "8474e79aad219839045ff9a60d5d461521399ee5d50e71d9de7d4fa7e5dba80b",
+      "challenge_seed": 6594354403430919058,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4660065174102783,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.4583333432674408,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": false,
+        "relative_utility_gain": null,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 0.0,
+        "world_pairing_closed": true
+      },
+      "replicate": 10046,
+      "replicate_ordinal": 14,
+      "row_digest": "28501252f4ffb081acc35dddab207801ef451c3f853660fb66c93c6f7791f9d5",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4723961353302002,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.2916666567325592,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "ef564bb83df593932162e70fc23a872455be5e7a1a7b74185e764faf5bd13532",
+      "challenge_seed": 10989957931431559167,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4637661874294281,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.2916666567325592,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": false,
+        "relative_utility_gain": null,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 0.0,
+        "world_pairing_closed": true
+      },
+      "replicate": 10047,
+      "replicate_ordinal": 15,
+      "row_digest": "6c9ba76b7a1dc638bb7a0ab709f244d41f1a7e99ab285e220ebef04bb7ff1408",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4688931405544281,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.033051469168694e-07
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "4318d227d0e2b108abd7d94885931cebff59563945f38222b96d7dcc699e49a7",
+      "challenge_seed": 11866435895093070300,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46145713329315186,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.378852827107572e-07
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 3.458013579388787e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10048,
+      "replicate_ordinal": 16,
+      "row_digest": "098aace58d1e07a1aa6b3779918c31fe18713b8d736cd6f6d76a2021db95e250",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4707004725933075,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.4166666567325592,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "5ad26b99947661e03041c27dd1352eb72755e36c9bf6fae69932880c5de9abe7",
+      "challenge_seed": 6131326982293151603,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.464033842086792,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.4166666567325592,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": false,
+        "relative_utility_gain": null,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 0.0,
+        "world_pairing_closed": true
+      },
+      "replicate": 10049,
+      "replicate_ordinal": 17,
+      "row_digest": "daf3b46dae35adb9eced78985e5d6a13496b2c87f4333616ecb62ab1d0b0761d",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.47241172194480896,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.625,
+        "verified_solution_rate": 0.25,
+        "verified_utility_per_accounted_flop": 1.2066102938337387e-06
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "687d16b833a29f68b20f2a214cc088bb003a64f32b672ddfe9626fae31440464",
+      "challenge_seed": 17434408465480102495,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4658604860305786,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.625,
+        "verified_solution_rate": 0.25,
+        "verified_utility_per_accounted_flop": 1.2757705654215145e-06
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 6.916027158777575e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10050,
+      "replicate_ordinal": 18,
+      "row_digest": "2f8e9d532b4b37bfc486da461e26e600f6ad3226370d4918a6851345eb25e3f0",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4701324999332428,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.2083333283662796,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "b46fb0560a239bbb4c4fddeadef58c1b982993c9d3469b528dcaa82e52b63301",
+      "challenge_seed": 12639886553731957917,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4647236764431,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.2083333283662796,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": false,
+        "relative_utility_gain": null,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 0.0,
+        "world_pairing_closed": true
+      },
+      "replicate": 10051,
+      "replicate_ordinal": 19,
+      "row_digest": "6ad2da8036fd933170745a5b3c7700898fa7032eec8a2a3f76581ffd150315c3",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4714134931564331,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "ddffca392cf71f5cdf4f1767b0ff2d78b8c9a00718210304c3c0b3ecba5a4abe",
+      "challenge_seed": 12826082165170423235,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46578797698020935,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": false,
+        "relative_utility_gain": null,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 0.0,
+        "world_pairing_closed": true
+      },
+      "replicate": 10052,
+      "replicate_ordinal": 20,
+      "row_digest": "ed3014a8e3c28d2606a0035fa48868472e2f274ac785bc21e0cd0630a078a12b",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4702301323413849,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.6666666865348816,
+        "verified_solution_rate": 0.25,
+        "verified_utility_per_accounted_flop": 1.2066102938337387e-06
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "b064f9afab9578604bb3997ea1a5e6432d4cfd80690580fdc782c5105c7e8217",
+      "challenge_seed": 8196060917594024912,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4654442071914673,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.6666666865348816,
+        "verified_solution_rate": 0.25,
+        "verified_utility_per_accounted_flop": 1.2757705654215145e-06
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 6.916027158777575e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10053,
+      "replicate_ordinal": 21,
+      "row_digest": "196bfd179d4a09ec1c3f9c8a481fd59fd17fdc0a959c1f4906b12551f74a1322",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4684622287750244,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.75,
+        "verified_solution_rate": 0.375,
+        "verified_utility_per_accounted_flop": 1.8099154407506081e-06
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "51646dc564d033001fd6491066a94f4c325b67b908543938f2cf8dd2aa267718",
+      "challenge_seed": 12245471148764005903,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4587571620941162,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.75,
+        "verified_solution_rate": 0.375,
+        "verified_utility_per_accounted_flop": 1.9136558481322717e-06
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 1.0374040738166362e-07,
+        "world_pairing_closed": true
+      },
+      "replicate": 10054,
+      "replicate_ordinal": 22,
+      "row_digest": "0e169bc7f21c48f61014e6cb681f1cbcc97291778ba76c24b2e89785830446b8",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4702130854129791,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.033051469168694e-07
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "6f5fd5a8023543a0347addd1fec5765f58a6923a8f39bafcc75e59099ed1f801",
+      "challenge_seed": 12485793403329599203,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46348997950553894,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.378852827107572e-07
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 3.458013579388787e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10055,
+      "replicate_ordinal": 23,
+      "row_digest": "d14b55b3b88ae30be6311fe4eafd59a4764f3c3336d3edc917b0c0d6602c3640",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.47178056836128235,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5833333134651184,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "16e247f7dd44a0ec916a0daab299fe7c7a7ed44b5c0753a2ca04cdf2b63e2ec4",
+      "challenge_seed": 6781330795867446352,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46530839800834656,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5833333134651184,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": false,
+        "relative_utility_gain": null,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 0.0,
+        "world_pairing_closed": true
+      },
+      "replicate": 10056,
+      "replicate_ordinal": 24,
+      "row_digest": "2d01ba673062bae5263491c0f15ba09378b76fd45ac6d08f800c789fd8ec5d1c",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4712791442871094,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.75,
+        "verified_solution_rate": 0.375,
+        "verified_utility_per_accounted_flop": 1.8099154407506081e-06
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "42f11df8a5af804fe379d38b04e214311f4482b85f5a8fd1ccc77960c8e6180b",
+      "challenge_seed": 8873525438320557440,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.464751273393631,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.75,
+        "verified_solution_rate": 0.375,
+        "verified_utility_per_accounted_flop": 1.9136558481322717e-06
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 1.0374040738166362e-07,
+        "world_pairing_closed": true
+      },
+      "replicate": 10057,
+      "replicate_ordinal": 25,
+      "row_digest": "b286fe6b85affcac95b3c9e68a381be17d52b33b40e00705aadf781e673d4442",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4722801148891449,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.033051469168694e-07
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "4130ba8b6f0a0f53185df35876e2fccb9687e4442ee1e24bd3f091cc45160d85",
+      "challenge_seed": 9074831603933746775,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46472668647766113,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.378852827107572e-07
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 3.458013579388787e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10058,
+      "replicate_ordinal": 26,
+      "row_digest": "9b4872d8ac07273c84c62c66bf4f8a4ee6b92a29e77546b80fdd98665870e4a8",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.47005870938301086,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.3333333432674408,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "67a16a9faad75ffef86b65925a1d2f7013283215a8fc9764bce5ce9447e4669f",
+      "challenge_seed": 12886611392070526597,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46411940455436707,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.3333333432674408,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": false,
+        "relative_utility_gain": null,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 0.0,
+        "world_pairing_closed": true
+      },
+      "replicate": 10059,
+      "replicate_ordinal": 27,
+      "row_digest": "a6ccb7aadf71f929776df8df03ab655f57bb3bdb566d3bfa36074b19a85411af",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4685145914554596,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5833333134651184,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.033051469168694e-07
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "fd4d19a6bce5c804372646fdb2c30c017ffe82c8bb919ee47112b80a20f8104a",
+      "challenge_seed": 17863783812562759475,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.46174156665802,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5833333134651184,
+        "verified_solution_rate": 0.125,
+        "verified_utility_per_accounted_flop": 6.378852827107572e-07
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 3.458013579388787e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10060,
+      "replicate_ordinal": 28,
+      "row_digest": "ca511e753380a44693156d3268918d0d62e44074cc3dea8c3b4b0b98e237337d",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4697761535644531,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5833333134651184,
+        "verified_solution_rate": 0.25,
+        "verified_utility_per_accounted_flop": 1.2066102938337387e-06
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "5293b2e321b1b1c3a399ddd38afb91a55cf18d4225629897a0297a2b0c075a6b",
+      "challenge_seed": 1020524376529192915,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.462578147649765,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5833333134651184,
+        "verified_solution_rate": 0.25,
+        "verified_utility_per_accounted_flop": 1.2757705654215145e-06
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 6.916027158777575e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10061,
+      "replicate_ordinal": 29,
+      "row_digest": "c454c64f482639faa3b345c11b0b48de29eabe82b5b06f19f65315ff72ba5001",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.47114574909210205,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "968fcd7d7a9e773ec0c34b7af7c2f9b6afdf7810a5cc58d99f9b9de242f800a8",
+      "challenge_seed": 1880929767923643337,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4638594090938568,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.0,
+        "verified_utility_per_accounted_flop": 0.0
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": false,
+        "relative_utility_gain": null,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 0.0,
+        "world_pairing_closed": true
+      },
+      "replicate": 10062,
+      "replicate_ordinal": 30,
+      "row_digest": "3155cd853d962975a70367fa313ca7b4bdb6294bd749913757ca609061b7ef5e",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    },
+    {
+      "arcs_branch": {
+        "accounted_flops_per_episode": 207192,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4735317528247833,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.25,
+        "verified_utility_per_accounted_flop": 1.2066102938337387e-06
+      },
+      "arm_input_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "evaluator_targets_withheld_from_arms": true,
+        "oracle_cbrf_received_oracle_incidence": true,
+        "same_surface_events": true,
+        "same_variable_states": true
+      },
+      "challenge_digest": "69a045a03d2df3c514f28830940cf48acee5a7d2e1a69efe30508745f37e7049",
+      "challenge_seed": 15329743034901609945,
+      "checkpoint_functional_state_after": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_functional_state_before": {
+        "arcs_branch": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "oracle_cbrf": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+      },
+      "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+      "experiment_id": "EXP-277",
+      "oracle_cbrf": {
+        "accounted_flops_per_episode": 195960,
+        "analytical_cost_receipt": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for frozen neural geometry; not hardware-profiler FLOPs",
+          "hardware_profiler_flops_claimed": false
+        },
+        "mean_verifier_confidence": 0.4669422209262848,
+        "predictions": [
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ]
+        ],
+        "verified_decision_accuracy": 0.5416666865348816,
+        "verified_solution_rate": 0.25,
+        "verified_utility_per_accounted_flop": 1.2757705654215145e-06
+      },
+      "oracle_information_receipt": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "paired": {
+        "baseline_denominator_positive": true,
+        "relative_utility_gain": 0.05731781996325773,
+        "solution_rate_difference": 0.0,
+        "utility_difference": 6.916027158777575e-08,
+        "world_pairing_closed": true
+      },
+      "replicate": 10063,
+      "replicate_ordinal": 31,
+      "row_digest": "61f9788fbb81dc3239b9a9afc52af44b5761b853f3b90191970566a3d0e820a1",
+      "schema": "NLM-EXP-277-CONFIRMATORY-RAW-ROW-V1"
+    }
+  ],
+  "reconstruction_authorization": {
+    "arm_accounted_flops_per_episode": {
+      "arcs_branch": 207192,
+      "oracle_cbrf": 195960
+    },
+    "binding_digest": "33f05106d83eb39ce75fde56d3952f5dd264073625b5f10b5f631673aafe8fdb",
+    "challenge_materialized": false,
+    "checkpoint_file_sha256": "383f1715702743e8ca9ec77a3a7744731e287ae15496c96c62ff1a63f033c7a3",
+    "checkpoint_receipt_digest": "1f5af2137c7270da68a05f405d0fad4f3d28cf8a009b59527f3684f45ffe3ee6",
+    "checkpoint_scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+    "checkpoint_seal_created_at_utc": "2026-09-09T07:28:12.359738Z",
+    "confirmatory_data_consumed": false,
+    "confirmatory_n": 32,
+    "confirmatory_ready": false,
+    "decision": "UNVERIFIED",
+    "decision_rule_executed": false,
+    "evidence_level": "EV-E2",
+    "experiment_id": "EXP-277",
+    "freeze_commit_sha": "b449099f4a8ac5673a9bb55be6c735511ebd786d",
+    "freeze_commit_timestamp_utc": "2026-09-09T07:18:44Z",
+    "model_geometry": {
+      "arm": {
+        "d_model": 64,
+        "hidden_size": 48,
+        "target_parameters": 500000
+      },
+      "world": {
+        "batch_size": 8,
+        "constraints": 3,
+        "d_model": 64,
+        "noise_std": 0.05,
+        "timesteps": 4,
+        "variables": 6
+      }
+    },
+    "oracle_information_separation": {
+      "arcs_received_oracle_incidence": false,
+      "artifact": "oracle_incidence",
+      "delivered_to": [
+        "oracle_cbrf"
+      ],
+      "ground_truth": true,
+      "withheld_from": [
+        "arcs_branch"
+      ]
+    },
+    "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+    "reconstruction_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+    "reconstruction_digest": "210d16fee3e61901035339dd56f94037bb61d0ece894f0adbbc83021b79e463b",
+    "reserved_replicate_ids": [
+      10032,
+      10033,
+      10034,
+      10035,
+      10036,
+      10037,
+      10038,
+      10039,
+      10040,
+      10041,
+      10042,
+      10043,
+      10044,
+      10045,
+      10046,
+      10047,
+      10048,
+      10049,
+      10050,
+      10051,
+      10052,
+      10053,
+      10054,
+      10055,
+      10056,
+      10057,
+      10058,
+      10059,
+      10060,
+      10061,
+      10062,
+      10063
+    ],
+    "schema": "NLM-EXP-277-CONFIRMATORY-RECONSTRUCTION-AUTH-V1",
+    "seal_digest": "d79ae1d6b902b07137d0309041727263ce93c24dc4984704120fa51b996704bd",
+    "seal_snapshot": {
+      "authorization_binding_digest": "50beab5f6a061cfff2bc6595d691d87566331a531f1a534a23244d5bde9054fd",
+      "authorization_digest": "d83637b8b94e1789c2ed53f6a0b138de011f76a78821d714fa1e51999eea101b",
+      "authorization_snapshot": {
+        "analysis_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+        "arm_registry_digest": "12906bdff848665c27d0342bd0135da5ae9c41898b81778ada42a8144d7a52d4",
+        "authorization_digest": "d83637b8b94e1789c2ed53f6a0b138de011f76a78821d714fa1e51999eea101b",
+        "binding_digest": "50beab5f6a061cfff2bc6595d691d87566331a531f1a534a23244d5bde9054fd",
+        "bootstrap_samples": 10000,
+        "challenge_materialized": false,
+        "checkpoint": {
+          "arcs_branch_final_digest": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+          "checkpoint_file_sha256": "383f1715702743e8ca9ec77a3a7744731e287ae15496c96c62ff1a63f033c7a3",
+          "execution_contract_digest": "cdc723e44a122603916499ce7750421292e5005b3ad9499c114871062cb6c863",
+          "oracle_cbrf_final_digest": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b",
+          "receipt_digest": "1f5af2137c7270da68a05f405d0fad4f3d28cf8a009b59527f3684f45ffe3ee6",
+          "scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+          "state_policy": "functional-only"
+        },
+        "checkpoint_seal_created_at_utc": "2026-09-09T07:28:12.359738Z",
+        "confirmatory_data_consumed": false,
+        "confirmatory_n": 32,
+        "confirmatory_ready": false,
+        "decision": "UNVERIFIED",
+        "decision_rule_executed": false,
+        "development_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+        "development_execution_digest": "f3e603d1906efc03c8aa2dba1d38b51b9af6f9e715b23b76194884729653daff",
+        "endpoint_alpha": 0.025,
+        "evidence_level": "EV-E2",
+        "experiment_id": "EXP-277",
+        "freeze_commit_sha": "b449099f4a8ac5673a9bb55be6c735511ebd786d",
+        "freeze_commit_timestamp_utc": "2026-09-09T07:18:44Z",
+        "frozen_analysis_digest": "21aaed8e6fbf90ee0a11940bfb9a5322c3eab060c929ef125e7b8bb27862681c",
+        "machinery_digests": {
+          "beacon_seed_derivation_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+          "challenge_generator_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+          "executor_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+          "reconstruction_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900"
+        },
+        "model_geometry": {
+          "arm": {
+            "d_model": 64,
+            "hidden_size": 48,
+            "target_parameters": 500000
+          },
+          "world": {
+            "batch_size": 8,
+            "constraints": 3,
+            "d_model": 64,
+            "noise_std": 0.05,
+            "timesteps": 4,
+            "variables": 6
+          }
+        },
+        "oracle_information_separation": {
+          "arcs_received_oracle_incidence": false,
+          "artifact": "oracle_incidence",
+          "delivered_to": [
+            "oracle_cbrf"
+          ],
+          "ground_truth": true,
+          "withheld_from": [
+            "arcs_branch"
+          ]
+        },
+        "prep_digest": "53812c8bfb353cb3698dc4985149f80cd497f9c25ca03b4200b2ab66f50e1072",
+        "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+        "reserved_replicate_ids": [
+          10032,
+          10033,
+          10034,
+          10035,
+          10036,
+          10037,
+          10038,
+          10039,
+          10040,
+          10041,
+          10042,
+          10043,
+          10044,
+          10045,
+          10046,
+          10047,
+          10048,
+          10049,
+          10050,
+          10051,
+          10052,
+          10053,
+          10054,
+          10055,
+          10056,
+          10057,
+          10058,
+          10059,
+          10060,
+          10061,
+          10062,
+          10063
+        ],
+        "resource_court": {
+          "arm_accounted_flops_per_episode": {
+            "arcs_branch": 207192,
+            "oracle_cbrf": 195960
+          },
+          "arm_accounted_flops_source": "pair_audit_compute_ledger",
+          "compute_budget_closed": true,
+          "declared_max_accounted_flops_per_episode": 207192,
+          "functional_parameter_match": true,
+          "pair_audit_digest": "52396b21feb67e6b7e14f922dcc681b1505277a7a45bdb64465d78460a76f38b",
+          "parameter_match": true,
+          "same_world_lineage": true
+        },
+        "sample_size_freeze_digest": "9758ee7d8e43050e16aa42c253b707251c5333965b8e77a891ae5cd42c42704c",
+        "schema": "NLM-EXP-277-CONFIRMATORY-GATE-A-AUTH-V1",
+        "seed_materialization_status": "NOT_EXECUTED",
+        "source_tree_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+        "status": "AUTHORIZED_NOT_EXECUTED",
+        "wall_energy_policy": {
+          "decision_use": false,
+          "fabrication_forbidden": true,
+          "metric": "wall_energy_per_episode",
+          "stage_a_role": "report-only"
+        }
+      },
+      "authorization_snapshot_digest": "2102658cfdd5ff9e86be960a80968a142c1daff5d2a7e70e3282d4a6f8c01003",
+      "challenge_materialized": false,
+      "checkpoint_seal_created_at_utc": "2026-09-09T07:28:12.359738Z",
+      "confirmatory_data_consumed": false,
+      "confirmatory_n": 32,
+      "confirmatory_ready": false,
+      "decision": "UNVERIFIED",
+      "decision_rule_executed": false,
+      "evidence_level": "EV-E2",
+      "experiment_id": "EXP-277",
+      "freeze_commit_sha": "b449099f4a8ac5673a9bb55be6c735511ebd786d",
+      "freeze_commit_timestamp_utc": "2026-09-09T07:18:44Z",
+      "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+      "readiness": "FROZEN_MACHINERY_AND_CHECKPOINT_READY_FOR_FUTURE_BEACON_ONLY",
+      "reserved_replicate_ids": [
+        10032,
+        10033,
+        10034,
+        10035,
+        10036,
+        10037,
+        10038,
+        10039,
+        10040,
+        10041,
+        10042,
+        10043,
+        10044,
+        10045,
+        10046,
+        10047,
+        10048,
+        10049,
+        10050,
+        10051,
+        10052,
+        10053,
+        10054,
+        10055,
+        10056,
+        10057,
+        10058,
+        10059,
+        10060,
+        10061,
+        10062,
+        10063
+      ],
+      "schema": "NLM-EXP-277-CONFIRMATORY-GATE-A-SEAL-V1",
+      "seal_binding_digest": "c9e30f476c5aa93650ada4198749221148535420de79023b3401a2c85349c189",
+      "seal_digest": "d79ae1d6b902b07137d0309041727263ce93c24dc4984704120fa51b996704bd",
+      "seed_materialization_status": "NOT_EXECUTED",
+      "source_tree_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+      "status": "CONFIRMATORY_GATE_A_SEALED"
+    },
+    "seal_snapshot_digest": "07e20d39d7ba17ad46a3b26f8b46da2901197e912bdfb8da8949551bb423bb59",
+    "seed_materialization_status": "NOT_EXECUTED",
+    "source_tree_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+    "status": "RECONSTRUCTION_AUTHORIZED_NOT_EXECUTED"
+  },
+  "reserved_replicate_ids": [
+    10032,
+    10033,
+    10034,
+    10035,
+    10036,
+    10037,
+    10038,
+    10039,
+    10040,
+    10041,
+    10042,
+    10043,
+    10044,
+    10045,
+    10046,
+    10047,
+    10048,
+    10049,
+    10050,
+    10051,
+    10052,
+    10053,
+    10054,
+    10055,
+    10056,
+    10057,
+    10058,
+    10059,
+    10060,
+    10061,
+    10062,
+    10063
+  ],
+  "schema": "NLM-EXP-277-CONFIRMATORY-CHALLENGE-RAW-V1",
+  "scientific_evidence_eligible": true,
+  "seal": {
+    "authorization_binding_digest": "50beab5f6a061cfff2bc6595d691d87566331a531f1a534a23244d5bde9054fd",
+    "authorization_digest": "d83637b8b94e1789c2ed53f6a0b138de011f76a78821d714fa1e51999eea101b",
+    "authorization_snapshot": {
+      "analysis_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+      "arm_registry_digest": "12906bdff848665c27d0342bd0135da5ae9c41898b81778ada42a8144d7a52d4",
+      "authorization_digest": "d83637b8b94e1789c2ed53f6a0b138de011f76a78821d714fa1e51999eea101b",
+      "binding_digest": "50beab5f6a061cfff2bc6595d691d87566331a531f1a534a23244d5bde9054fd",
+      "bootstrap_samples": 10000,
+      "challenge_materialized": false,
+      "checkpoint": {
+        "arcs_branch_final_digest": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+        "checkpoint_file_sha256": "383f1715702743e8ca9ec77a3a7744731e287ae15496c96c62ff1a63f033c7a3",
+        "execution_contract_digest": "cdc723e44a122603916499ce7750421292e5005b3ad9499c114871062cb6c863",
+        "oracle_cbrf_final_digest": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b",
+        "receipt_digest": "1f5af2137c7270da68a05f405d0fad4f3d28cf8a009b59527f3684f45ffe3ee6",
+        "scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+        "state_policy": "functional-only"
+      },
+      "checkpoint_seal_created_at_utc": "2026-09-09T07:28:12.359738Z",
+      "confirmatory_data_consumed": false,
+      "confirmatory_n": 32,
+      "confirmatory_ready": false,
+      "decision": "UNVERIFIED",
+      "decision_rule_executed": false,
+      "development_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+      "development_execution_digest": "f3e603d1906efc03c8aa2dba1d38b51b9af6f9e715b23b76194884729653daff",
+      "endpoint_alpha": 0.025,
+      "evidence_level": "EV-E2",
+      "experiment_id": "EXP-277",
+      "freeze_commit_sha": "b449099f4a8ac5673a9bb55be6c735511ebd786d",
+      "freeze_commit_timestamp_utc": "2026-09-09T07:18:44Z",
+      "frozen_analysis_digest": "21aaed8e6fbf90ee0a11940bfb9a5322c3eab060c929ef125e7b8bb27862681c",
+      "machinery_digests": {
+        "beacon_seed_derivation_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+        "challenge_generator_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+        "executor_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+        "reconstruction_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900"
+      },
+      "model_geometry": {
+        "arm": {
+          "d_model": 64,
+          "hidden_size": 48,
+          "target_parameters": 500000
+        },
+        "world": {
+          "batch_size": 8,
+          "constraints": 3,
+          "d_model": 64,
+          "noise_std": 0.05,
+          "timesteps": 4,
+          "variables": 6
+        }
+      },
+      "oracle_information_separation": {
+        "arcs_received_oracle_incidence": false,
+        "artifact": "oracle_incidence",
+        "delivered_to": [
+          "oracle_cbrf"
+        ],
+        "ground_truth": true,
+        "withheld_from": [
+          "arcs_branch"
+        ]
+      },
+      "prep_digest": "53812c8bfb353cb3698dc4985149f80cd497f9c25ca03b4200b2ab66f50e1072",
+      "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+      "reserved_replicate_ids": [
+        10032,
+        10033,
+        10034,
+        10035,
+        10036,
+        10037,
+        10038,
+        10039,
+        10040,
+        10041,
+        10042,
+        10043,
+        10044,
+        10045,
+        10046,
+        10047,
+        10048,
+        10049,
+        10050,
+        10051,
+        10052,
+        10053,
+        10054,
+        10055,
+        10056,
+        10057,
+        10058,
+        10059,
+        10060,
+        10061,
+        10062,
+        10063
+      ],
+      "resource_court": {
+        "arm_accounted_flops_per_episode": {
+          "arcs_branch": 207192,
+          "oracle_cbrf": 195960
+        },
+        "arm_accounted_flops_source": "pair_audit_compute_ledger",
+        "compute_budget_closed": true,
+        "declared_max_accounted_flops_per_episode": 207192,
+        "functional_parameter_match": true,
+        "pair_audit_digest": "52396b21feb67e6b7e14f922dcc681b1505277a7a45bdb64465d78460a76f38b",
+        "parameter_match": true,
+        "same_world_lineage": true
+      },
+      "sample_size_freeze_digest": "9758ee7d8e43050e16aa42c253b707251c5333965b8e77a891ae5cd42c42704c",
+      "schema": "NLM-EXP-277-CONFIRMATORY-GATE-A-AUTH-V1",
+      "seed_materialization_status": "NOT_EXECUTED",
+      "source_tree_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+      "status": "AUTHORIZED_NOT_EXECUTED",
+      "wall_energy_policy": {
+        "decision_use": false,
+        "fabrication_forbidden": true,
+        "metric": "wall_energy_per_episode",
+        "stage_a_role": "report-only"
+      }
+    },
+    "authorization_snapshot_digest": "2102658cfdd5ff9e86be960a80968a142c1daff5d2a7e70e3282d4a6f8c01003",
+    "challenge_materialized": false,
+    "checkpoint_seal_created_at_utc": "2026-09-09T07:28:12.359738Z",
+    "confirmatory_data_consumed": false,
+    "confirmatory_n": 32,
+    "confirmatory_ready": false,
+    "decision": "UNVERIFIED",
+    "decision_rule_executed": false,
+    "evidence_level": "EV-E2",
+    "experiment_id": "EXP-277",
+    "freeze_commit_sha": "b449099f4a8ac5673a9bb55be6c735511ebd786d",
+    "freeze_commit_timestamp_utc": "2026-09-09T07:18:44Z",
+    "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+    "readiness": "FROZEN_MACHINERY_AND_CHECKPOINT_READY_FOR_FUTURE_BEACON_ONLY",
+    "reserved_replicate_ids": [
+      10032,
+      10033,
+      10034,
+      10035,
+      10036,
+      10037,
+      10038,
+      10039,
+      10040,
+      10041,
+      10042,
+      10043,
+      10044,
+      10045,
+      10046,
+      10047,
+      10048,
+      10049,
+      10050,
+      10051,
+      10052,
+      10053,
+      10054,
+      10055,
+      10056,
+      10057,
+      10058,
+      10059,
+      10060,
+      10061,
+      10062,
+      10063
+    ],
+    "schema": "NLM-EXP-277-CONFIRMATORY-GATE-A-SEAL-V1",
+    "seal_binding_digest": "c9e30f476c5aa93650ada4198749221148535420de79023b3401a2c85349c189",
+    "seal_digest": "d79ae1d6b902b07137d0309041727263ce93c24dc4984704120fa51b996704bd",
+    "seed_materialization_status": "NOT_EXECUTED",
+    "source_tree_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+    "status": "CONFIRMATORY_GATE_A_SEALED"
+  },
+  "seed_materialization_status": "EXECUTED",
+  "status": "CONFIRMATORY_CHALLENGE_EXECUTED_UNANALYZED",
+  "synthetic_challenge_data_consumed": false,
+  "test_only": false
+}

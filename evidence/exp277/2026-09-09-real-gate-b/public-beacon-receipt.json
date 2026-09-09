@@ -1,0 +1,13 @@
+{
+  "authenticity_status": "EXTERNAL_EVIDENCE_RECORDED",
+  "beacon_id": "drand:8990e7a9aaed2ffed73dbd7092123d6f289930540d7651336225dc172e51b2ce:6450263",
+  "entropy_hex": "2fc158476c1c8199cb5efd212827935fa33acba9ca7ee6e7e722db3b2d0f91d6",
+  "evidence_reference": "https://api.drand.sh/public/6450263;https://api2.drand.sh/public/6450263;chain=8990e7a9aaed2ffed73dbd7092123d6f289930540d7651336225dc172e51b2ce",
+  "experiment_id": "EXP-277",
+  "published_at_utc": "2026-09-09T07:28:30Z",
+  "receipt_digest": "ebb7556330f27f446aeb2e2bc065a79b41f3af09c41c9594bab56808cac6e7b3",
+  "schema": "NLM-EXP-277-PUBLIC-BEACON-RECEIPT-V1",
+  "scientific_evidence_eligible": true,
+  "source": "drand-public-http-cross-recorded",
+  "test_only": false
+}

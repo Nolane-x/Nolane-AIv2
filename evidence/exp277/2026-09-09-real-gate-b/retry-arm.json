@@ -1,0 +1,12 @@
+{
+  "schema": "NLM-EXP-277-REAL-GATE-B-ARM-V1",
+  "ceremony_id": "EXP-277-REAL-GATE-B-2026-09-09",
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "source_baseline_sha": "b449099f4a8ac5673a9bb55be6c735511ebd786d",
+  "armed": true,
+  "attempt_number": 2,
+  "prior_pre_inference_failure_run_id": 34318307479,
+  "prior_pre_inference_failure_arm_sha": "a24b1d3220b8d95934ce08979c08d5a00e899900",
+  "prior_failure_boundary": "PRE_BEACON_PRE_INFERENCE",
+  "prior_failure_artifact_count": 0
+}

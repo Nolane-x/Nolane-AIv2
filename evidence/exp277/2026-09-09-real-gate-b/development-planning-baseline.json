@@ -1,0 +1,858 @@
+{
+  "arm_geometry": {
+    "d_model": 64,
+    "hidden_size": 48,
+    "target_parameters": 500000
+  },
+  "artifact_digest": "f3e603d1906efc03c8aa2dba1d38b51b9af6f9e715b23b76194884729653daff",
+  "challenge_materialized": false,
+  "code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+  "confirmatory_data_consumed": false,
+  "confirmatory_ready": false,
+  "decision": "UNVERIFIED",
+  "decision_rule_executed": false,
+  "evaluation": {
+    "aggregate": {
+      "mean_arcs_utility": 5.090387177111085e-07,
+      "mean_oracle_utility": 5.382157072872012e-07,
+      "n": 32,
+      "oracle_minus_arcs_verified_solution_rate": 0.0,
+      "oracle_relative_utility_gain": 0.05731781996325749
+    },
+    "per_replicate": [
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.4714324474334717,
+          "verified_decision_accuracy": 0.4583333432674408,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.033051469168694e-07
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4644777476787567,
+          "verified_decision_accuracy": 0.4583333432674408,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.378852827107572e-07
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "9c740642802b4102dafc5638fe58ebeb06f5ea1054454616d1cf27a60cc5c3ac",
+        "replicate": 10000,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47028684616088867,
+          "verified_decision_accuracy": 0.5,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46341654658317566,
+          "verified_decision_accuracy": 0.5,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_relative_verified_utility_gain": 0.0,
+        "paired_batch_digest": "18d4915e7a6a4c6257f112ca4b05967953f0ab1723523eb87b7763005f7e82d5",
+        "replicate": 10001,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.4701310694217682,
+          "verified_decision_accuracy": 0.4166666567325592,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4646233320236206,
+          "verified_decision_accuracy": 0.4166666567325592,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_relative_verified_utility_gain": 0.0,
+        "paired_batch_digest": "0a1d6e5f9c741ab0a4e69a0eb07a229815821ba8c86057d8421248ee58016fec",
+        "replicate": 10002,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47114062309265137,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4642145335674286,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_relative_verified_utility_gain": 0.0,
+        "paired_batch_digest": "7f0114f250cf1a4f0359299357c600258e9561360ca34e61aea17b1f0b22ce3d",
+        "replicate": 10003,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.46926459670066833,
+          "verified_decision_accuracy": 0.3333333432674408,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4617786109447479,
+          "verified_decision_accuracy": 0.3333333432674408,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_relative_verified_utility_gain": 0.0,
+        "paired_batch_digest": "025f3ad7a4fc1d105d3cde15e6c6d0e1570b20fd15b91110abe386afdc49efc8",
+        "replicate": 10004,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47145190834999084,
+          "verified_decision_accuracy": 0.375,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.033051469168694e-07
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4639989137649536,
+          "verified_decision_accuracy": 0.375,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.378852827107572e-07
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "c9ff020f1b6f34e140ed65e071b9bf6c370a65e459d4e42cfec305edde706e89",
+        "replicate": 10005,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.46992576122283936,
+          "verified_decision_accuracy": 0.5833333134651184,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.033051469168694e-07
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4643247127532959,
+          "verified_decision_accuracy": 0.5833333134651184,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.378852827107572e-07
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "77d4995d15b33a71d1139652af4f44133742d7fbdabb3f1663ab5d2dff6fd178",
+        "replicate": 10006,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47016462683677673,
+          "verified_decision_accuracy": 0.5833333134651184,
+          "verified_solution_rate": 0.25,
+          "verified_utility_per_accounted_flop": 1.2066102938337387e-06
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46285009384155273,
+          "verified_decision_accuracy": 0.5833333134651184,
+          "verified_solution_rate": 0.25,
+          "verified_utility_per_accounted_flop": 1.2757705654215145e-06
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "05f8e2cf045ff45fcbe94cadd6ceb8c379b967d23e80e33d751839f10d8f6cf0",
+        "replicate": 10007,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47213444113731384,
+          "verified_decision_accuracy": 0.25,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4659065008163452,
+          "verified_decision_accuracy": 0.25,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_relative_verified_utility_gain": 0.0,
+        "paired_batch_digest": "dbaba9a3a881b8b7d88f3c16f3ed48e2c3b9bcab902e361572d60b2c76482f8d",
+        "replicate": 10008,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.4709613025188446,
+          "verified_decision_accuracy": 0.3333333432674408,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46385666728019714,
+          "verified_decision_accuracy": 0.3333333432674408,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_relative_verified_utility_gain": 0.0,
+        "paired_batch_digest": "fa0d60ccc8af160871ee2a16604839a8771a41d49369f7280ad39089e2cead7b",
+        "replicate": 10009,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.46980559825897217,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.25,
+          "verified_utility_per_accounted_flop": 1.2066102938337387e-06
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46328020095825195,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.25,
+          "verified_utility_per_accounted_flop": 1.2757705654215145e-06
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "268422123bba2d64df2f1ceb8c0140ed87be289e23683907691dc82de6302b45",
+        "replicate": 10010,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47137436270713806,
+          "verified_decision_accuracy": 0.4166666567325592,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.464220255613327,
+          "verified_decision_accuracy": 0.4166666567325592,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_relative_verified_utility_gain": 0.0,
+        "paired_batch_digest": "6460796863b2322bae25e4685160eb6d027c695f61af6fd6606a7332e8bca23a",
+        "replicate": 10011,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.46956929564476013,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.033051469168694e-07
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46204009652137756,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.378852827107572e-07
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "b4dec9b9cffe83646bd7dd68047130aacd6edd9fb86cf04c050ae5b99c59ee7e",
+        "replicate": 10012,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.4717070758342743,
+          "verified_decision_accuracy": 0.75,
+          "verified_solution_rate": 0.375,
+          "verified_utility_per_accounted_flop": 1.8099154407506081e-06
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4625667333602905,
+          "verified_decision_accuracy": 0.75,
+          "verified_solution_rate": 0.375,
+          "verified_utility_per_accounted_flop": 1.9136558481322717e-06
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "e7d3eb409d4c4586fb7af093e881cb9b4db5ca2053443083356f17318fb2649f",
+        "replicate": 10013,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47170987725257874,
+          "verified_decision_accuracy": 0.4583333432674408,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46400466561317444,
+          "verified_decision_accuracy": 0.4583333432674408,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_relative_verified_utility_gain": 0.0,
+        "paired_batch_digest": "93335e7f709a072394569e42ef2d9cb5db032d89386029c2c7fc271783cb6f07",
+        "replicate": 10014,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47153258323669434,
+          "verified_decision_accuracy": 0.2083333283662796,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46031105518341064,
+          "verified_decision_accuracy": 0.2083333283662796,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_relative_verified_utility_gain": 0.0,
+        "paired_batch_digest": "8210732547e2696bc951596368ff5add38dcfb5b32f90c5312558bb572db2286",
+        "replicate": 10015,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47074007987976074,
+          "verified_decision_accuracy": 0.5,
+          "verified_solution_rate": 0.25,
+          "verified_utility_per_accounted_flop": 1.2066102938337387e-06
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46405836939811707,
+          "verified_decision_accuracy": 0.5,
+          "verified_solution_rate": 0.25,
+          "verified_utility_per_accounted_flop": 1.2757705654215145e-06
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "1d1f3145cb97485c3ef5c72866b00538cb7ed85f953b1c7045fed627646c8fca",
+        "replicate": 10016,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47245892882347107,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.033051469168694e-07
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46440479159355164,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.378852827107572e-07
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "610f46bd859b4e4fdc277a18971e9771a31f8cd5f0a2161392229d6fb6d1c306",
+        "replicate": 10017,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.4718947410583496,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.25,
+          "verified_utility_per_accounted_flop": 1.2066102938337387e-06
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46404680609703064,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.25,
+          "verified_utility_per_accounted_flop": 1.2757705654215145e-06
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "141e93786c9515a38e2c5b9d32595733ddb0f4819dc9fbd9c6285c4ed63796bb",
+        "replicate": 10018,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47137251496315,
+          "verified_decision_accuracy": 0.4583333432674408,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.033051469168694e-07
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4623023271560669,
+          "verified_decision_accuracy": 0.4583333432674408,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.378852827107572e-07
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "72bdcafb545f27c0b8797413f7c534ab632da311f8c3201c31aa62480517dd9c",
+        "replicate": 10019,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.4703390896320343,
+          "verified_decision_accuracy": 0.4166666567325592,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46420904994010925,
+          "verified_decision_accuracy": 0.4166666567325592,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_relative_verified_utility_gain": 0.0,
+        "paired_batch_digest": "745a6ae2225ba6cbffca2617c4d52a9cc7087dbb714b3431f2553b056b3ff9c7",
+        "replicate": 10020,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.46936535835266113,
+          "verified_decision_accuracy": 0.5,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.033051469168694e-07
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4621160328388214,
+          "verified_decision_accuracy": 0.5,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.378852827107572e-07
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "87b7c54e0d3f627764472443f47b09bcecafb89120a41d5e8cc6c4031606ae0f",
+        "replicate": 10021,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47135448455810547,
+          "verified_decision_accuracy": 0.4166666567325592,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4640701711177826,
+          "verified_decision_accuracy": 0.4166666567325592,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_relative_verified_utility_gain": 0.0,
+        "paired_batch_digest": "1e0ad8b29697dbdc2f9beff38eb880440e7828f9347956260aa88dac6ab92785",
+        "replicate": 10022,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.469974547624588,
+          "verified_decision_accuracy": 0.3333333432674408,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46249863505363464,
+          "verified_decision_accuracy": 0.3333333432674408,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_relative_verified_utility_gain": 0.0,
+        "paired_batch_digest": "56ddb49df1d38cffa8dd3a1e0b800221f8db570a546a8bcc07f19fb72bd7a0fe",
+        "replicate": 10023,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.4722103774547577,
+          "verified_decision_accuracy": 0.5,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.033051469168694e-07
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4647544324398041,
+          "verified_decision_accuracy": 0.5,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.378852827107572e-07
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "3c3e29f2c9d8fa4efba64aa4f58113c257499f47822162c05b3aa7d99a50015b",
+        "replicate": 10024,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.4722306728363037,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.25,
+          "verified_utility_per_accounted_flop": 1.2066102938337387e-06
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4654691517353058,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.25,
+          "verified_utility_per_accounted_flop": 1.2757705654215145e-06
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "9a2d7c9b57194f46ecd9fe406ef43c0c06710125de79d09d489efb7d9c9aa078",
+        "replicate": 10025,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47160983085632324,
+          "verified_decision_accuracy": 0.625,
+          "verified_solution_rate": 0.25,
+          "verified_utility_per_accounted_flop": 1.2066102938337387e-06
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46441367268562317,
+          "verified_decision_accuracy": 0.625,
+          "verified_solution_rate": 0.25,
+          "verified_utility_per_accounted_flop": 1.2757705654215145e-06
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "6d60eccee2c809241ed18b4b1cf1388e848bef70689bc1f02437620ff6380d6d",
+        "replicate": 10026,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.4699117839336395,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.033051469168694e-07
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4625178873538971,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.378852827107572e-07
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "d7c66c638635539870289939d593a3f6a35059c200ac34253de7ea980f1a31a2",
+        "replicate": 10027,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.47093427181243896,
+          "verified_decision_accuracy": 0.4583333432674408,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4638010561466217,
+          "verified_decision_accuracy": 0.4583333432674408,
+          "verified_solution_rate": 0.0,
+          "verified_utility_per_accounted_flop": 0.0
+        },
+        "oracle_relative_verified_utility_gain": 0.0,
+        "paired_batch_digest": "d900005a14e3347dc2b54277798faed146907aacb8c58ae6719efcc632710c89",
+        "replicate": 10028,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.470867395401001,
+          "verified_decision_accuracy": 0.5833333134651184,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.033051469168694e-07
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46474286913871765,
+          "verified_decision_accuracy": 0.5833333134651184,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.378852827107572e-07
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "4437560ccba3313054fd1327d0305e6e8a17223479673126196514ef103a66ae",
+        "replicate": 10029,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.4710483253002167,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.033051469168694e-07
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.4641515910625458,
+          "verified_decision_accuracy": 0.5416666865348816,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.378852827107572e-07
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "8ea5f97891415906ee65f7cabf94c1d68b65b3b801866cb46dd8b2748d242de8",
+        "replicate": 10030,
+        "world_pairing_closed": true
+      },
+      {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "mean_verifier_confidence": 0.4693610668182373,
+          "verified_decision_accuracy": 0.4166666567325592,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.033051469168694e-07
+        },
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "mean_verifier_confidence": 0.46295738220214844,
+          "verified_decision_accuracy": 0.4166666567325592,
+          "verified_solution_rate": 0.125,
+          "verified_utility_per_accounted_flop": 6.378852827107572e-07
+        },
+        "oracle_relative_verified_utility_gain": 0.05731781996325773,
+        "paired_batch_digest": "2c3518906d3bd1ac8f85423f2f077b209c519ba1e047e6d0d58509cb652586dc",
+        "replicate": 10031,
+        "world_pairing_closed": true
+      }
+    ],
+    "replicates": 32,
+    "rng_stream": "evaluation",
+    "start_replicate": 10000
+  },
+  "evidence_level": "EV-E2",
+  "final_state": {
+    "arcs_branch_digest": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+    "oracle_cbrf_digest": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b"
+  },
+  "initial_state": {
+    "arcs_branch_digest": "c1723ec67fcf4265589cf4cda7f1554d584e5a0bd0df5f64c9c89ff0261d34e5",
+    "functional_digest_match": true,
+    "oracle_cbrf_digest": "c1723ec67fcf4265589cf4cda7f1554d584e5a0bd0df5f64c9c89ff0261d34e5"
+  },
+  "model_init_seed": 8673022444806698961,
+  "oracle_information_receipt": {
+    "arcs_received_oracle_incidence": false,
+    "artifact": "oracle_incidence",
+    "delivered_to": [
+      "oracle_cbrf"
+    ],
+    "ground_truth": true,
+    "withheld_from": [
+      "arcs_branch"
+    ]
+  },
+  "primary_endpoint": {
+    "direction": "higher",
+    "mesi_relative_gain": 0.1,
+    "metric": "verified_utility_per_accounted_flop"
+  },
+  "protected_endpoints": {
+    "verified_solution_rate_floor": "oracle_cbrf >= arcs_branch - 0.005"
+  },
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "remaining_blockers": [
+    "development evidence cannot promote H-CBRF-01",
+    "confirmatory sample-size/analysis freeze and confirmatory-open execution remain open",
+    "post-freeze challenge beacon remains unmaterialized"
+  ],
+  "resource_match": {
+    "compute_budget_closed": true,
+    "declared_max_accounted_flops_per_episode": 207192,
+    "functional_parameter_match": true,
+    "pair_audit": {
+      "arcs_branch": {
+        "functional_parameters": 22852,
+        "reserved_parameters": 477148,
+        "total_parameters": 500000
+      },
+      "compute_budget_closed": true,
+      "compute_ledger": {
+        "arcs_branch": {
+          "accounted_flops_per_episode": 207192,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for declared neural geometry; not hardware-profiler FLOPs",
+          "arm_id": "arcs_branch",
+          "components": {
+            "decision_and_verifier_heads": 1752,
+            "event_projection": 24768,
+            "recurrent_event_encoding": 114432,
+            "routing_or_incidence_message_passing": 1152,
+            "structure_or_branch_processing": 27936,
+            "variable_projection": 37152
+          },
+          "geometry": {
+            "constraints": 3,
+            "d_model": 64,
+            "hidden_size": 48,
+            "timesteps": 4,
+            "variables": 6
+          },
+          "hardware_profiler_flops_claimed": false
+        },
+        "decision": "UNVERIFIED",
+        "evidence_level": "EV-E2",
+        "oracle_cbrf": {
+          "accounted_flops_per_episode": 195960,
+          "accounting_semantics": "analytical scalar arithmetic FLOPs for declared neural geometry; not hardware-profiler FLOPs",
+          "arm_id": "oracle_cbrf",
+          "components": {
+            "decision_and_verifier_heads": 1752,
+            "event_projection": 24768,
+            "recurrent_event_encoding": 114432,
+            "routing_or_incidence_message_passing": 3888,
+            "structure_or_branch_processing": 13968,
+            "variable_projection": 37152
+          },
+          "geometry": {
+            "constraints": 3,
+            "d_model": 64,
+            "hidden_size": 48,
+            "timesteps": 4,
+            "variables": 6
+          },
+          "hardware_profiler_flops_claimed": false
+        },
+        "schema": "NLM-EXP-277-COMPUTE-LEDGER-V1"
+      },
+      "decision": "UNVERIFIED",
+      "declared_max_accounted_flops_per_episode": 207192,
+      "evidence_level": "EV-E2",
+      "functional_parameter_match": true,
+      "oracle_cbrf": {
+        "functional_parameters": 22852,
+        "reserved_parameters": 477148,
+        "total_parameters": 500000
+      },
+      "oracle_information_separation": true,
+      "parameter_match": true,
+      "remaining_blockers": [
+        "matched arms remain DEVELOPMENT-only until paired world/evaluation lineage is closed",
+        "confirmatory-open and post-freeze challenge execution remain unrun"
+      ],
+      "schema": "NLM-EXP-277-MATCHED-ARMS-DEV-V1"
+    },
+    "pair_audit_digest": "52396b21feb67e6b7e14f922dcc681b1505277a7a45bdb64465d78460a76f38b",
+    "parameter_match": true,
+    "same_world_lineage": true
+  },
+  "root_seed": "20260906-exp277-paired-dev",
+  "schema": "NLM-EXP-277-PAIRED-DEV-EVAL-V1",
+  "scope": "synthetic-exp277-paired-oracle-structure-development",
+  "training": {
+    "arcs_branch_losses": [
+      0.6950207352638245,
+      0.7196557521820068,
+      0.7023981213569641,
+      0.690209150314331,
+      0.6902456283569336,
+      0.7017534375190735,
+      0.6969647407531738,
+      0.6849575638771057,
+      0.6870153546333313,
+      0.6922460198402405,
+      0.7009860873222351,
+      0.7060688138008118,
+      0.7017441391944885,
+      0.7031083703041077,
+      0.7183294296264648,
+      0.6794741749763489
+    ],
+    "optimizer": {
+      "lr": 0.002,
+      "type": "AdamW",
+      "weight_decay": 0.0
+    },
+    "oracle_cbrf_losses": [
+      0.6944155097007751,
+      0.720241129398346,
+      0.6977941989898682,
+      0.6885444521903992,
+      0.6849806308746338,
+      0.6954963803291321,
+      0.6928608417510986,
+      0.6682108044624329,
+      0.6824234127998352,
+      0.6882009506225586,
+      0.7063432335853577,
+      0.7254204750061035,
+      0.7094777226448059,
+      0.7090863585472107,
+      0.7320613861083984,
+      0.6759082674980164
+    ],
+    "paired_batch_digests": [
+      "619213754382c0ab5e22867e8f3b15bc8f91a78704cad31d3302cc73ffb74730",
+      "971932fd7855fc6ad351e060b78d07b15479cf33697e2dcbee04a54da147e0ac",
+      "d962f0e9b9ac3196b3bd3ce03abfb54816cbcdbf21923e10d10971fc113e8ae8",
+      "51b210dd6d86ae14e944f622f69b21ab7e08aa04f8a763ef578a6a0416900468",
+      "b4ddb9654258733433a62ef8cc1f4d78a95637dd16c4d11bdf5b106e901612de",
+      "f308fd6aa0bd17d64594399990081b7de1cb608edc40c04afd582896d0b7bde0",
+      "783f0c13ac8dd485d7912d86dcd3ae10a30e160bce1920e55993f2fbb7f1539b",
+      "31837bc49ce13a15c488530641fc9854f873f3126ff29fdd979a7e026305b642",
+      "2dc88f417e033c4182a481c515bc603b171ec1e0226726ece89fb6609eef17d3",
+      "63eacbdac8c27aa1263ffc8ad2e243c0f0ab871b78fc552f7e0b6ce909a95f0b",
+      "eb992c8aa96a15b8db429811cf580ce4471a71b24fbca82473d0b93f073a3d38",
+      "81e4008977e910978b6bea777404272868d239d84453b333f1f1491f2eca74cb",
+      "ddfa3ea36df2ec15a15e36b80c5aacf55185b41b621fb98f478fd85ba17575b9",
+      "5945ca21f6a9c59d62d753486991db7f146848d6bf5552f253c7f1a29debc32c",
+      "9fa87c8ef191f5780f1770cec334eb3d92532f5ddcbcdee0bdcb2d3463a03a85",
+      "99d1a494528b0c5c391feb1ef0d24643c5c32b08a1fd6affdbfa4569f8d596f3"
+    ],
+    "replicates": 16,
+    "rng_stream": "augmentation",
+    "start_replicate": 0
+  },
+  "world_geometry": {
+    "batch_size": 8,
+    "constraints": 3,
+    "d_model": 64,
+    "noise_std": 0.05,
+    "timesteps": 4,
+    "variables": 6
+  }
+}

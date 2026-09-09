@@ -1,0 +1,123 @@
+{
+  "analysis_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+  "arm_registry_digest": "12906bdff848665c27d0342bd0135da5ae9c41898b81778ada42a8144d7a52d4",
+  "authorization_digest": "d83637b8b94e1789c2ed53f6a0b138de011f76a78821d714fa1e51999eea101b",
+  "binding_digest": "50beab5f6a061cfff2bc6595d691d87566331a531f1a534a23244d5bde9054fd",
+  "bootstrap_samples": 10000,
+  "challenge_materialized": false,
+  "checkpoint": {
+    "arcs_branch_final_digest": "f0c57ae444fbb3e0b16223dfd91065ef445fe0bcaaf3e56245eecbef4b31746e",
+    "checkpoint_file_sha256": "383f1715702743e8ca9ec77a3a7744731e287ae15496c96c62ff1a63f033c7a3",
+    "execution_contract_digest": "cdc723e44a122603916499ce7750421292e5005b3ad9499c114871062cb6c863",
+    "oracle_cbrf_final_digest": "875d1302f16517a0f7d6938371aa924fe94090cbcaa85ee200297fc4b9e76f2b",
+    "receipt_digest": "1f5af2137c7270da68a05f405d0fad4f3d28cf8a009b59527f3684f45ffe3ee6",
+    "scientific_identity_digest": "e1894dcdfd5df069417cd1bc7f550cf86c137b20f98eec24aac9287730f8b2b4",
+    "state_policy": "functional-only"
+  },
+  "checkpoint_seal_created_at_utc": "2026-09-09T07:28:12.359738Z",
+  "confirmatory_data_consumed": false,
+  "confirmatory_n": 32,
+  "confirmatory_ready": false,
+  "decision": "UNVERIFIED",
+  "decision_rule_executed": false,
+  "development_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+  "development_execution_digest": "f3e603d1906efc03c8aa2dba1d38b51b9af6f9e715b23b76194884729653daff",
+  "endpoint_alpha": 0.025,
+  "evidence_level": "EV-E2",
+  "experiment_id": "EXP-277",
+  "freeze_commit_sha": "b449099f4a8ac5673a9bb55be6c735511ebd786d",
+  "freeze_commit_timestamp_utc": "2026-09-09T07:18:44Z",
+  "frozen_analysis_digest": "21aaed8e6fbf90ee0a11940bfb9a5322c3eab060c929ef125e7b8bb27862681c",
+  "machinery_digests": {
+    "beacon_seed_derivation_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+    "challenge_generator_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+    "executor_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+    "reconstruction_code_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900"
+  },
+  "model_geometry": {
+    "arm": {
+      "d_model": 64,
+      "hidden_size": 48,
+      "target_parameters": 500000
+    },
+    "world": {
+      "batch_size": 8,
+      "constraints": 3,
+      "d_model": 64,
+      "noise_std": 0.05,
+      "timesteps": 4,
+      "variables": 6
+    }
+  },
+  "oracle_information_separation": {
+    "arcs_received_oracle_incidence": false,
+    "artifact": "oracle_incidence",
+    "delivered_to": [
+      "oracle_cbrf"
+    ],
+    "ground_truth": true,
+    "withheld_from": [
+      "arcs_branch"
+    ]
+  },
+  "prep_digest": "53812c8bfb353cb3698dc4985149f80cd497f9c25ca03b4200b2ab66f50e1072",
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "reserved_replicate_ids": [
+    10032,
+    10033,
+    10034,
+    10035,
+    10036,
+    10037,
+    10038,
+    10039,
+    10040,
+    10041,
+    10042,
+    10043,
+    10044,
+    10045,
+    10046,
+    10047,
+    10048,
+    10049,
+    10050,
+    10051,
+    10052,
+    10053,
+    10054,
+    10055,
+    10056,
+    10057,
+    10058,
+    10059,
+    10060,
+    10061,
+    10062,
+    10063
+  ],
+  "resource_court": {
+    "arm_accounted_flops_per_episode": {
+      "arcs_branch": 207192,
+      "oracle_cbrf": 195960
+    },
+    "arm_accounted_flops_source": "pair_audit_compute_ledger",
+    "compute_budget_closed": true,
+    "declared_max_accounted_flops_per_episode": 207192,
+    "functional_parameter_match": true,
+    "pair_audit_digest": "52396b21feb67e6b7e14f922dcc681b1505277a7a45bdb64465d78460a76f38b",
+    "parameter_match": true,
+    "same_world_lineage": true
+  },
+  "sample_size_freeze_digest": "9758ee7d8e43050e16aa42c253b707251c5333965b8e77a891ae5cd42c42704c",
+  "schema": "NLM-EXP-277-CONFIRMATORY-GATE-A-AUTH-V1",
+  "seed_materialization_status": "NOT_EXECUTED",
+  "source_tree_digest": "c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900",
+  "status": "AUTHORIZED_NOT_EXECUTED",
+  "wall_energy_policy": {
+    "decision_use": false,
+    "fabrication_forbidden": true,
+    "metric": "wall_energy_per_episode",
+    "stage_a_role": "report-only"
+  }
+}

@@ -1,0 +1,299 @@
+name: exp277-persist-real-gate-b-evidence
+
+on:
+  push:
+    branches: [exp277-confirmatory-gate-a]
+    paths:
+      - .github/workflows/exp277-persist-real-gate-b-evidence.yml
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  persist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prove persistence commit cannot alter frozen scientific source
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE_SHA=b449099f4a8ac5673a9bb55be6c735511ebd786d
+          git cat-file -e "$FREEZE_SHA^{commit}"
+          changed="$(git diff --name-only "$FREEZE_SHA" HEAD -- src scripts protocols/stage_a_v1.json protocols/stage_a_v1.sha256)"
+          test -z "$changed"
+
+      - name: Verify immutable source artifact and ceremony metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/exp277-persist
+          gh api repos/Nolane-x/Nolane-AIv2/actions/artifacts/10093277653 > /tmp/exp277-persist/artifact-metadata.json
+          gh api repos/Nolane-x/Nolane-AIv2/actions/runs/34323835734 > /tmp/exp277-persist/run-metadata.json
+          gh api 'repos/Nolane-x/Nolane-AIv2/actions/runs/34323835734/artifacts?per_page=100' > /tmp/exp277-persist/all-artifacts-metadata.json
+          gh api repos/Nolane-x/Nolane-AIv2/actions/runs/34318307479 > /tmp/exp277-persist/prior-run-metadata.json
+          gh api 'repos/Nolane-x/Nolane-AIv2/actions/runs/34318307479/artifacts?per_page=100' > /tmp/exp277-persist/prior-artifacts-metadata.json
+          gh api 'repos/Nolane-x/Nolane-AIv2/contents/.github/ceremony/exp277-real-gate-b-arm.json?ref=dd37ab9d0c59f9b86a9e75e190acd6436c3401ac' > /tmp/exp277-persist/arm-api.json
+          python - <<'PY'
+          import base64
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/exp277-persist')
+          m = json.loads((root / 'artifact-metadata.json').read_text())
+          assert m['id'] == 10093277653
+          assert m['name'] == 'exp277-real-gate-b-evidence-dd37ab9d0c59f9b86a9e75e190acd6436c3401ac'
+          assert m['expired'] is False
+          assert m['digest'] == 'sha256:043ad0015258a03cadbd7d6705474756425f1753af7bfba0ceb26d23ecbb247b'
+          assert m['workflow_run']['id'] == 34323835734
+          assert m['workflow_run']['head_sha'] == 'dd37ab9d0c59f9b86a9e75e190acd6436c3401ac'
+
+          run = json.loads((root / 'run-metadata.json').read_text())
+          assert run['id'] == 34323835734
+          assert run['run_number'] == 2
+          assert run['status'] == 'completed'
+          assert run['conclusion'] == 'success'
+          assert run['head_branch'] == 'exp277-real-gate-b-ceremony-retry-2'
+          assert run['head_sha'] == 'dd37ab9d0c59f9b86a9e75e190acd6436c3401ac'
+
+          all_artifacts = json.loads((root / 'all-artifacts-metadata.json').read_text())
+          observed = {a['name']: a for a in all_artifacts['artifacts']}
+          expected = {
+              'exp277-real-gate-b-evidence-dd37ab9d0c59f9b86a9e75e190acd6436c3401ac': (10093277653, 'sha256:043ad0015258a03cadbd7d6705474756425f1753af7bfba0ceb26d23ecbb247b'),
+              'exp277-real-gate-b-outcome-dd37ab9d0c59f9b86a9e75e190acd6436c3401ac': (10093277090, 'sha256:46fad8cb796b60434ef3ef62b77d3b76ae2c3a3f4688948d8536d7763e9a9b6e'),
+              'exp277-real-gate-b-inference-started-dd37ab9d0c59f9b86a9e75e190acd6436c3401ac': (10092991571, 'sha256:9103719a977a4de7671363e51611fee691500426c58526e21ba60c3d9db69e63'),
+          }
+          for name, (artifact_id, digest) in expected.items():
+              assert observed[name]['id'] == artifact_id
+              assert observed[name]['digest'] == digest
+              assert observed[name]['expired'] is False
+
+          prior = json.loads((root / 'prior-run-metadata.json').read_text())
+          assert prior['id'] == 34318307479
+          assert prior['status'] == 'completed'
+          assert prior['conclusion'] == 'failure'
+          assert prior['head_sha'] == 'a24b1d3220b8d95934ce08979c08d5a00e899900'
+          prior_artifacts = json.loads((root / 'prior-artifacts-metadata.json').read_text())
+          assert prior_artifacts['total_count'] == 0
+          assert prior_artifacts['artifacts'] == []
+
+          arm_api = json.loads((root / 'arm-api.json').read_text())
+          arm_bytes = base64.b64decode(arm_api['content'])
+          (root / 'retry-arm.json').write_bytes(arm_bytes)
+          arm = json.loads(arm_bytes)
+          assert arm['attempt_number'] == 2
+          assert arm['source_baseline_sha'] == 'b449099f4a8ac5673a9bb55be6c735511ebd786d'
+          assert arm['protocol_digest'] == 'c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440'
+          assert arm['prior_pre_inference_failure_run_id'] == 34318307479
+          assert arm['prior_pre_inference_failure_arm_sha'] == 'a24b1d3220b8d95934ce08979c08d5a00e899900'
+          assert arm['prior_failure_boundary'] == 'PRE_BEACON_PRE_INFERENCE'
+          assert arm['prior_failure_artifact_count'] == 0
+          PY
+
+      - name: Download only the authoritative completed evidence artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=evidence/exp277/2026-09-09-real-gate-b
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          gh run download 34323835734 --repo Nolane-x/Nolane-AIv2 --name exp277-real-gate-b-evidence-dd37ab9d0c59f9b86a9e75e190acd6436c3401ac --dir "$OUT"
+          cp /tmp/exp277-persist/artifact-metadata.json "$OUT/actions-artifact-metadata.json"
+          cp /tmp/exp277-persist/run-metadata.json "$OUT/actions-run-metadata.json"
+          cp /tmp/exp277-persist/all-artifacts-metadata.json "$OUT/actions-all-artifacts-metadata.json"
+          cp /tmp/exp277-persist/prior-run-metadata.json "$OUT/prior-attempt-run-metadata.json"
+          cp /tmp/exp277-persist/prior-artifacts-metadata.json "$OUT/prior-attempt-artifacts-metadata.json"
+          cp /tmp/exp277-persist/retry-arm.json "$OUT/retry-arm.json"
+
+      - name: Verify every source file and frozen EXP-277 scientific result
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path('evidence/exp277/2026-09-09-real-gate-b')
+          sums = {}
+          for line in (root / 'SHA256SUMS').read_text().splitlines():
+              digest, path = line.split(None, 1)
+              sums[Path(path).name] = digest
+          assert len(sums) == 16
+          for name, expected in sums.items():
+              observed = hashlib.sha256((root / name).read_bytes()).hexdigest()
+              assert observed == expected, (name, observed, expected)
+
+          source = json.loads((root / 'source-identity.json').read_text())
+          seal = json.loads((root / 'gate-a-seal.json').read_text())
+          checkpoint = json.loads((root / 'checkpoint-receipt.json').read_text())
+          prep = json.loads((root / 'gate-a-prep.json').read_text())
+          auth = json.loads((root / 'gate-a-authorization.json').read_text())
+          recon = json.loads((root / 'reconstruction-authorization.json').read_text())
+          beacon = json.loads((root / 'public-beacon-receipt.json').read_text())
+          external = json.loads((root / 'public-beacon-external-evidence.json').read_text())
+          inference = json.loads((root / 'inference-start-receipt.json').read_text())
+          raw = json.loads((root / 'confirmatory-raw.json').read_text())
+          analysis = json.loads((root / 'confirmatory-analysis.json').read_text())
+          summary = json.loads((root / 'ceremony-summary.json').read_text())
+
+          protocol = 'c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440'
+          source_digest = 'c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900'
+          baseline = 'b449099f4a8ac5673a9bb55be6c735511ebd786d'
+          ceremony = 'dd37ab9d0c59f9b86a9e75e190acd6436c3401ac'
+
+          assert source['protocol_digest'] == protocol
+          assert source['source_tree_digest'] == source_digest
+          assert source['scientific_baseline_sha'] == baseline
+          assert source['ceremony_sha'] == ceremony
+          assert seal['freeze_commit_sha'] == baseline
+          assert seal['freeze_commit_timestamp_utc'] == '2026-09-09T07:18:44Z'
+          assert seal['checkpoint_seal_created_at_utc'] == '2026-09-09T07:28:12.359738Z'
+          assert seal['source_tree_digest'] == source_digest
+          assert seal['seal_digest'] == 'd79ae1d6b902b07137d0309041727263ce93c24dc4984704120fa51b996704bd'
+          assert prep['status'] == 'CONFIRMATORY_GATE_A_PREPARED'
+          assert prep['sample_size_freeze']['confirmatory_n'] == 32
+          assert prep['sample_size_freeze']['unclamped_required_n'] == 4
+          assert auth['status'] == 'AUTHORIZED_NOT_EXECUTED'
+          assert recon['status'] == 'RECONSTRUCTION_AUTHORIZED_NOT_EXECUTED'
+          assert checkpoint['checkpoint_file_sha256'] == '383f1715702743e8ca9ec77a3a7744731e287ae15496c96c62ff1a63f033c7a3'
+          assert checkpoint['receipt_digest'] == '1f5af2137c7270da68a05f405d0fad4f3d28cf8a009b59527f3684f45ffe3ee6'
+
+          assert beacon['beacon_id'] == 'drand:8990e7a9aaed2ffed73dbd7092123d6f289930540d7651336225dc172e51b2ce:6450263'
+          assert beacon['published_at_utc'] == '2026-09-09T07:28:30Z'
+          assert beacon['receipt_digest'] == 'ebb7556330f27f446aeb2e2bc065a79b41f3af09c41c9594bab56808cac6e7b3'
+          assert beacon['test_only'] is False
+          assert beacon['scientific_evidence_eligible'] is True
+          assert beacon['authenticity_status'] == 'EXTERNAL_EVIDENCE_RECORDED'
+          assert external['authenticity_status'] == 'EXTERNAL_EVIDENCE_RECORDED'
+          assert external['cryptographic_signature_verified_by_ceremony'] is False
+          assert external['primary_response']['round'] == 6450263
+          assert external['primary_response']['randomness'] == external['mirror_response']['randomness']
+          assert external['primary_response']['signature'] == external['mirror_response']['signature']
+
+          assert inference['inference_started'] is True
+          assert inference['ceremony_sha'] == ceremony
+          assert inference['scientific_baseline_sha'] == baseline
+          assert inference['confirmatory_n'] == 32
+          assert raw['status'] == 'CONFIRMATORY_CHALLENGE_EXECUTED_UNANALYZED'
+          assert raw['artifact_digest'] == 'f3f84f2c4f3266cdf8db48bc0c055da955149272de1ea9accc3e86575f0e399b'
+          assert raw['scientific_evidence_eligible'] is True
+          assert raw['confirmatory_data_consumed'] is True
+          assert raw['integrity_errors'] == []
+          assert raw['reserved_replicate_ids'] == list(range(10032, 10064))
+
+          assert analysis['status'] == 'CONFIRMATORY_CHALLENGE_ANALYZED'
+          assert analysis['analysis_digest'] == 'd1ec4794b23ed108ec4141fd1e6622597296905cb343ba3ecc6e2cf3d6fcdf1b'
+          assert analysis['evidence_level'] == 'EV-E3'
+          assert analysis['decision'] == 'KILL_SUBSYSTEM'
+          assert analysis['decision_rule_executed'] is True
+          assert analysis['scientific_evidence_eligible'] is True
+          assert analysis['confirmatory_n'] == 32
+          primary = analysis['primary_endpoint']
+          assert primary['effect_type'] == 'ratio_of_means_relative_gain'
+          assert primary['denominator_policy'] == 'no_epsilon'
+          assert primary['denominator_valid'] is True
+          assert primary['samples'] == 10000
+          assert primary['valid_resamples'] == 10000
+          assert primary['invalid_denominator_resamples'] == 0
+          assert primary['observed_relative_gain'] == 0.0573178199632578
+          assert primary['one_sided_lower'] == 0.05731781996325758
+          assert primary['mesi_relative_gain'] == 0.1
+          protected = analysis['protected_solution_rate']
+          assert protected['observed_baseline_mean'] == 0.13671875
+          assert protected['observed_candidate_mean'] == 0.13671875
+          assert protected['observed_difference'] == 0.0
+          assert protected['floor_difference'] == -0.005
+          assert protected['lower_floor_pass'] is True
+          assert protected['samples'] == 10000
+          energy = analysis['wall_energy_per_episode']
+          assert energy['numeric_measurement'] is None
+          assert energy['fabricated'] is False
+          assert energy['decision_use'] is False
+          assert summary['state'] == 'EXECUTED_AND_ANALYZED'
+          assert summary['evidence_level'] == 'EV-E3'
+          assert summary['decision'] == 'KILL_SUBSYSTEM'
+          assert summary['scientific_evidence_eligible'] is True
+          assert summary['seal_digest'] == analysis['lineage']['seal_digest']
+          assert summary['beacon_receipt_digest'] == analysis['lineage']['beacon_receipt_digest']
+          assert summary['source_tree_digest'] == analysis['lineage']['source_tree_digest']
+          assert summary['ceremony_sha'] == ceremony
+          assert summary['scientific_baseline_sha'] == baseline
+          PY
+
+      - name: Write durable provenance and persistence receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT=evidence/exp277/2026-09-09-real-gate-b
+          cat > "$OUT/PROVENANCE.md" <<'EOF'
+          # EXP-277 real Gate B EV-E3 evidence
+
+          This directory is a persistence-only copy of GitHub Actions evidence artifact `10093277653`, produced by authoritative retry ceremony run `34323835734` at exact arm SHA `dd37ab9d0c59f9b86a9e75e190acd6436c3401ac`. GitHub records the artifact digest as `sha256:043ad0015258a03cadbd7d6705474756425f1753af7bfba0ceb26d23ecbb247b`.
+
+          Scientific source identity is frozen to baseline `b449099f4a8ac5673a9bb55be6c735511ebd786d`, source-tree digest `c13f85d290204ed5355b4651d6751c589310468dd7c0e751f2a893a1cdc30900`, and canonical Stage-A V1 protocol digest `c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440`.
+
+          The first arm run `34318307479` at `a24b1d3220b8d95934ce08979c08d5a00e899900` failed before beacon and before inference, with zero persisted artifacts. Retry attempt 2 preserves that provenance in `retry-arm.json` and is the authoritative scientific attempt.
+
+          The authoritative result is `EV-E3 / KILL_SUBSYSTEM` for frozen hypothesis H-CBRF-01 on the synthetic EXP-277 structure-dense oracle-headroom family. At `n=32`, oracle-CBRF achieved a verified-utility-per-accounted-FLOP ratio-of-means relative gain of `+0.0573178199632578`, below the frozen MESI `+0.10`. The protected verified-solution-rate difference was `0.0`, passing the frozen floor `-0.005`.
+
+          The public beacon was drand round `6450263`, published `2026-09-09T07:28:30Z`. Round/randomness/signature were cross-recorded from two public HTTP endpoints. The evidence deliberately records `cryptographic_signature_verified_by_ceremony=false`; authenticity status is `EXTERNAL_EVIDENCE_RECORDED`.
+
+          Wall energy per episode was not numerically measured on the hosted runner and no value was fabricated. It was report-only and unused by the decision.
+
+          This result closes H-CBRF-01 under the frozen Stage-A decision rule. It does not establish or refute all possible learned structure compilers, general CBRF, integrated NLM performance, or open-domain reasoning authority. Reopening the killed hypothesis would require a genuinely different scientific hypothesis/protocol decision rather than a same-protocol rerun.
+          EOF
+          cat > "$OUT/PERSISTENCE-RECEIPT.md" <<'EOF'
+          # EXP-277 EV-E3 persistence receipt
+
+          - Authoritative ceremony run: `34323835734`
+          - Exact armed ceremony SHA: `dd37ab9d0c59f9b86a9e75e190acd6436c3401ac`
+          - Scientific baseline: `b449099f4a8ac5673a9bb55be6c735511ebd786d`
+          - Source evidence artifact ID: `10093277653`
+          - Source evidence artifact digest: `sha256:043ad0015258a03cadbd7d6705474756425f1753af7bfba0ceb26d23ecbb247b`
+          - Prior pre-inference failure run: `34318307479`
+          - Prior arm SHA: `a24b1d3220b8d95934ce08979c08d5a00e899900`
+          - Prior failure boundary: `PRE_BEACON_PRE_INFERENCE`
+          - Prior failure artifact count: `0`
+          - Canonical Stage-A V1 digest: `c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440`
+          - Scientific outcome: `EV-E3 / KILL_SUBSYSTEM`
+
+          The persistence workflow validates immutable GitHub Actions metadata, all original `SHA256SUMS`, frozen source/protocol/checkpoint/beacon identities, inference-start evidence, primary/protected endpoints, and the evidence-only diff boundary. It does not invoke Gate B, derive a second challenge, retrain, or regenerate any scientific observation.
+          EOF
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          root = Path('evidence/exp277/2026-09-09-real-gate-b')
+          names = sorted(p.name for p in root.iterdir() if p.is_file() and p.name != 'PERSISTED-SHA256SUMS')
+          lines = [f"{hashlib.sha256((root / name).read_bytes()).hexdigest()}  {name}" for name in names]
+          (root / 'PERSISTED-SHA256SUMS').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          PY
+
+      - name: Confirm final persistence diff remains evidence-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE_SHA=b449099f4a8ac5673a9bb55be6c735511ebd786d
+          git cat-file -e "$FREEZE_SHA^{commit}"
+          changed="$(git diff --name-only "$FREEZE_SHA" HEAD -- src scripts protocols/stage_a_v1.json protocols/stage_a_v1.sha256)"
+          test -z "$changed"
+          git status --short
+
+      - name: Commit persisted evidence to feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add evidence/exp277/2026-09-09-real-gate-b
+          git commit -m 'evidence(exp277): persist authoritative real Gate B outcome'
+          git push origin HEAD:exp277-confirmatory-gate-a
