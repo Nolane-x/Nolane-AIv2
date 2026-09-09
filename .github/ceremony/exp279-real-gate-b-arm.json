@@ -1,0 +1,7 @@
+{
+  "schema": "NLM-EXP-279-REAL-GATE-B-ARM-V1",
+  "ceremony_id": "EXP-279-REAL-GATE-B-2026-09-09",
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "source_baseline_sha": "2d8532371f05798d2d8be5fb19731503192363e0",
+  "armed": true
+}
