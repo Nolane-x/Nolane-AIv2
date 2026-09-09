@@ -7,6 +7,7 @@ on:
       - 'scripts/*exp277*.py'
       - 'tests/test_exp277_*.py'
       - 'tests/test_matched_cbrf_arms.py'
+      - '.github/workflows/ci.yml'
       - '.github/workflows/exp277-confirmatory-ci.yml'
   push:
     branches: [main]
@@ -15,6 +16,7 @@ on:
       - 'scripts/*exp277*.py'
       - 'tests/test_exp277_*.py'
       - 'tests/test_matched_cbrf_arms.py'
+      - '.github/workflows/ci.yml'
       - '.github/workflows/exp277-confirmatory-ci.yml'
 
 concurrency:
