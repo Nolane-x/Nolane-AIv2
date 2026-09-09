@@ -28,6 +28,18 @@ PRIMARY_METRIC = "verified_utility_per_accounted_flop_on_structure_dense_stratum
 PROTECTED_FLOOR = "hybrid >= best_simple - 0.01"
 MULTIPLICITY_FAMILY = "PROPAGATION_ROUTING"
 REPLAY_CONTRACT_SCHEMA = "NLM-EXP-279-DEVELOPMENT-REPLAY-CONTRACT-V1"
+RESIDUAL_STATISTIC = "mean_predicted_episode_stop_failure_probability"
+ROUTING_SUPERVISION = {
+    "loss": "binary_cross_entropy",
+    "weight": 1.0,
+    "episode_targets": {
+        "propagation_only": "arm_exact_failure",
+        "branch_only": "arm_exact_failure",
+        "hybrid": "propagation_stop_exact_failure",
+    },
+    "development_targets_used": True,
+    "evaluation_targets_used_for_routing": False,
+}
 
 
 def _artifact_digest(payload: dict[str, Any]) -> str:
@@ -78,6 +90,31 @@ def _build_seeded_triplet(
     return propagation, branch, hybrid, seed
 
 
+def _episode_failure_target(
+    decision_logits: torch.Tensor,
+    targets: torch.Tensor,
+) -> torch.Tensor:
+    predictions = decision_logits.detach().argmax(dim=-1)
+    exact = (predictions == targets).all(dim=-1)
+    return (~exact).to(dtype=decision_logits.dtype)
+
+
+def _hybrid_stop_decision_logits(
+    arm: HybridRoutingArm,
+    *,
+    surface_events: torch.Tensor,
+    variable_states: torch.Tensor,
+    incidence: torch.Tensor,
+) -> torch.Tensor:
+    events, variables = arm._validate_common(surface_events, variable_states)
+    checked_incidence = arm._validate_incidence(incidence, variables)
+    propagated = arm._propagate(variables, checked_incidence)
+    propagation_state = variables + propagated
+    reclaimed = torch.tanh(arm.reclaimed_projection(propagation_state))
+    stop_state = propagation_state + reclaimed
+    return arm.decision_head(stop_state)
+
+
 def _train_step(
     arm: PropagationOnlyArm | BranchOnlyArm | HybridRoutingArm,
     optimizer: torch.optim.Optimizer,
@@ -94,7 +131,26 @@ def _train_step(
         output = arm(surface_events, variable_states)
     else:
         output = arm(surface_events, variable_states, incidence)
-    loss = F.cross_entropy(output.decision_logits.reshape(-1, 2), targets.reshape(-1))
+
+    decision_loss = F.cross_entropy(
+        output.decision_logits.reshape(-1, 2),
+        targets.reshape(-1),
+    )
+    if arm_id == "hybrid":
+        stop_logits = _hybrid_stop_decision_logits(
+            arm,
+            surface_events=surface_events,
+            variable_states=variable_states,
+            incidence=incidence,
+        )
+        routing_target = _episode_failure_target(stop_logits, targets)
+    else:
+        routing_target = _episode_failure_target(output.decision_logits, targets)
+    routing_loss = F.binary_cross_entropy(
+        output.residual_uncertainty,
+        routing_target,
+    )
+    loss = decision_loss + float(ROUTING_SUPERVISION["weight"]) * routing_loss
     loss.backward()
     optimizer.step()
     return float(loss.detach().item())
@@ -196,6 +252,7 @@ def _replay_contract(payload: dict[str, Any]) -> dict[str, Any]:
             "strata": deepcopy(training.get("strata") or []),
             "paired_batch_digests": deepcopy(training.get("paired_batch_digests") or []),
             "optimizer": deepcopy(training.get("optimizer") or {}),
+            "routing_supervision": deepcopy(training.get("routing_supervision") or {}),
             "losses": deepcopy(training.get("losses") or {}),
         },
         "final_state": deepcopy(payload.get("final_state") or {}),
@@ -338,6 +395,8 @@ def validate_exp279_paired_development(payload: dict[str, Any]) -> list[str]:
     route_config = payload.get("route_config") or {}
     if route_config.get("strategy") != "propagation_then_branch_on_residual_uncertainty":
         errors.append("EXP-279 routing strategy drift")
+    if route_config.get("residual_statistic") != RESIDUAL_STATISTIC:
+        errors.append("EXP-279 residual routing statistic drift")
     if route_config.get("frozen_before_evaluation") is not True:
         errors.append("EXP-279 route threshold must be frozen before evaluation")
     try:
@@ -372,6 +431,8 @@ def validate_exp279_paired_development(payload: dict[str, Any]) -> list[str]:
     train_digests = list(training.get("paired_batch_digests") or [])
     if training.get("strata") != list(STRATA):
         errors.append("EXP-279 training strata drift")
+    if training.get("routing_supervision") != ROUTING_SUPERVISION:
+        errors.append("EXP-279 calibrated routing supervision contract drift")
     if (
         train_count <= 0
         or len(train_digests) != train_count
@@ -839,6 +900,7 @@ def run_exp279_paired_development(
         "route_config": {
             "strategy": "propagation_then_branch_on_residual_uncertainty",
             "threshold": float(route_threshold),
+            "residual_statistic": RESIDUAL_STATISTIC,
             "frozen_before_evaluation": True,
         },
         "primary_endpoint": {
@@ -878,6 +940,7 @@ def run_exp279_paired_development(
                 "lr": float(lr),
                 "weight_decay": float(weight_decay),
             },
+            "routing_supervision": deepcopy(ROUTING_SUPERVISION),
             "losses": training_losses,
             "mean_losses": {
                 arm: sum(loss_values) / len(loss_values)
