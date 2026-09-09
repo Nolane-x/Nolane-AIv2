@@ -32,6 +32,9 @@ RESIDUAL_STATISTIC = "mean_predicted_episode_stop_failure_probability"
 ROUTING_SUPERVISION = {
     "loss": "binary_cross_entropy",
     "weight": 1.0,
+    "gradient_scope": "routing_head_only",
+    "shared_backbone_receives_routing_loss_gradient": False,
+    "decision_head_receives_routing_loss_gradient": False,
     "episode_targets": {
         "propagation_only": "arm_exact_failure",
         "branch_only": "arm_exact_failure",
@@ -150,10 +153,22 @@ def _train_step(
         output.residual_uncertainty,
         routing_target,
     )
-    loss = decision_loss + float(ROUTING_SUPERVISION["weight"]) * routing_loss
-    loss.backward()
+    routing_weight = float(ROUTING_SUPERVISION["weight"])
+    routing_parameters = tuple(arm.routing_head.parameters())
+    routing_gradients = torch.autograd.grad(
+        routing_weight * routing_loss,
+        routing_parameters,
+        retain_graph=True,
+    )
+    decision_loss.backward()
+    for parameter, routing_gradient in zip(routing_parameters, routing_gradients):
+        if parameter.grad is None:
+            parameter.grad = routing_gradient.detach().clone()
+        else:
+            parameter.grad.add_(routing_gradient)
     optimizer.step()
-    return float(loss.detach().item())
+    loss_value = decision_loss.detach() + routing_weight * routing_loss.detach()
+    return float(loss_value.item())
 
 
 def _external_metrics(

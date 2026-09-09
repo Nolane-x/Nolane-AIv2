@@ -12,7 +12,7 @@ on:
       - 'tests/test_exp279_*.py'
       - 'tests/test_matched_routing_arms.py'
   push:
-    branches: [exp279-confirmatory-gate-a]
+    branches: [main, exp279-confirmatory-gate-a]
     paths:
       - '.github/workflows/exp279-confirmatory-ci.yml'
       - 'protocols/stage_a_v1.json'

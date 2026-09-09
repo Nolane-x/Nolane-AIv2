@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-import torch
+import pytest
+
+torch = pytest.importorskip("torch")
 
 from nolane_ai.experiments.exp279_paired_runner import (
     ROUTING_SUPERVISION,
