@@ -124,7 +124,7 @@ def gate_a_inputs(tmp_path_factory: pytest.TempPathFactory):
 
 def _gate_a_args(root: Path, execution: Path, registry: Path) -> tuple[list[str], dict[str, Path]]:
     out = root / "gate-a"
-    out.mkdir(exist_ok=True)
+    out.mkdir(parents=True, exist_ok=True)
     paths = {
         "checkpoint": out / "checkpoint.pt",
         "checkpoint_receipt": out / "checkpoint-receipt.json",
