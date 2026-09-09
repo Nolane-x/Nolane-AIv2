@@ -4,7 +4,7 @@ from copy import deepcopy
 
 import pytest
 
-pytest.importorskip("torch")
+torch = pytest.importorskip("torch")
 
 
 STRATA = ["PROPAGATION_FIT", "BRANCH_FIT", "MIXED_RESIDUAL"]
@@ -115,6 +115,38 @@ def test_exp279_paired_runner_closes_development_lineage_without_promotion() -> 
     assert aggregate["best_simple_arm"] in {"propagation_only", "branch_only"}
     assert set(aggregate["by_stratum"]) == set(STRATA)
     assert validate_exp279_paired_development(artifact) == []
+
+
+def test_exp279_hybrid_training_updates_routing_head() -> None:
+    from nolane_ai.experiments.exp279_paired_runner import _build_seeded_triplet, _train_step
+
+    _, _, hybrid, _ = _build_seeded_triplet(
+        root_seed="exp279-routing-gradient-test",
+        d_model=8,
+        hidden_size=6,
+        target_parameters=5_000,
+        route_threshold=0.5,
+    )
+    optimizer = torch.optim.SGD(hybrid.parameters(), lr=0.05)
+    surface = torch.randn(2, 3, 8)
+    variables = torch.randn(2, 4, 8)
+    incidence = torch.ones(2, 2, 4)
+    targets = torch.tensor([[0, 1, 0, 1], [1, 0, 1, 0]], dtype=torch.long)
+
+    before_weight = hybrid.routing_head.weight.detach().clone()
+    before_bias = hybrid.routing_head.bias.detach().clone()
+    _train_step(
+        hybrid,
+        optimizer,
+        arm_id="hybrid",
+        surface_events=surface,
+        variable_states=variables,
+        incidence=incidence,
+        targets=targets,
+    )
+
+    assert not torch.equal(hybrid.routing_head.weight.detach(), before_weight)
+    assert not torch.equal(hybrid.routing_head.bias.detach(), before_bias)
 
 
 def test_exp279_runner_requires_all_predeclared_strata_and_disjoint_lineage() -> None:
