@@ -71,3 +71,17 @@ def test_exp277_persistence_verifies_primary_and_protected_endpoints() -> None:
         "wall_energy_per_episode",
     ):
         assert token in text
+
+
+def test_exp277_persistence_source_boundary_check_cannot_fail_open_on_shallow_clone() -> None:
+    text = _text()
+    assert "fetch-depth: 0" in text
+    assert "git cat-file -e \"$FREEZE_SHA^{commit}\"" in text
+
+
+def test_exp277_persistence_uses_summary_fields_that_exist_and_cross_links_lineage() -> None:
+    text = _text()
+    assert "summary['analysis_digest']" not in text
+    assert "summary['seal_digest'] == analysis['lineage']['seal_digest']" in text
+    assert "summary['beacon_receipt_digest'] == analysis['lineage']['beacon_receipt_digest']" in text
+    assert "summary['source_tree_digest'] == analysis['lineage']['source_tree_digest']" in text
