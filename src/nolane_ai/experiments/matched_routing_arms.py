@@ -92,8 +92,7 @@ class _MatchedExp279ArmBase(nn.Module):
     def _residual_uncertainty(self, hidden: torch.Tensor) -> torch.Tensor:
         routing_logits = self.routing_head(hidden).squeeze(-1)
         routing_probability = torch.sigmoid(routing_logits)
-        entropy_proxy = 1.0 - (routing_probability - 0.5).abs().mul(2.0)
-        return entropy_proxy.mean(dim=-1).clamp(0.0, 1.0)
+        return routing_probability.mean(dim=-1).clamp(0.0, 1.0)
 
     def _heads(
         self,
