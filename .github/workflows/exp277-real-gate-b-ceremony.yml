@@ -2,7 +2,7 @@ name: exp277-real-gate-b-ceremony
 
 on:
   push:
-    branches: [exp277-real-gate-b-ceremony]
+    branches: [exp277-real-gate-b-ceremony-retry-2]
     paths:
       - .github/ceremony/exp277-real-gate-b-arm.json
 
@@ -49,13 +49,25 @@ jobs:
               raise SystemExit(f"invalid EXP-277 protocol identity in arm marker: {arm!r}")
           if arm.get('armed') is not True:
               raise SystemExit('EXP-277 scientific lane is not armed')
+          if os.environ.get('GITHUB_REF_NAME') != 'exp277-real-gate-b-ceremony-retry-2':
+              raise SystemExit('EXP-277 retry must run only on immutable retry-2 branch')
+          if arm.get('attempt_number') != 2:
+              raise SystemExit('EXP-277 retry arm must declare attempt_number=2')
+          if arm.get('prior_pre_inference_failure_run_id') != 34318307479:
+              raise SystemExit('EXP-277 retry arm must bind prior pre-inference failure run')
+          if arm.get('prior_pre_inference_failure_arm_sha') != 'a24b1d3220b8d95934ce08979c08d5a00e899900':
+              raise SystemExit('EXP-277 retry arm must bind prior pre-inference failure arm SHA')
+          if arm.get('prior_failure_boundary') != 'PRE_BEACON_PRE_INFERENCE':
+              raise SystemExit('EXP-277 retry arm must preserve the prior failure boundary')
+          if arm.get('prior_failure_artifact_count') != 0:
+              raise SystemExit('EXP-277 retry is legal only because prior attempt published zero artifacts')
           baseline = arm.get('source_baseline_sha')
           if not isinstance(baseline, str) or len(baseline) != 40:
               raise SystemExit('EXP-277 source_baseline_sha missing or invalid')
           with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as fh:
               fh.write(f'BASELINE_SHA={baseline}\n')
           PY
-          test "${GITHUB_REF_NAME}" = "exp277-real-gate-b-ceremony"
+          test "${GITHUB_REF_NAME}" = "exp277-real-gate-b-ceremony-retry-2"
           PARENT_SHA="$(git rev-parse HEAD^)"
           BASELINE_FROM_MARKER="$(python - <<'PY'
           import json
