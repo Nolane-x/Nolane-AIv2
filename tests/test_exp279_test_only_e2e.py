@@ -72,7 +72,10 @@ def test_exp279_test_only_development_builder_is_canonical_e2_and_non_scientific
     assert execution["challenge_materialized"] is False
     assert execution["decision_rule_executed"] is False
     assert registry["protocol_digest"] == canonical
-    assert registry["experiments"]["EXP-279"]["development_match_status"] == "MATCHED"
+    assert (
+        registry["experiments"]["EXP-279"]["development_match_status"]
+        == "PAIRED_ROUTING_DEV_READY"
+    )
 
 
 def test_exp279_production_gate_a_to_test_only_gate_b_e2e_cannot_promote(
