@@ -4,6 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "exp277-persist-real-gate-b-evidence.yml"
+EVIDENCE_ROOT = ROOT / "evidence" / "exp277" / "2026-09-09-real-gate-b"
 
 RUN_ID = "34323835734"
 ARTIFACT_ID = "10093277653"
@@ -85,3 +86,28 @@ def test_exp277_persistence_uses_summary_fields_that_exist_and_cross_links_linea
     assert "summary['seal_digest'] == analysis['lineage']['seal_digest']" in text
     assert "summary['beacon_receipt_digest'] == analysis['lineage']['beacon_receipt_digest']" in text
     assert "summary['source_tree_digest'] == analysis['lineage']['source_tree_digest']" in text
+
+
+def test_exp277_persisted_ev_e3_closure_is_present_and_pinned() -> None:
+    receipt = (EVIDENCE_ROOT / "PERSISTENCE-RECEIPT.md").read_text(encoding="utf-8")
+    provenance = (EVIDENCE_ROOT / "PROVENANCE.md").read_text(encoding="utf-8")
+    persisted_sums = (EVIDENCE_ROOT / "PERSISTED-SHA256SUMS").read_text(encoding="utf-8")
+    for token in (
+        RUN_ID,
+        ARTIFACT_ID,
+        ARTIFACT_DIGEST,
+        BASELINE_SHA,
+        CEREMONY_SHA,
+        PROTOCOL_DIGEST,
+        PRIOR_RUN_ID,
+        "PRE_BEACON_PRE_INFERENCE",
+        "EV-E3 / KILL_SUBSYSTEM",
+    ):
+        assert token in receipt
+    assert "0.0573178199632578" in provenance
+    assert "+0.10" in provenance
+    assert "-0.005" in provenance
+    assert "cryptographic_signature_verified_by_ceremony=false" in provenance
+    assert "confirmatory-analysis.json" in persisted_sums
+    assert "confirmatory-raw.json" in persisted_sums
+    assert "trained-checkpoint.pt" in persisted_sums
