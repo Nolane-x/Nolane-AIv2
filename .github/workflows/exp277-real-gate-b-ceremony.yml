@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: exp277-real-gate-b-${{ github.workflow }}-${{ github.ref }}
+  group: exp277-real-gate-b-${{ github.ref }}
   cancel-in-progress: false
 
 env:
