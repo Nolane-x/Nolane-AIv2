@@ -1,0 +1,138 @@
+name: exp279-development-routing-recheck
+
+on:
+  push:
+    branches:
+      - exp279-confirmatory-gate-a
+    paths:
+      - .github/workflows/exp279-development-routing-recheck.yml
+      - src/nolane_ai/experiments/matched_routing_arms.py
+      - src/nolane_ai/experiments/exp279_paired_runner.py
+      - src/nolane_ai/experiments/exp279_confirmatory_prep.py
+      - scripts/run_exp279_paired_dev.py
+      - protocols/stage_a_v1.json
+      - protocols/stage_a_v1.sha256
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exp279-development-routing-recheck-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  planning-recheck:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev,model]'
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run calibrated non-tiny EXP-279 DEVELOPMENT pilot
+        run: |
+          mkdir -p /tmp/exp279-routing-recheck
+          python scripts/run_exp279_paired_dev.py \
+            --root-seed 20260906-exp279-paired-dev \
+            --d-model 64 \
+            --hidden-size 48 \
+            --target-parameters 500000 \
+            --route-threshold 0.5 \
+            --train-replicates 15 \
+            --eval-replicates 33 \
+            --eval-start-replicate 10000 \
+            --batch-size 8 \
+            --timesteps 4 \
+            --variables 6 \
+            --constraints 3 \
+            --noise-std 0.05 \
+            --lr 0.002 \
+            --weight-decay 0.0 \
+            --output /tmp/exp279-routing-recheck/development.json \
+            --registry-output /tmp/exp279-routing-recheck/registry.json
+      - name: Compute Gate-A planning status without sealing or challenge entropy
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from nolane_ai.experiments.exp279_confirmatory_prep import (
+              build_exp279_confirmatory_prep,
+              validate_exp279_confirmatory_prep,
+          )
+          from nolane_ai.protocol.identity import file_sha256, source_tree_digest
+
+          root = Path.cwd()
+          work = Path('/tmp/exp279-routing-recheck')
+          protocol = json.loads((root / 'protocols/stage_a_v1.json').read_text())
+          expected = (root / 'protocols/stage_a_v1.sha256').read_text().strip()
+          actual = file_sha256(root / 'protocols/stage_a_v1.json')
+          if actual != expected:
+              raise SystemExit(f'protocol digest mismatch: {actual} != {expected}')
+          experiment = next(
+              item for item in protocol['experiments']
+              if item.get('experiment_id') == 'EXP-279'
+          )
+          execution = json.loads((work / 'development.json').read_text())
+          registry = json.loads((work / 'registry.json').read_text())
+          prep = build_exp279_confirmatory_prep(
+              experiment=experiment,
+              execution_artifact=execution,
+              arm_registry=registry,
+              analysis_code_digest=source_tree_digest(root),
+          )
+          errors = validate_exp279_confirmatory_prep(prep)
+          if errors:
+              raise SystemExit('invalid EXP-279 prep: ' + '; '.join(errors))
+          (work / 'prep.json').write_text(
+              json.dumps(prep, sort_keys=True, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          summary = {
+              'status': prep.get('status'),
+              'confirmatory_ready': prep.get('confirmatory_ready'),
+              'confirmatory_n': prep.get('confirmatory_n'),
+              'unclamped_required_n': prep.get('unclamped_required_n'),
+              'required_n_by_contrast': prep.get('required_n_by_contrast'),
+              'challenge_materialized': prep.get('challenge_materialized'),
+              'confirmatory_data_consumed': prep.get('confirmatory_data_consumed'),
+              'decision': prep.get('decision'),
+              'evidence_level': prep.get('evidence_level'),
+              'protocol_digest': prep.get('protocol_digest'),
+              'analysis_code_digest': prep.get('analysis_code_digest'),
+          }
+          (work / 'summary.json').write_text(
+              json.dumps(summary, sort_keys=True, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          print(json.dumps(summary, sort_keys=True))
+          PY
+      - name: Assert DEVELOPMENT-only boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          work = Path('/tmp/exp279-routing-recheck')
+          execution = json.loads((work / 'development.json').read_text())
+          prep = json.loads((work / 'prep.json').read_text())
+          assert execution['evidence_level'] == 'EV-E2'
+          assert execution['decision'] == 'UNVERIFIED'
+          assert execution['confirmatory_data_consumed'] is False
+          assert execution['challenge_materialized'] is False
+          assert prep['evidence_level'] == 'EV-E2'
+          assert prep['decision'] == 'UNVERIFIED'
+          assert prep['confirmatory_data_consumed'] is False
+          assert prep['challenge_materialized'] is False
+          PY
+      - name: Upload DEVELOPMENT planning evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-development-routing-recheck-${{ github.sha }}
+          path: /tmp/exp279-routing-recheck
+          if-no-files-found: error
+          retention-days: 90
