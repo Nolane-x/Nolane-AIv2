@@ -95,7 +95,9 @@ def test_exp279_checkpoint_payload_is_functional_only_and_excludes_optimizer_and
     }
     rendered = repr(payload).lower()
     assert "optimizer_state" not in rendered
-    assert "evaluation" not in rendered
+    assert "evaluation" not in payload
+    assert "evaluation" not in payload["replay_contract"]
+    assert "per_replicate" not in payload["replay_contract"]
     assert "challenge" not in rendered
 
 
