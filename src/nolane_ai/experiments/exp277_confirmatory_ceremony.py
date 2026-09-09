@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from nolane_ai.protocol.evidence import canonical_sha256
 from .exp277_beacon import validate_exp277_beacon_receipt
@@ -119,6 +119,7 @@ def execute_exp277_gate_b_ceremony(
     executor_code_digest: str,
     test_only: bool,
     arm_scientific_lane: bool,
+    raw_publisher: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     _validate_chain(
         seal=seal,
@@ -140,10 +141,6 @@ def execute_exp277_gate_b_ceremony(
         current_source_tree_digest=current_source_tree_digest,
         executor_code_digest=executor_code_digest,
     )
-    if raw.get("status") == "INVALID_RUN" or raw.get("decision") == "INVALID_RUN":
-        detail = "; ".join(raw.get("integrity_errors") or ["unspecified integrity failure"])
-        raise RuntimeError("EXP-277 ceremony stopped at INVALID_RUN before analysis: " + detail)
-
     raw_errors = validate_exp277_confirmatory_raw(
         raw,
         checkpoint_path=checkpoint_path,
@@ -151,6 +148,16 @@ def execute_exp277_gate_b_ceremony(
     )
     if raw_errors:
         raise RuntimeError("invalid EXP-277 confirmatory raw artifact: " + "; ".join(raw_errors))
+
+    # The unanalyzed raw artifact is the first durable post-beacon evidence. A
+    # caller may persist it here so integrity failures and later analysis errors
+    # cannot erase the first-valid-attempt record.
+    if raw_publisher is not None:
+        raw_publisher(raw)
+
+    if raw.get("status") == "INVALID_RUN" or raw.get("decision") == "INVALID_RUN":
+        detail = "; ".join(raw.get("integrity_errors") or ["unspecified integrity failure"])
+        raise RuntimeError("EXP-277 ceremony stopped at INVALID_RUN before analysis: " + detail)
 
     authorization = seal.get("authorization_snapshot") or {}
     analysis_code_digest = authorization.get("analysis_code_digest")
