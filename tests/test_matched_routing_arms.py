@@ -96,6 +96,23 @@ def test_hybrid_route_threshold_is_explicit_and_controls_branch_execution() -> N
     assert never_output.branch_route_mask.tolist() == [False, False, False]
 
 
+def test_hybrid_residual_uncertainty_is_stop_failure_probability() -> None:
+    _, _, hybrid = _triplet(route_threshold=0.5)
+    with torch.no_grad():
+        hybrid.routing_head.weight.zero_()
+        hybrid.routing_head.bias.fill_(torch.logit(torch.tensor(0.9)).item())
+
+    hidden = torch.zeros(2, 4, hybrid.hidden_size)
+    residual = hybrid._residual_uncertainty(hidden)
+    assert residual.tolist() == pytest.approx([0.9, 0.9], abs=1e-6)
+
+    surface = torch.randn(2, 3, 8)
+    variables = torch.randn(2, 4, 8)
+    incidence = torch.ones(2, 2, 4)
+    output = hybrid(surface, variables, incidence)
+    assert output.branch_route_mask.tolist() == [True, True]
+
+
 def test_exp279_compute_budget_fails_closed() -> None:
     from nolane_ai.experiments.matched_routing_arms import audit_matched_exp279_arm_triplet
 
