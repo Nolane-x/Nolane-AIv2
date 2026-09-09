@@ -7,6 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "exp277-real-gate-b-ceremony.yml"
 ARM_PATH = ".github/ceremony/exp277-real-gate-b-arm.json"
 PROTOCOL_SHA = "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440"
+RETRY_BRANCH = "exp277-real-gate-b-ceremony-retry-2"
+PRIOR_FAILURE_RUN_ID = "34318307479"
+PRIOR_FAILURE_ARM_SHA = "a24b1d3220b8d95934ce08979c08d5a00e899900"
 
 
 def _workflow_text() -> str:
@@ -16,7 +19,7 @@ def _workflow_text() -> str:
 
 def test_exp277_real_gate_b_workflow_exists_and_is_arm_only() -> None:
     text = _workflow_text()
-    assert "branches: [exp277-real-gate-b-ceremony]" in text
+    assert f"branches: [{RETRY_BRANCH}]" in text
     assert ARM_PATH in text
     assert "workflow_dispatch" not in text
     assert "actions: read" in text
@@ -38,6 +41,24 @@ def test_exp277_real_gate_b_arm_commit_is_only_orchestration_marker() -> None:
     ):
         assert path in text
     assert PROTOCOL_SHA in text
+
+
+def test_exp277_retry_lane_preserves_failed_pre_inference_attempt_provenance() -> None:
+    text = _workflow_text()
+    for token in (
+        RETRY_BRANCH,
+        "attempt_number",
+        "prior_pre_inference_failure_run_id",
+        "prior_pre_inference_failure_arm_sha",
+        "prior_failure_boundary",
+        "prior_failure_artifact_count",
+        PRIOR_FAILURE_RUN_ID,
+        PRIOR_FAILURE_ARM_SHA,
+        "PRE_BEACON_PRE_INFERENCE",
+    ):
+        assert token in text
+    assert "prior_failure_artifact_count') != 0" in text
+    assert "attempt_number') != 2" in text
 
 
 def test_exp277_real_gate_b_requires_baseline_normal_and_focused_ci() -> None:
