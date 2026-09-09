@@ -62,6 +62,7 @@ jobs:
           tests/test_exp277_confirmatory_prep.py
           tests/test_exp277_confirmatory_prep_min_replicates.py
           tests/test_exp277_checkpoint.py
+          tests/test_exp277_confirmatory_gate_a_cli.py
           tests/test_exp279_neural_import.py
           tests/test_matched_routing_arms.py
           tests/test_exp279_routing_worlds.py
