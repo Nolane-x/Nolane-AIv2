@@ -31,6 +31,9 @@ RUN_KWARGS = dict(
 EXPECTED_ROUTING_SUPERVISION = {
     "loss": "binary_cross_entropy",
     "weight": 1.0,
+    "gradient_scope": "routing_head_only",
+    "shared_backbone_receives_routing_loss_gradient": False,
+    "decision_head_receives_routing_loss_gradient": False,
     "episode_targets": {
         "propagation_only": "arm_exact_failure",
         "branch_only": "arm_exact_failure",
