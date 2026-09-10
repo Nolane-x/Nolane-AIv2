@@ -9,8 +9,12 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _protocol() -> dict:
+    return json.loads((ROOT / "protocols" / "stage_a_v1.json").read_text(encoding="utf-8"))
+
+
 def _frozen_experiment() -> dict:
-    protocol = json.loads((ROOT / "protocols" / "stage_a_v1.json").read_text(encoding="utf-8"))
+    protocol = _protocol()
     return next(item for item in protocol["experiments"] if item["experiment_id"] == "EXP-286")
 
 
@@ -82,6 +86,7 @@ def test_exp286_gate_a_plans_from_real_paired_development_without_consuming_chal
         execution_artifact=execution,
         arm_registry=registry,
         analysis_code_digest="a" * 64,
+        familywise_alpha=_protocol()["global_sample_size_plan"]["familywise_alpha"],
     )
 
     assert prep["schema"] == "NLM-EXP-286-CONFIRMATORY-PREP-V1"
@@ -97,6 +102,8 @@ def test_exp286_gate_a_plans_from_real_paired_development_without_consuming_chal
     assert frozen["primary_direction"] == "lower"
     assert frozen["effect_type"] == "paired_log_cost_ratio_relative_reduction"
     assert frozen["mesi_relative_reduction"] == pytest.approx(0.15)
+    assert frozen["familywise_alpha"] == pytest.approx(0.05)
+    assert "bootstrap_samples" not in frozen
     assert frozen["multiplicity_family"] == "CONFLICT_VALUE"
     assert frozen["protected_solution_floor"] == "oracle_conflict_core >= chronological_failure - 0.005"
 
