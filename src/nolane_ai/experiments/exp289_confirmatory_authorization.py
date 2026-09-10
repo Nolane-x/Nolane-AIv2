@@ -36,6 +36,20 @@ def _is_hex_digest(value: Any, *, lengths: set[int] = {64}) -> bool:
     return True
 
 
+def _reserved_id_errors(value: Any, *, confirmatory_n: int | None) -> list[str]:
+    if not isinstance(value, list):
+        return ["EXP-289 authorization reserved replicate IDs are missing"]
+    if confirmatory_n is None or len(value) != confirmatory_n:
+        return ["EXP-289 authorization reserved replicate count mismatch"]
+    if any(not isinstance(item, int) or isinstance(item, bool) or item < 0 for item in value):
+        return ["EXP-289 authorization reserved replicate IDs must be non-negative integers"]
+    if len(set(value)) != len(value):
+        return ["EXP-289 authorization reserved replicate IDs must be unique"]
+    if value and value != list(range(value[0], value[0] + len(value))):
+        return ["EXP-289 authorization reserved replicate IDs must be contiguous and ordered"]
+    return []
+
+
 def _forbidden_material_present(payload: dict[str, Any]) -> list[str]:
     rendered = repr(payload).lower()
     forbidden = ("beacon_receipt", "entropy_hex", "challenge_seed", "confirmatory_observations")
@@ -165,8 +179,15 @@ def validate_exp289_confirmatory_execution_authorization(payload: dict[str, Any]
         errors.append(f"EXP-289 authorization contains forbidden pre-beacon material: {item}")
 
     confirmatory_n = payload.get("confirmatory_n")
-    if not isinstance(confirmatory_n, int) or isinstance(confirmatory_n, bool) or not MIN_N <= confirmatory_n <= MAX_N:
+    valid_n = isinstance(confirmatory_n, int) and not isinstance(confirmatory_n, bool) and MIN_N <= confirmatory_n <= MAX_N
+    if not valid_n:
         errors.append("EXP-289 authorization confirmatory_n is outside frozen bounds")
+    errors.extend(
+        _reserved_id_errors(
+            payload.get("reserved_replicate_ids"),
+            confirmatory_n=int(confirmatory_n) if valid_n else None,
+        )
+    )
 
     lineage = payload.get("lineage")
     if not isinstance(lineage, dict):
@@ -214,6 +235,7 @@ def validate_exp289_confirmatory_execution_authorization(payload: dict[str, Any]
         "checkpoint_file_hash_bound",
         "checkpoint_execution_contract_bound",
         "checkpoint_functional_state_verified",
+        "reserved_replicate_ids_bound",
         "pre_beacon_boundary_preserved",
         "all_checks_passed",
     )
@@ -279,6 +301,12 @@ def authorize_exp289_confirmatory_execution(
     confirmatory_n = (prep_artifact.get("sample_size_freeze") or {}).get("confirmatory_n")
     if not isinstance(confirmatory_n, int) or isinstance(confirmatory_n, bool) or not MIN_N <= confirmatory_n <= MAX_N:
         raise ValueError("EXP-289 authorization requires confirmatory_n within frozen bounds")
+    reserved_replicate_ids = list(
+        (prep_artifact.get("confirmatory_lineage") or {}).get("reserved_replicate_ids") or []
+    )
+    reserved_errors = _reserved_id_errors(reserved_replicate_ids, confirmatory_n=confirmatory_n)
+    if reserved_errors:
+        raise ValueError("; ".join(reserved_errors))
 
     checkpoint_errors = _checkpoint_errors(
         checkpoint_path=checkpoint_path,
@@ -316,6 +344,7 @@ def authorize_exp289_confirmatory_execution(
         "evidence_level": "EV-E2",
         "decision": "UNVERIFIED",
         "confirmatory_n": confirmatory_n,
+        "reserved_replicate_ids": deepcopy(reserved_replicate_ids),
         "confirmatory_data_consumed": False,
         "seed_materialization_status": "NOT_EXECUTED",
         "challenge_materialized": False,
@@ -334,6 +363,7 @@ def authorize_exp289_confirmatory_execution(
             "checkpoint_file_hash_bound": True,
             "checkpoint_execution_contract_bound": True,
             "checkpoint_functional_state_verified": True,
+            "reserved_replicate_ids_bound": True,
             "pre_beacon_boundary_preserved": True,
             "all_checks_passed": True,
         },
