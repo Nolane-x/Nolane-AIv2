@@ -6,6 +6,7 @@ on:
       - 'src/nolane_ai/experiments/exp289_*.py'
       - 'scripts/*exp289*.py'
       - 'tests/test_exp289_*.py'
+      - 'tests/exp289_confirmatory_fixtures.py'
       - 'tests/test_matched_nogood_arms.py'
       - 'protocols/exp289_authoritative_development_v1.json'
       - 'protocols/exp289_authoritative_development_v1.sha256'
@@ -19,6 +20,7 @@ on:
       - 'src/nolane_ai/experiments/exp289_*.py'
       - 'scripts/*exp289*.py'
       - 'tests/test_exp289_*.py'
+      - 'tests/exp289_confirmatory_fixtures.py'
       - 'tests/test_matched_nogood_arms.py'
       - 'protocols/exp289_authoritative_development_v1.json'
       - 'protocols/exp289_authoritative_development_v1.sha256'
@@ -55,6 +57,8 @@ jobs:
           tests/test_exp289_confirmatory_prep_cli.py
           tests/test_exp289_authoritative_development.py
           tests/test_exp289_checkpoint.py
+          tests/test_exp289_confirmatory_authorization.py
+          tests/test_exp289_confirmatory_ceremony.py
       - name: Verify frozen Stage-A protocol
         run: python scripts/verify_protocol.py
       - name: Build EXP-289 Gate A DEVELOPMENT pilot
