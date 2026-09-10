@@ -1,0 +1,62 @@
+{
+  "challenge_contract_digest": "d796b09ac54417932efd9e451fec8731406b3293d7083314afe64315bf2560cb",
+  "challenge_materialized": false,
+  "code_tree_digest": "b48d046640f98644bb398fa030cabea8295d58d0b3990297e3e879951cf95517",
+  "confirmatory_data_consumed": false,
+  "confirmatory_n": 32,
+  "confirmatory_ready": true,
+  "confirmatory_ready_scope": "FROZEN_MACHINERY_READY_FOR_FUTURE_BEACON_ONLY",
+  "decision": "UNVERIFIED",
+  "decision_rule_executed": false,
+  "evidence_level": "EV-E2",
+  "execution_authorization": {
+    "authorization_digest": "9444361eb64e80a7ca67ebe1cc0ed72856f818160c5fc98e161b9aa478df06e3",
+    "challenge_materialized": false,
+    "confirmatory_data_consumed": false,
+    "confirmatory_n": 32,
+    "decision": "UNVERIFIED",
+    "evidence_level": "EV-E2",
+    "experiment_id": "EXP-286",
+    "lineage": {
+      "challenge_contract_digest": "d796b09ac54417932efd9e451fec8731406b3293d7083314afe64315bf2560cb",
+      "development_execution_digest": "17d18f91338970f7b03be7b4acfa8dc0cb60f7e477eb45aeb9ed3bc33a30df3b",
+      "development_geometry_digest": "b60995518224229885c8eda55e171616d62b0aba566d7d015b407a27f7d39ec1",
+      "execution_code_digest": "b48d046640f98644bb398fa030cabea8295d58d0b3990297e3e879951cf95517",
+      "prep_digest": "ed7e3ef49d5336b6c86ad7eedc8a3bd378aff5485cc473ae9a9a65b31b552fc8",
+      "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440"
+    },
+    "preflight": {
+      "all_checks_passed": true,
+      "authoritative_geometry_bound": true,
+      "challenge_contract_bound": true,
+      "development_artifact_valid": true,
+      "development_prep_lineage_bound": true,
+      "pre_beacon_boundary_preserved": true,
+      "prep_artifact_valid": true,
+      "prep_ready": true,
+      "protocol_lineage_bound": true
+    },
+    "schema": "NLM-EXP-286-CONFIRMATORY-EXECUTION-AUTH-V1",
+    "seed_materialization_status": "NOT_EXECUTED",
+    "status": "AUTHORIZED_NOT_EXECUTED"
+  },
+  "experiment_id": "EXP-286",
+  "freeze_commit_sha": "0b3234ab3b90e9e49dc2976d7976e4c92344b20c",
+  "freeze_commit_timestamp_utc": "2026-09-10T06:05:57Z",
+  "lineage": {
+    "analysis_code_digest": "b48d046640f98644bb398fa030cabea8295d58d0b3990297e3e879951cf95517",
+    "challenge_contract_digest": "d796b09ac54417932efd9e451fec8731406b3293d7083314afe64315bf2560cb",
+    "development_code_digest": "b48d046640f98644bb398fa030cabea8295d58d0b3990297e3e879951cf95517",
+    "development_execution_digest": "17d18f91338970f7b03be7b4acfa8dc0cb60f7e477eb45aeb9ed3bc33a30df3b",
+    "development_geometry_digest": "b60995518224229885c8eda55e171616d62b0aba566d7d015b407a27f7d39ec1",
+    "execution_authorization_digest": "9444361eb64e80a7ca67ebe1cc0ed72856f818160c5fc98e161b9aa478df06e3",
+    "execution_code_digest": "b48d046640f98644bb398fa030cabea8295d58d0b3990297e3e879951cf95517",
+    "prep_digest": "ed7e3ef49d5336b6c86ad7eedc8a3bd378aff5485cc473ae9a9a65b31b552fc8",
+    "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440"
+  },
+  "pre_beacon_binding_digest": "b5c972d7e901613594c8b8abe665c85f98a4e32d76cdce81f00e39deb32b5ad6",
+  "schema": "NLM-EXP-286-CONFIRMATORY-GATE-A-SEAL-V1",
+  "seal_digest": "981664457922e1077fc9755902f058b66c29bdea5cac49a15ff92cd031e127ce",
+  "seed_materialization_status": "NOT_EXECUTED",
+  "status": "CONFIRMATORY_GATE_A_SEALED"
+}
