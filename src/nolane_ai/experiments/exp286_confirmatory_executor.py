@@ -144,8 +144,8 @@ def execute_exp286_confirmatory_challenge(
     resource = (checkpoint_receipt.get("execution_contract") or {}).get("resource_binding") or {}
     ceiling = int(resource["declared_max_accounted_flops_per_episode"])
     compute = pair_audit.get("compute_ledger") or {}
-    chronological_flops = int(compute["chronological_failure"]["accounted_neural_flops_per_search_step"])
-    oracle_flops = int(compute["oracle_conflict_core"]["accounted_neural_flops_per_search_step"])
+    chronological_flops = int(compute["chronological_failure"]["accounted_flops_per_search_step"])
+    oracle_flops = int(compute["oracle_conflict_core"]["accounted_flops_per_search_step"])
     scope = TEST_ONLY_SCOPE if test_only else SCIENTIFIC_SCOPE
     rows: list[dict[str, Any]] = []
     lineage = seal.get("lineage") or {}
