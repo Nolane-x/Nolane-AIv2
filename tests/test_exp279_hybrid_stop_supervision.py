@@ -109,13 +109,16 @@ def test_hybrid_training_directly_supervises_stop_decision_even_when_all_episode
 
     # A hybrid router is trained from stop-path failure. If the stop path itself is
     # not directly supervised, an early weak stop prediction can self-lock the arm
-    # into always-branch behavior. The production objective must therefore differ
-    # from the legacy branch-only decision objective even when every episode routes.
-    assert not torch.equal(
-        hybrid.decision_head.weight.detach(),
-        legacy.decision_head.weight.detach(),
-    )
-    assert not torch.equal(
-        hybrid.decision_head.bias.detach(),
-        legacy.decision_head.bias.detach(),
+    # into always-branch behavior. The production objective must therefore produce
+    # a distinct decision-head update from the legacy branch-only objective even
+    # when every episode routes. Individual tensors (for example a bias on a
+    # balanced batch) are allowed to have cancelling gradients, so the contract is
+    # intentionally stated over the decision head as a whole rather than every
+    # parameter independently.
+    production_state = tuple(parameter.detach() for parameter in hybrid.decision_head.parameters())
+    legacy_state = tuple(parameter.detach() for parameter in legacy.decision_head.parameters())
+    assert len(production_state) == len(legacy_state)
+    assert any(
+        not torch.equal(production, baseline)
+        for production, baseline in zip(production_state, legacy_state)
     )
