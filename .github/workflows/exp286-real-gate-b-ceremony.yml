@@ -1,0 +1,372 @@
+name: exp286-real-gate-b-ceremony
+
+on:
+  push:
+    branches: [exp286-real-gate-b-ceremony]
+    paths:
+      - .github/ceremony/exp286-real-gate-b-arm.json
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: exp286-real-gate-b-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PROTOCOL_SHA: c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440
+  CEREMONY_ID: EXP-286-REAL-GATE-B-2026-09-10
+  ARM_PATH: .github/ceremony/exp286-real-gate-b-arm.json
+  ARM_LOCK_NAME: exp286-real-gate-b-arm-lock-EXP-286-REAL-GATE-B-2026-09-10
+  INFERENCE_MARKER_NAME: exp286-real-gate-b-inference-started-${{ github.sha }}
+  RAW_NAME: exp286-real-gate-b-raw-${{ github.sha }}
+  OUTCOME_NAME: exp286-real-gate-b-outcome-${{ github.sha }}
+  EVIDENCE_NAME: exp286-real-gate-b-evidence-${{ github.sha }}
+
+jobs:
+  ceremony:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate arm-only commit and frozen scientific scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          arm = json.loads(Path(os.environ['ARM_PATH']).read_text(encoding='utf-8'))
+          expected = {
+              'schema': 'NLM-EXP-286-REAL-GATE-B-ARM-V1',
+              'ceremony_id': os.environ['CEREMONY_ID'],
+              'protocol_digest': os.environ['PROTOCOL_SHA'],
+              'armed': True,
+              'confirmatory_scope': 'frozen-exp286-chronological-vs-oracle-conflict-core',
+          }
+          for key, value in expected.items():
+              if arm.get(key) != value:
+                  raise SystemExit(f'EXP-286 arm marker mismatch: {key}={arm.get(key)!r}')
+          baseline = arm.get('source_baseline_sha')
+          if not isinstance(baseline, str) or len(baseline) != 40:
+              raise SystemExit('EXP-286 source_baseline_sha missing or invalid')
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as fh:
+              fh.write(f'BASELINE_SHA={baseline}\n')
+          PY
+          test "${GITHUB_REF_NAME}" = "exp286-real-gate-b-ceremony"
+          BASELINE_FROM_MARKER="$(python -c "import json; print(json.load(open('${ARM_PATH}'))['source_baseline_sha'])")"
+          test "$(git rev-parse HEAD^)" = "$BASELINE_FROM_MARKER"
+          if git cat-file -e "${BASELINE_FROM_MARKER}:${ARM_PATH}" 2>/dev/null; then
+            echo "baseline already contains EXP-286 arm marker" >&2
+            exit 1
+          fi
+          mapfile -t changed < <(git diff --name-only "$BASELINE_FROM_MARKER" HEAD)
+          test "${#changed[@]}" -eq 1
+          test "${changed[0]}" = "$ARM_PATH"
+          test -z "$(git diff --name-only "$BASELINE_FROM_MARKER" HEAD -- src scripts protocols/stage_a_v1.json protocols/stage_a_v1.sha256 protocols/exp286_development_geometry_v1.json protocols/exp286_development_geometry_v1.sha256)"
+          test -z "$(git diff --name-only "$BASELINE_FROM_MARKER" HEAD -- .github/workflows/exp286-real-gate-b-ceremony.yml)"
+
+      - name: Reject replay after authoritative inference or outcome
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in "$ARM_LOCK_NAME" "$INFERENCE_MARKER_NAME" "$RAW_NAME" "$OUTCOME_NAME"; do
+            gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${name}&per_page=100" > /tmp/exp286-artifacts.json
+            python - "$name" <<'PY'
+          import json, sys
+          payload = json.load(open('/tmp/exp286-artifacts.json'))
+          name = sys.argv[1]
+          active = [a for a in payload.get('artifacts', []) if a.get('name') == name and not a.get('expired', False)]
+          if active:
+              raise SystemExit(f'authoritative EXP-286 artifact already exists for ceremony: {name}')
+          PY
+          done
+
+      - name: Materialize EXP-286 ceremony arm lock
+        shell: bash
+        run: |
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import json, os
+          from pathlib import Path
+          arm = json.loads(Path(os.environ['ARM_PATH']).read_text())
+          out = {
+              'schema': 'NLM-EXP-286-REAL-GATE-B-ARM-LOCK-V1',
+              'ceremony_id': os.environ['CEREMONY_ID'],
+              'ceremony_sha': os.environ['GITHUB_SHA'],
+              'source_baseline_sha': arm['source_baseline_sha'],
+              'protocol_digest': arm['protocol_digest'],
+              'created_at_utc': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+              'scientific_evidence_eligible': False,
+              'confirmatory_data_consumed': False,
+          }
+          Path('/tmp/exp286-arm-lock.json').write_text(json.dumps(out, sort_keys=True, indent=2)+'\n')
+          PY
+
+      - name: Publish irreversible EXP-286 ceremony arm lock
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARM_LOCK_NAME }}
+          path: /tmp/exp286-arm-lock.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Require exact baseline normal and focused CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          wait_run() {
+            local workflow="$1"
+            local outfile="$2"
+            for attempt in $(seq 1 120); do
+              gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${BASELINE_SHA}&event=push&per_page=20" > /tmp/exp286-ci-runs.json
+              state="$(python - <<'PY'
+          import json, os
+          runs=[r for r in json.load(open('/tmp/exp286-ci-runs.json')).get('workflow_runs',[]) if r.get('head_sha')==os.environ['BASELINE_SHA'] and r.get('event')=='push']
+          if not runs: print('WAIT')
+          else:
+              r=sorted(runs,key=lambda x:int(x['id']),reverse=True)[0]
+              print('WAIT' if r.get('status')!='completed' else (f"RUN:{r['id']}" if r.get('conclusion')=='success' else f"FAIL:{r['id']}:{r.get('conclusion')}"))
+          PY
+          )"
+              case "$state" in
+                WAIT) sleep 15 ;;
+                RUN:*) printf '%s\n' "${state#RUN:}" > "$outfile"; return 0 ;;
+                *) echo "exact baseline CI failed: $workflow $state" >&2; exit 1 ;;
+              esac
+            done
+            echo "timed out waiting for exact baseline CI: $workflow" >&2; exit 1
+          }
+          wait_run ci.yml /tmp/exp286-normal-ci-run-id.txt
+          wait_run exp286-confirmatory-ci.yml /tmp/exp286-focused-ci-run-id.txt
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/$(cat /tmp/exp286-normal-ci-run-id.txt)/jobs?per_page=100" > /tmp/exp286-normal-ci-jobs.json
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/$(cat /tmp/exp286-focused-ci-run-id.txt)/jobs?per_page=100" > /tmp/exp286-focused-ci-jobs.json
+          python - <<'PY'
+          import json
+          normal={j.get('name'):j.get('conclusion') for j in json.load(open('/tmp/exp286-normal-ci-jobs.json')).get('jobs',[])}
+          for name in ('core (3.11)','core (3.13)','model-smoke'):
+              if normal.get(name) != 'success': raise SystemExit(f'EXP-286 baseline normal CI court failed: {name}={normal.get(name)!r}')
+          focused={j.get('name'):j.get('conclusion') for j in json.load(open('/tmp/exp286-focused-ci-jobs.json')).get('jobs',[])}
+          if focused.get('contract') != 'success': raise SystemExit(f'EXP-286 focused CI court failed: {focused!r}')
+          PY
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install frozen model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev,model]'
+
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+
+      - name: Build locked authoritative EXP-286 DEVELOPMENT geometry
+        run: >-
+          python scripts/run_exp286_paired_dev.py
+          --geometry-manifest protocols/exp286_development_geometry_v1.json
+          --geometry-digest-file protocols/exp286_development_geometry_v1.sha256
+          --output /tmp/exp286-development.json
+          --registry-output /tmp/exp286-registry.json
+
+      - name: Prepare and authorize EXP-286 Gate A without beacon
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/prepare_exp286_confirmatory_gate_a.py --execution /tmp/exp286-development.json --registry /tmp/exp286-registry.json --output /tmp/exp286-prep.json
+          python - <<'PY'
+          import json
+          p=json.load(open('/tmp/exp286-prep.json'))
+          if p.get('status') != 'CONFIRMATORY_GATE_A_PREPARED': raise SystemExit(f"EXP-286 NOT READY: {p.get('status')}")
+          if p.get('evidence_level')!='EV-E2' or p.get('decision')!='UNVERIFIED' or p.get('confirmatory_data_consumed') is not False: raise SystemExit('EXP-286 prep crossed evidence boundary')
+          PY
+          python scripts/authorize_exp286_confirmatory_execution.py --execution /tmp/exp286-development.json --prep /tmp/exp286-prep.json --output /tmp/exp286-auth.json
+
+      - name: Reconstruct immutable EXP-286 trained checkpoint
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from nolane_ai.experiments.exp286_checkpoint import build_exp286_trained_checkpoint
+          execution=json.load(open('/tmp/exp286-development.json'))
+          receipt=build_exp286_trained_checkpoint(execution_artifact=execution, checkpoint_path='/tmp/exp286-checkpoint.pt')
+          Path('/tmp/exp286-checkpoint-receipt.json').write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
+          PY
+
+      - name: Seal immutable EXP-286 Gate A before public beacon
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE_COMMIT_TIMESTAMP_UTC="$(git show -s --format=%cI "$BASELINE_SHA" | python -c "import sys; from datetime import datetime,timezone; x=sys.stdin.read().strip(); print(datetime.fromisoformat(x.replace('Z','+00:00')).astimezone(timezone.utc).isoformat().replace('+00:00','Z'))")"
+          python scripts/seal_exp286_confirmatory_gate_a.py --execution /tmp/exp286-development.json --prep /tmp/exp286-prep.json --authorization /tmp/exp286-auth.json --freeze-commit-sha "$BASELINE_SHA" --freeze-commit-timestamp-utc "$FREEZE_COMMIT_TIMESTAMP_UTC" --output /tmp/exp286-gate-a-seal.json
+          date -u +%Y-%m-%dT%H:%M:%S.%NZ > /tmp/exp286-actual-gate-a-seal-created-at.txt
+
+      - name: Record first future public drand beacon after both freeze boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, math, time, urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+          from nolane_ai.experiments.exp286_beacon import _receipt_digest, validate_exp286_beacon_receipt
+          seal=json.load(open('/tmp/exp286-gate-a-seal.json'))
+          actual_gate_a_seal_created_at_utc=Path('/tmp/exp286-actual-gate-a-seal-created-at.txt').read_text().strip()
+          boundary=datetime.fromisoformat(actual_gate_a_seal_created_at_utc.replace('Z','+00:00')).astimezone(timezone.utc)
+          def fetch_json(url):
+              last=None
+              for _ in range(30):
+                  try:
+                      with urllib.request.urlopen(url, timeout=20) as r: return json.load(r)
+                  except Exception as exc:
+                      last=exc; time.sleep(2)
+              raise RuntimeError(f'failed to fetch {url}: {last}')
+          info=fetch_json('https://api.drand.sh/info')
+          genesis=int(info['genesis_time']); period=int(info['period'])
+          first_drand_round_strictly_after_actual_gate_a_seal = math.floor((boundary.timestamp()-genesis)/period)+2
+          target_round=max(1, first_drand_round_strictly_after_actual_gate_a_seal)
+          published=datetime.fromtimestamp(genesis+(target_round-1)*period, timezone.utc)
+          while datetime.now(timezone.utc) <= published: time.sleep(1)
+          primary_url=f'https://api.drand.sh/public/{target_round}'
+          try: beacon=fetch_json(primary_url)
+          except Exception: beacon=fetch_json(f'https://api2.drand.sh/public/{target_round}')
+          if int(beacon.get('round',-1)) != target_round: raise SystemExit('drand round mismatch')
+          if published <= boundary: raise SystemExit('drand beacon is not strictly after actual Gate-A seal')
+          receipt={
+              'schema':'NLM-EXP-286-PUBLIC-BEACON-RECEIPT-V1','experiment_id':'EXP-286','source':'drand',
+              'beacon_id':f'drand-round-{target_round}','published_at_utc':published.isoformat().replace('+00:00','Z'),
+              'entropy_hex':str(beacon['randomness']).lower(),'evidence_reference':primary_url,
+              'test_only':False,'scientific_evidence_eligible':True,'authenticity_status':'SOURCE_VERIFIED','receipt_digest':''}
+          receipt['receipt_digest']=_receipt_digest(receipt)
+          errors=validate_exp286_beacon_receipt(
+              receipt,
+              freeze_commit_timestamp_utc=seal['freeze_commit_timestamp_utc'],
+              seal_created_at_utc=actual_gate_a_seal_created_at_utc,
+          )
+          if errors: raise SystemExit('invalid real EXP-286 beacon: '+'; '.join(errors))
+          Path('/tmp/exp286-beacon.json').write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
+          PY
+
+      - name: Materialize EXP-286 inference-start marker
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          seal=json.load(open('/tmp/exp286-gate-a-seal.json')); beacon=json.load(open('/tmp/exp286-beacon.json'))
+          marker={'schema':'NLM-EXP-286-INFERENCE-START-V1','ceremony_id':os.environ['CEREMONY_ID'],'ceremony_sha':os.environ['GITHUB_SHA'],'seal_digest':seal['seal_digest'],'beacon_receipt_digest':beacon['receipt_digest'],'started_at_utc':datetime.now(timezone.utc).isoformat().replace('+00:00','Z'),'confirmatory_data_consumed':False}
+          Path('/tmp/exp286-inference-start.json').write_text(json.dumps(marker,sort_keys=True,indent=2)+'\n')
+          PY
+
+      - name: Publish irreversible inference-start replay barrier
+        id: barrier
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.INFERENCE_MARKER_NAME }}
+          path: /tmp/exp286-inference-start.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Execute frozen EXP-286 raw challenge once
+        if: steps.barrier.outcome == 'success'
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from nolane_ai.experiments.exp286_beacon import validate_exp286_beacon_receipt
+          from nolane_ai.experiments.exp286_confirmatory_executor import execute_exp286_confirmatory_challenge
+          from nolane_ai.protocol.identity import source_tree_digest
+          seal=json.load(open('/tmp/exp286-gate-a-seal.json')); beacon=json.load(open('/tmp/exp286-beacon.json')); receipt=json.load(open('/tmp/exp286-checkpoint-receipt.json'))
+          errors=validate_exp286_beacon_receipt(
+              beacon,
+              freeze_commit_timestamp_utc=seal['freeze_commit_timestamp_utc'],
+              seal_created_at_utc=Path('/tmp/exp286-actual-gate-a-seal-created-at.txt').read_text().strip(),
+          )
+          if errors: raise SystemExit('EXP-286 actual-seal authority lost before raw execution: '+'; '.join(errors))
+          raw=execute_exp286_confirmatory_challenge(seal=seal,beacon_receipt=beacon,checkpoint_path='/tmp/exp286-checkpoint.pt',checkpoint_receipt=receipt,current_source_tree_digest=source_tree_digest('.'),executor_code_digest=seal['lineage']['execution_code_digest'])
+          Path('/tmp/exp286-raw.json').write_text(json.dumps(raw,sort_keys=True,indent=2)+'\n')
+          PY
+
+      - name: Detect raw evidence
+        id: raw_state
+        shell: bash
+        run: |
+          test -s /tmp/exp286-raw.json
+          echo "present=true" >> "$GITHUB_OUTPUT"
+
+      - name: Publish immutable EXP-286 raw evidence before analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RAW_NAME }}
+          path: /tmp/exp286-raw.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Analyze persisted EXP-286 raw evidence once
+        if: steps.raw_state.outputs.present == 'true'
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from nolane_ai.experiments.exp286_confirmatory_analysis import build_exp286_confirmatory_analysis
+          from nolane_ai.protocol.identity import source_tree_digest
+          raw=json.load(open('/tmp/exp286-raw.json')); seal=json.load(open('/tmp/exp286-gate-a-seal.json'))
+          analysis=build_exp286_confirmatory_analysis(raw_artifact=raw,seal=seal,analysis_code_digest=source_tree_digest('.'))
+          if analysis.get('evidence_level') != 'EV-E3' or analysis.get('confirmatory_data_consumed') is not True or analysis.get('decision_rule_executed') is not True: raise SystemExit('EXP-286 real analysis did not satisfy EV-E3 boundary')
+          Path('/tmp/exp286-analysis.json').write_text(json.dumps(analysis,sort_keys=True,indent=2)+'\n')
+          PY
+
+      - name: Materialize authoritative EXP-286 outcome marker
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import datetime, timezone
+          from pathlib import Path
+          a=json.load(open('/tmp/exp286-analysis.json'))
+          out={'schema':'NLM-EXP-286-REAL-GATE-B-OUTCOME-V1','ceremony_id':os.environ['CEREMONY_ID'],'ceremony_sha':os.environ['GITHUB_SHA'],'evidence_level':a['evidence_level'],'decision':a['decision'],'analysis_digest':a['analysis_digest'],'confirmatory_data_consumed':True,'created_at_utc':datetime.now(timezone.utc).isoformat().replace('+00:00','Z')}
+          Path('/tmp/exp286-outcome.json').write_text(json.dumps(out,sort_keys=True,indent=2)+'\n')
+          PY
+
+      - name: Publish authoritative EXP-286 outcome marker
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.OUTCOME_NAME }}
+          path: /tmp/exp286-outcome.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Stage outcome-agnostic EXP-286 evidence bundle
+        shell: bash
+        run: |
+          mkdir -p /tmp/exp286-evidence
+          cp /tmp/exp286-development.json /tmp/exp286-registry.json /tmp/exp286-prep.json /tmp/exp286-auth.json /tmp/exp286-checkpoint-receipt.json /tmp/exp286-gate-a-seal.json /tmp/exp286-beacon.json /tmp/exp286-inference-start.json /tmp/exp286-raw.json /tmp/exp286-analysis.json /tmp/exp286-outcome.json /tmp/exp286-evidence/
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root=Path('/tmp/exp286-evidence')
+          manifest={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(root.iterdir()) if p.is_file()}
+          summary={'schema':'NLM-EXP-286-REAL-GATE-B-CEREMONY-SUMMARY-V1','ceremony_id':os.environ['CEREMONY_ID'],'ceremony_sha':os.environ['GITHUB_SHA'],'scientific_baseline_sha':os.environ['BASELINE_SHA'],'protocol_digest':os.environ['PROTOCOL_SHA'],'evidence_level':'EV-E3','confirmatory_data_consumed':True,'artifact_sha256':manifest}
+          (root/'ceremony-summary.json').write_text(json.dumps(summary,sort_keys=True,indent=2)+'\n')
+          PY
+
+      - name: Publish outcome-agnostic EXP-286 evidence bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EVIDENCE_NAME }}
+          path: /tmp/exp286-evidence
+          if-no-files-found: error
+          retention-days: 90

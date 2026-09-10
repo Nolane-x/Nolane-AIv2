@@ -92,13 +92,15 @@ def validate_exp286_beacon_receipt(
     *,
     freeze_commit_timestamp_utc: str | None = None,
     authorization_created_at_utc: str | None = None,
+    seal_created_at_utc: str | None = None,
 ) -> list[str]:
     """Validate an EXP-286 public-beacon evidence receipt fail closed.
 
     Timestamp arguments are authority boundaries supplied by the caller. When
-    present, the beacon must have been published strictly after both. This
-    validator never fetches, generates, or authenticates external entropy by
-    itself; real receipts must carry an allowed external authenticity state.
+    present, the beacon must have been published strictly after all relevant
+    pre-beacon boundaries. This validator never fetches, generates, or
+    authenticates external entropy by itself; real receipts must carry an
+    allowed external authenticity state.
     """
 
     errors: list[str] = []
@@ -140,6 +142,7 @@ def validate_exp286_beacon_receipt(
     if not isinstance(digest, str) or digest != _receipt_digest(payload):
         errors.append("EXP-286 beacon receipt digest mismatch")
 
+    frozen: datetime | None = None
     if freeze_commit_timestamp_utc is not None:
         try:
             frozen = _parse_utc(freeze_commit_timestamp_utc)
@@ -158,6 +161,17 @@ def validate_exp286_beacon_receipt(
             if published is not None and published <= authorized:
                 errors.append("EXP-286 beacon must be published strictly after execution authorization")
 
+    if seal_created_at_utc is not None:
+        try:
+            sealed = _parse_utc(seal_created_at_utc)
+        except ValueError:
+            errors.append("EXP-286 actual Gate A seal creation timestamp invalid")
+        else:
+            if frozen is not None and sealed < frozen:
+                errors.append("EXP-286 actual Gate A seal creation cannot precede Gate A freeze")
+            if published is not None and published <= sealed:
+                errors.append("EXP-286 beacon must be published strictly after actual Gate A seal creation")
+
     return errors
 
 
@@ -170,6 +184,7 @@ def derive_exp286_challenge_seed(
     stream: str,
     replicate: int,
     authorization_created_at_utc: str | None = None,
+    seal_created_at_utc: str | None = None,
 ) -> int:
     """Derive one domain-separated seed bound to the frozen Gate-A lineage."""
 
@@ -186,6 +201,7 @@ def derive_exp286_challenge_seed(
         beacon_receipt,
         freeze_commit_timestamp_utc=freeze_commit_timestamp_utc,
         authorization_created_at_utc=authorization_created_at_utc,
+        seal_created_at_utc=seal_created_at_utc,
     )
     if errors:
         raise ValueError("invalid EXP-286 beacon receipt: " + "; ".join(errors))
