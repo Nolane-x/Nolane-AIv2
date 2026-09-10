@@ -112,7 +112,19 @@ jobs:
         run: |
           set -euo pipefail
           git rev-parse HEAD > /tmp/nlm-exp289-freeze-sha.txt
-          git show -s --format=%cI HEAD > /tmp/nlm-exp289-freeze-time.txt
+          python - <<'PY'
+          from datetime import datetime, timezone
+          from pathlib import Path
+          import subprocess
+
+          raw = subprocess.check_output(
+              ["git", "show", "-s", "--format=%cI", "HEAD"],
+              text=True,
+          ).strip()
+          parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+          canonical = parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+          Path("/tmp/nlm-exp289-freeze-time.txt").write_text(canonical + "\n", encoding="utf-8")
+          PY
       - name: Build checkpoint and immutable EXP-289 Gate A seal
         shell: bash
         run: |
