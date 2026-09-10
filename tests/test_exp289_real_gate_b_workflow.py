@@ -21,7 +21,9 @@ def test_exp289_real_gate_b_workflow_closes_irreversible_evidence_order() -> Non
         "protocols/exp289_authoritative_development_v1.json",
         "seal_exp289_confirmatory_gate_a.py",
         "Record first future public drand beacon after both freeze boundaries",
-        "api.drand.sh/public/latest",
+        "target_round = math.floor(",
+        "first_drand_round_strictly_after_actual_gate_a_seal",
+        "primary_url = f'https://api.drand.sh/public/{target_round}'",
         "api2.drand.sh/public/",
         "seal_created_at_utc",
         "Publish irreversible inference-start replay barrier",
@@ -40,9 +42,10 @@ def test_exp289_real_gate_b_workflow_closes_irreversible_evidence_order() -> Non
         "--test-only",
         "entropy_hex=\"ab\" * 32",
         "build_test_beacon_receipt",
+        "api.drand.sh/public/latest",
     )
     for item in forbidden:
-        assert item not in text, f"real ceremony contains TEST-only escape hatch: {item}"
+        assert item not in text, f"real ceremony contains forbidden or weaker path: {item}"
 
     inference_barrier = text.index("Publish irreversible inference-start replay barrier")
     raw_execution = text.index("Execute frozen EXP-289 raw challenge once")
