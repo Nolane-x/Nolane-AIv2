@@ -55,16 +55,25 @@ def test_exp289_real_gate_b_workflow_closes_irreversible_evidence_order() -> Non
     assert inference_barrier < raw_execution < raw_persistence < analysis < outcome
 
 
-def test_exp289_raw_execution_requires_durable_inference_barrier() -> None:
+def test_exp289_real_ceremony_has_single_arm_lock_before_beacon() -> None:
     assert WORKFLOW.is_file(), "EXP-289 real Gate-B ceremony workflow is missing"
     text = WORKFLOW.read_text(encoding="utf-8")
-    start = text.index("- name: Execute frozen EXP-289 raw challenge once")
-    end = text.index("- name: Detect raw evidence", start)
-    raw_step = text[start:end]
-    assert "steps.barrier.outcome == 'success'" in raw_step, (
-        "EXP-289 scientific raw execution must not start unless the irreversible "
-        "inference-start artifact was durably uploaded"
+
+    required = (
+        "ARM_LOCK_NAME: exp289-real-gate-b-arm-lock-EXP-289-REAL-GATE-B-2026-09-10",
+        "baseline already contains EXP-289 arm marker",
+        "Publish irreversible EXP-289 ceremony arm lock",
+        "exp289-arm-lock.json",
+        'for name in "$ARM_LOCK_NAME" "$INFERENCE_MARKER_NAME" "$RAW_NAME" "$OUTCOME_NAME"',
     )
+    for item in required:
+        assert item in text, f"missing single-arm invariant: {item}"
+
+    replay = text.index("Reject replay after authoritative inference or outcome")
+    arm_lock = text.index("Publish irreversible EXP-289 ceremony arm lock")
+    ci_court = text.index("Require exact baseline normal and focused CI")
+    beacon = text.index("Record first future public drand beacon after both freeze boundaries")
+    assert replay < arm_lock < ci_court < beacon
 
 
 def test_exp289_real_gate_b_workflow_requires_arm_only_baseline_and_no_scientific_drift() -> None:
