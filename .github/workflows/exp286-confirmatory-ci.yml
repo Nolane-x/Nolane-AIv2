@@ -90,6 +90,18 @@ jobs:
       - name: Assert EXP-286 execution authorization remains pre-beacon
         run: >-
           python -c 'import json; from pathlib import Path; a=json.loads(Path("/tmp/nlm-exp286-authoritative-auth.json").read_text()); assert a["status"] == "AUTHORIZED_NOT_EXECUTED"; assert a["evidence_level"] == "EV-E2"; assert a["decision"] == "UNVERIFIED"; assert a["confirmatory_data_consumed"] is False; assert a["seed_materialization_status"] == "NOT_EXECUTED"; assert a["challenge_materialized"] is False; assert 32 <= a["confirmatory_n"] <= 128; assert a["preflight"]["all_checks_passed"] is True; assert "seeds" not in a; assert "beacon" not in a'
+      - name: Seal EXP-286 Gate A with synthetic CI freeze metadata
+        run: >-
+          python scripts/seal_exp286_confirmatory_gate_a.py
+          --execution /tmp/nlm-exp286-authoritative-dev.json
+          --prep /tmp/nlm-exp286-authoritative-gatea-prep.json
+          --authorization /tmp/nlm-exp286-authoritative-auth.json
+          --freeze-commit-sha 0000000000000000000000000000000000000000
+          --freeze-commit-timestamp-utc 2026-01-01T00:00:00Z
+          --output /tmp/nlm-exp286-ci-gatea-seal.json
+      - name: Assert EXP-286 Gate-A seal remains pre-beacon
+        run: >-
+          python -c 'import json; from pathlib import Path; from nolane_ai.experiments.exp286_confirmatory_ceremony import validate_exp286_confirmatory_gate_a_seal; s=json.loads(Path("/tmp/nlm-exp286-ci-gatea-seal.json").read_text()); assert validate_exp286_confirmatory_gate_a_seal(s) == []; assert s["status"] == "CONFIRMATORY_GATE_A_SEALED"; assert s["evidence_level"] == "EV-E2"; assert s["decision"] == "UNVERIFIED"; assert s["confirmatory_ready"] is True; assert s["confirmatory_ready_scope"] == "FROZEN_MACHINERY_READY_FOR_FUTURE_BEACON_ONLY"; assert s["confirmatory_data_consumed"] is False; assert s["seed_materialization_status"] == "NOT_EXECUTED"; assert s["challenge_materialized"] is False; assert s["decision_rule_executed"] is False; r=repr(s).lower(); assert "beacon_receipt" not in r; assert "entropy_hex" not in r; assert "challenge_seed" not in r'
       - name: Upload authoritative EXP-286 DEVELOPMENT Gate A evidence
         uses: actions/upload-artifact@v4
         with:
@@ -111,5 +123,6 @@ jobs:
           /tmp/nlm-exp286-authoritative-registry.json
           /tmp/nlm-exp286-authoritative-gatea-prep.json
           /tmp/nlm-exp286-authoritative-auth.json
+          /tmp/nlm-exp286-ci-gatea-seal.json
       - run: python scripts/verify_protocol.py
       - run: python -m compileall -q src scripts
