@@ -14,6 +14,7 @@ MESI_RELATIVE_REDUCTION = 0.15
 POWER_TARGET = 0.90
 MIN_N = 32
 MAX_N = 128
+FAMILYWISE_ALPHA = 0.05
 MULTIPLICITY_FAMILY = "CONFLICT_VALUE"
 ANALYSIS_METHOD = (
     "paired log-cost ratio and bootstrap CI; failures included as "
@@ -23,8 +24,6 @@ PROTECTED_SOLUTION_FLOOR = (
     "oracle_conflict_core >= chronological_failure - 0.005"
 )
 SCHEMA = "NLM-EXP-286-CONFIRMATORY-PREP-V1"
-PLANNING_ALPHA = 0.05
-BOOTSTRAP_SAMPLES = 10_000
 SAMPLE_SIZE_METHOD = "paired-log-cost-normal-approximation-from-development-sd-v1"
 
 
@@ -35,7 +34,7 @@ def _prep_digest(payload: dict[str, Any]) -> str:
 
 
 def frozen_exp286_gate_a_contract() -> dict[str, object]:
-    """Return the frozen Stage-A authority boundary for EXP-286 Gate A."""
+    """Return only authority explicitly frozen by the Stage-A protocol."""
 
     return {
         "experiment_id": EXPERIMENT_ID,
@@ -55,7 +54,7 @@ def frozen_exp286_gate_a_contract() -> dict[str, object]:
     }
 
 
-def _validate_frozen_experiment(experiment: dict[str, Any]) -> None:
+def _validate_frozen_experiment(experiment: dict[str, Any], *, familywise_alpha: float) -> None:
     if experiment.get("experiment_id") != EXPERIMENT_ID:
         raise ValueError("confirmatory prep requires EXP-286")
     primary = experiment.get("primary_endpoint") or {}
@@ -71,6 +70,8 @@ def _validate_frozen_experiment(experiment: dict[str, Any]) -> None:
         raise ValueError("EXP-286 sample-size bounds drift")
     if sample.get("paired") is not True:
         raise ValueError("EXP-286 paired-analysis contract drift")
+    if float(familywise_alpha) != FAMILYWISE_ALPHA:
+        raise ValueError("EXP-286 familywise alpha drift")
     if experiment.get("analysis_method") != ANALYSIS_METHOD:
         raise ValueError("EXP-286 analysis method drift")
     if experiment.get("multiplicity_family") != MULTIPLICITY_FAMILY:
@@ -174,14 +175,14 @@ def _paired_log_cost_summary(rows: list[dict[str, Any]]) -> tuple[float, float, 
     )
 
 
-def _required_n(*, paired_sd: float) -> int:
+def _required_n(*, paired_sd: float, familywise_alpha: float) -> int:
     if not math.isfinite(paired_sd) or paired_sd < 0.0:
         raise ValueError("paired_sd must be finite and non-negative")
     if paired_sd == 0.0:
         return 1
     target_log_reduction = abs(math.log(1.0 - MESI_RELATIVE_REDUCTION))
     normal = NormalDist()
-    z_alpha = normal.inv_cdf(1.0 - PLANNING_ALPHA)
+    z_alpha = normal.inv_cdf(1.0 - familywise_alpha)
     z_power = normal.inv_cdf(POWER_TARGET)
     return max(1, int(math.ceil(((z_alpha + z_power) * paired_sd / target_log_reduction) ** 2)))
 
@@ -204,8 +205,7 @@ def validate_exp286_confirmatory_prep(payload: dict[str, Any]) -> list[str]:
         "primary_direction": PRIMARY_DIRECTION,
         "effect_type": "paired_log_cost_ratio_relative_reduction",
         "mesi_relative_reduction": MESI_RELATIVE_REDUCTION,
-        "planning_alpha": PLANNING_ALPHA,
-        "bootstrap_samples": BOOTSTRAP_SAMPLES,
+        "familywise_alpha": FAMILYWISE_ALPHA,
         "multiplicity_family": MULTIPLICITY_FAMILY,
         "analysis_method": ANALYSIS_METHOD,
         "protected_solution_floor": PROTECTED_SOLUTION_FLOOR,
@@ -225,6 +225,8 @@ def validate_exp286_confirmatory_prep(payload: dict[str, Any]) -> list[str]:
         errors.append("EXP-286 sample-size method drift")
     if float(freeze.get("power_target", -1.0)) != POWER_TARGET:
         errors.append("EXP-286 power target drift")
+    if float(freeze.get("familywise_alpha", -1.0)) != FAMILYWISE_ALPHA:
+        errors.append("EXP-286 familywise alpha drift")
     if int(freeze.get("min_n", -1)) != MIN_N or int(freeze.get("max_n", -1)) != MAX_N:
         errors.append("EXP-286 sample-size bounds drift")
     if freeze.get("paired") is not True or freeze.get("pilot_reuse_as_confirmatory") is not False:
@@ -267,13 +269,14 @@ def build_exp286_confirmatory_prep(
     execution_artifact: dict[str, Any],
     arm_registry: dict[str, Any],
     analysis_code_digest: str,
+    familywise_alpha: float,
 ) -> dict[str, Any]:
     if not analysis_code_digest:
         raise ValueError("analysis_code_digest is required")
-    _validate_frozen_experiment(experiment)
+    _validate_frozen_experiment(experiment, familywise_alpha=familywise_alpha)
     rows, training_ids, replicate_ids = _development_rows(execution_artifact, arm_registry)
     mean_chronological, mean_oracle, paired_sd, log_ratios = _paired_log_cost_summary(rows)
-    required = _required_n(paired_sd=paired_sd)
+    required = _required_n(paired_sd=paired_sd, familywise_alpha=familywise_alpha)
     confirmatory_n = max(MIN_N, required) if required <= MAX_N else None
     ready = confirmatory_n is not None
     status = "CONFIRMATORY_GATE_A_PREPARED" if ready else "NOT_READY_VARIANCE_EXCEEDS_MAX_N"
@@ -302,8 +305,7 @@ def build_exp286_confirmatory_prep(
             "primary_direction": PRIMARY_DIRECTION,
             "effect_type": "paired_log_cost_ratio_relative_reduction",
             "mesi_relative_reduction": MESI_RELATIVE_REDUCTION,
-            "planning_alpha": PLANNING_ALPHA,
-            "bootstrap_samples": BOOTSTRAP_SAMPLES,
+            "familywise_alpha": float(familywise_alpha),
             "multiplicity_family": MULTIPLICITY_FAMILY,
             "analysis_method": ANALYSIS_METHOD,
             "protected_solution_floor": PROTECTED_SOLUTION_FLOOR,
@@ -321,7 +323,7 @@ def build_exp286_confirmatory_prep(
         "sample_size_freeze": {
             "method": SAMPLE_SIZE_METHOD,
             "power_target": POWER_TARGET,
-            "planning_alpha": PLANNING_ALPHA,
+            "familywise_alpha": float(familywise_alpha),
             "min_n": MIN_N,
             "max_n": MAX_N,
             "paired": True,
@@ -330,7 +332,7 @@ def build_exp286_confirmatory_prep(
             "confirmatory_n": confirmatory_n,
             "planning_constants": {
                 "target_log_reduction": abs(math.log(1.0 - MESI_RELATIVE_REDUCTION)),
-                "z_alpha": NormalDist().inv_cdf(1.0 - PLANNING_ALPHA),
+                "z_alpha": NormalDist().inv_cdf(1.0 - familywise_alpha),
                 "z_power": NormalDist().inv_cdf(POWER_TARGET),
             },
         },
