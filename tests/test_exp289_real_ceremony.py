@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 import importlib.util
 from pathlib import Path
 import subprocess
@@ -19,7 +20,6 @@ from tests.test_exp289_confirmatory_ceremony import _seal
 ROOT = Path(__file__).resolve().parents[1]
 GATE_A_SEAL_SCRIPT = ROOT / "scripts" / "seal_exp289_confirmatory_gate_a.py"
 GATE_B_SCRIPT = ROOT / "scripts" / "run_exp289_confirmatory_gate_b.py"
-BEACON_TIME = "2026-09-10T10:47:00Z"
 VALID_SCIENTIFIC_DECISIONS = {
     "PROMOTE_TO_NEXT_STAGE",
     "HOLD_UNSTABLE",
@@ -27,15 +27,23 @@ VALID_SCIENTIFIC_DECISIONS = {
 }
 
 
-def _external_beacon() -> dict:
+def _parse_utc(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+
+
+def _external_beacon(seal: dict, *, published_at_utc: str | None = None) -> dict:
     from nolane_ai.experiments.exp289_beacon import validate_exp289_beacon_receipt
 
+    if published_at_utc is None:
+        published_at_utc = (
+            _parse_utc(seal["seal_created_at_utc"]) + timedelta(seconds=1)
+        ).isoformat().replace("+00:00", "Z")
     payload = {
         "schema": "NLM-EXP-289-BEACON-RECEIPT-V1",
         "experiment_id": "EXP-289",
         "source": "drand-public-http-cross-recorded",
         "beacon_id": "drand:test-chain:289000001",
-        "published_at_utc": BEACON_TIME,
+        "published_at_utc": published_at_utc,
         "entropy_hex": "cd" * 32,
         "evidence_reference": "https://api.drand.sh/public/289000001;https://api2.drand.sh/public/289000001",
         "test_only": False,
@@ -114,6 +122,31 @@ def test_exp289_gate_a_seal_geometry_match_treats_tiny_as_manifest_only_marker()
     assert not module._geometry_matches_execution(drifted, manifest_geometry)
 
 
+def test_exp289_executor_rejects_beacon_after_freeze_but_before_actual_seal(
+    task5_inputs: dict,
+) -> None:
+    from nolane_ai.experiments.exp289_confirmatory_executor import execute_exp289_confirmatory_challenge
+
+    authorization = _authorize(task5_inputs)
+    seal = _seal(task5_inputs, authorization)
+    freeze = _parse_utc(seal["freeze_commit_timestamp_utc"])
+    sealed = _parse_utc(seal["seal_created_at_utc"])
+    assert sealed > freeze
+    pre_seal_time = (freeze + timedelta(microseconds=1)).isoformat().replace("+00:00", "Z")
+    assert _parse_utc(pre_seal_time) < sealed
+    beacon = _external_beacon(seal, published_at_utc=pre_seal_time)
+
+    with pytest.raises(ValueError, match="beacon|seal"):
+        execute_exp289_confirmatory_challenge(
+            seal=seal,
+            beacon_receipt=beacon,
+            checkpoint_path=task5_inputs["checkpoint_path"],
+            checkpoint_receipt=task5_inputs["checkpoint_receipt"],
+            current_source_tree_digest=CODE_DIGEST,
+            executor_code_digest=CODE_DIGEST,
+        )
+
+
 def test_exp289_real_beacon_executes_raw_before_analysis_and_promotes_only_analysis(
     task5_inputs: dict,
 ) -> None:
@@ -128,7 +161,7 @@ def test_exp289_real_beacon_executes_raw_before_analysis_and_promotes_only_analy
 
     authorization = _authorize(task5_inputs)
     seal = _seal(task5_inputs, authorization)
-    beacon = _external_beacon()
+    beacon = _external_beacon(seal)
     raw = execute_exp289_confirmatory_challenge(
         seal=seal,
         beacon_receipt=beacon,
@@ -188,7 +221,7 @@ def test_exp289_non_test_beacon_must_be_explicitly_scientific(task5_inputs: dict
 
     authorization = _authorize(task5_inputs)
     seal = _seal(task5_inputs, authorization)
-    forged = deepcopy(_external_beacon())
+    forged = deepcopy(_external_beacon(seal))
     forged["scientific_evidence_eligible"] = False
     forged["receipt_digest"] = canonical_sha256(
         {key: value for key, value in forged.items() if key != "receipt_digest"}
