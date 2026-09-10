@@ -86,7 +86,7 @@ def _validate_frozen_experiment(
         item.get("metric"): item.get("floor")
         for item in experiment.get("protected_endpoints") or []
     }
-    if float(protected.get("valid_state_overprune_rate", -1.0)) != PROTECTED_OVERPRUNE_CEILING:
+    if protected.get("valid_state_overprune_rate") != "<=0.005":
         raise ValueError("EXP-289 protected over-prune ceiling drift")
     if protected.get("verified_solution_rate") != PROTECTED_SOLUTION_FLOOR:
         raise ValueError("EXP-289 protected solution-rate floor drift")
