@@ -78,6 +78,12 @@ def test_exp289_confirmatory_prep_freezes_stage_a_authority_without_opening_chal
     assert contract["confirmatory_data_consumed"] is False
 
 
+def test_exp289_gate_a_accepts_canonical_protected_floor_encoding() -> None:
+    from nolane_ai.experiments.exp289_confirmatory_prep import _validate_frozen_experiment
+
+    _validate_frozen_experiment(_frozen_experiment(), familywise_alpha=0.05)
+
+
 def test_exp289_gate_a_plans_from_real_paired_development_without_consuming_challenge() -> None:
     from nolane_ai.experiments.exp289_confirmatory_prep import (
         build_exp289_confirmatory_prep,
@@ -142,7 +148,9 @@ def test_exp289_gate_a_plans_from_real_paired_development_without_consuming_chal
     assert lineage["lane"] == "POST_FREEZE_CHALLENGE_RESERVED_UNCONSUMED"
     assert lineage["pilot_reuse_forbidden"] is True
     assert lineage["seed_materialization_status"] == "NOT_EXECUTED"
-    assert set(lineage["reserved_replicate_ids"]).isdisjoint(execution["evaluation"]["per_replicate"][index]["replicate"] for index in range(32))
+    assert set(lineage["reserved_replicate_ids"]).isdisjoint(
+        execution["evaluation"]["per_replicate"][index]["replicate"] for index in range(32)
+    )
     assert validate_exp289_confirmatory_prep(prep) == []
 
 
