@@ -1,0 +1,128 @@
+name: exp286-confirmatory-ci
+
+on:
+  pull_request:
+    paths:
+      - 'src/nolane_ai/experiments/exp286_*.py'
+      - 'scripts/*exp286*.py'
+      - 'tests/test_exp286_*.py'
+      - 'tests/test_matched_conflict_arms.py'
+      - 'protocols/exp286_development_geometry_v1.json'
+      - 'protocols/exp286_development_geometry_v1.sha256'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/exp286-confirmatory-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/nolane_ai/experiments/exp286_*.py'
+      - 'scripts/*exp286*.py'
+      - 'tests/test_exp286_*.py'
+      - 'tests/test_matched_conflict_arms.py'
+      - 'protocols/exp286_development_geometry_v1.json'
+      - 'protocols/exp286_development_geometry_v1.sha256'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/exp286-confirmatory-ci.yml'
+
+concurrency:
+  group: exp286-confirmatory-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,model]'
+      - name: Run EXP-286 focused contract
+        run: pytest -q tests/test_exp286_*.py tests/test_matched_conflict_arms.py
+      - name: Build EXP-286 Gate A DEVELOPMENT pilot
+        run: >-
+          python scripts/run_exp286_paired_dev.py
+          --tiny
+          --train-replicates 2
+          --eval-replicates 32
+          --eval-start-replicate 20000
+          --batch-size 2
+          --timesteps 3
+          --variables 5
+          --decoys 2
+          --max-search-steps 8
+          --output /tmp/nlm-exp286-gatea-smoke-dev.json
+          --registry-output /tmp/nlm-exp286-gatea-smoke-registry.json
+      - name: Prepare EXP-286 Gate A
+        run: >-
+          python scripts/prepare_exp286_confirmatory_gate_a.py
+          --execution /tmp/nlm-exp286-gatea-smoke-dev.json
+          --registry /tmp/nlm-exp286-gatea-smoke-registry.json
+          --output /tmp/nlm-exp286-gatea-smoke-prep.json
+      - name: Assert EXP-286 Gate A pre-beacon boundary
+        run: >-
+          python -c 'import json; from pathlib import Path; p=json.loads(Path("/tmp/nlm-exp286-gatea-smoke-prep.json").read_text()); assert p["evidence_level"] == "EV-E2"; assert p["decision"] == "UNVERIFIED"; assert p["challenge_materialized"] is False; assert p["confirmatory_data_consumed"] is False; assert p["decision_rule_executed"] is False; assert p["confirmatory_lineage"]["seed_materialization_status"] == "NOT_EXECUTED"; assert p["status"] in {"CONFIRMATORY_GATE_A_PREPARED", "NOT_READY_VARIANCE_EXCEEDS_MAX_N"}'
+      - name: Run locked authoritative EXP-286 DEVELOPMENT geometry
+        run: >-
+          python scripts/run_exp286_paired_dev.py
+          --geometry-manifest protocols/exp286_development_geometry_v1.json
+          --geometry-digest-file protocols/exp286_development_geometry_v1.sha256
+          --output /tmp/nlm-exp286-authoritative-dev.json
+          --registry-output /tmp/nlm-exp286-authoritative-registry.json
+      - name: Assert authoritative DEVELOPMENT geometry binding
+        run: >-
+          python -c 'import json; from pathlib import Path; e=json.loads(Path("/tmp/nlm-exp286-authoritative-dev.json").read_text()); expected=Path("protocols/exp286_development_geometry_v1.sha256").read_text().strip(); a=e["development_geometry_authority"]; assert a["manifest_digest"] == expected; assert a["authority_scope"] == "DEVELOPMENT_PILOT_ONLY"; assert a["confirmatory_authority"] is False; assert e["evidence_level"] == "EV-E2"; assert e["decision"] == "UNVERIFIED"; assert e["challenge_materialized"] is False; assert e["confirmatory_data_consumed"] is False'
+      - name: Prepare authoritative EXP-286 Gate A
+        run: >-
+          python scripts/prepare_exp286_confirmatory_gate_a.py
+          --execution /tmp/nlm-exp286-authoritative-dev.json
+          --registry /tmp/nlm-exp286-authoritative-registry.json
+          --output /tmp/nlm-exp286-authoritative-gatea-prep.json
+      - name: Assert authoritative EXP-286 pre-beacon boundary
+        run: >-
+          python -c 'import json; from pathlib import Path; p=json.loads(Path("/tmp/nlm-exp286-authoritative-gatea-prep.json").read_text()); assert p["evidence_level"] == "EV-E2"; assert p["decision"] == "UNVERIFIED"; assert p["challenge_materialized"] is False; assert p["confirmatory_data_consumed"] is False; assert p["decision_rule_executed"] is False; assert p["confirmatory_lineage"]["seed_materialization_status"] == "NOT_EXECUTED"; assert p["status"] in {"CONFIRMATORY_GATE_A_PREPARED", "NOT_READY_VARIANCE_EXCEEDS_MAX_N"}; f=p["sample_size_freeze"]; assert (p["confirmatory_ready"] is False and f["confirmatory_n"] is None and p["confirmatory_lineage"]["reserved_replicate_ids"] == []) if p["status"] == "NOT_READY_VARIANCE_EXCEEDS_MAX_N" else (p["confirmatory_ready"] is True and 32 <= f["confirmatory_n"] <= 128)'
+      - name: Authorize authoritative EXP-286 confirmatory execution
+        run: >-
+          python scripts/authorize_exp286_confirmatory_execution.py
+          --execution /tmp/nlm-exp286-authoritative-dev.json
+          --prep /tmp/nlm-exp286-authoritative-gatea-prep.json
+          --output /tmp/nlm-exp286-authoritative-auth.json
+      - name: Assert EXP-286 execution authorization remains pre-beacon
+        run: >-
+          python -c 'import json; from pathlib import Path; a=json.loads(Path("/tmp/nlm-exp286-authoritative-auth.json").read_text()); assert a["status"] == "AUTHORIZED_NOT_EXECUTED"; assert a["evidence_level"] == "EV-E2"; assert a["decision"] == "UNVERIFIED"; assert a["confirmatory_data_consumed"] is False; assert a["seed_materialization_status"] == "NOT_EXECUTED"; assert a["challenge_materialized"] is False; assert 32 <= a["confirmatory_n"] <= 128; assert a["preflight"]["all_checks_passed"] is True; assert "seeds" not in a; assert "beacon" not in a'
+      - name: Seal EXP-286 Gate A with synthetic CI freeze metadata
+        run: >-
+          python scripts/seal_exp286_confirmatory_gate_a.py
+          --execution /tmp/nlm-exp286-authoritative-dev.json
+          --prep /tmp/nlm-exp286-authoritative-gatea-prep.json
+          --authorization /tmp/nlm-exp286-authoritative-auth.json
+          --freeze-commit-sha 0000000000000000000000000000000000000000
+          --freeze-commit-timestamp-utc 2026-01-01T00:00:00Z
+          --output /tmp/nlm-exp286-ci-gatea-seal.json
+      - name: Assert EXP-286 Gate-A seal remains pre-beacon
+        run: >-
+          python -c 'import json; from pathlib import Path; from nolane_ai.experiments.exp286_confirmatory_ceremony import validate_exp286_confirmatory_gate_a_seal; s=json.loads(Path("/tmp/nlm-exp286-ci-gatea-seal.json").read_text()); assert validate_exp286_confirmatory_gate_a_seal(s) == []; assert s["status"] == "CONFIRMATORY_GATE_A_SEALED"; assert s["evidence_level"] == "EV-E2"; assert s["decision"] == "UNVERIFIED"; assert s["confirmatory_ready"] is True; assert s["confirmatory_ready_scope"] == "FROZEN_MACHINERY_READY_FOR_FUTURE_BEACON_ONLY"; assert s["confirmatory_data_consumed"] is False; assert s["seed_materialization_status"] == "NOT_EXECUTED"; assert s["challenge_materialized"] is False; assert s["decision_rule_executed"] is False; r=repr(s).lower(); assert "beacon_receipt" not in r; assert "entropy_hex" not in r; assert "challenge_seed" not in r'
+      - name: Upload authoritative EXP-286 DEVELOPMENT Gate A evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp286-authoritative-development-gatea
+          path: |
+            /tmp/nlm-exp286-authoritative-dev.json
+            /tmp/nlm-exp286-authoritative-registry.json
+            /tmp/nlm-exp286-authoritative-gatea-prep.json
+            /tmp/nlm-exp286-authoritative-auth.json
+          if-no-files-found: error
+      - name: Remove EXP-286 temporary artifacts
+        if: always()
+        run: >-
+          rm -f
+          /tmp/nlm-exp286-gatea-smoke-dev.json
+          /tmp/nlm-exp286-gatea-smoke-registry.json
+          /tmp/nlm-exp286-gatea-smoke-prep.json
+          /tmp/nlm-exp286-authoritative-dev.json
+          /tmp/nlm-exp286-authoritative-registry.json
+          /tmp/nlm-exp286-authoritative-gatea-prep.json
+          /tmp/nlm-exp286-authoritative-auth.json
+          /tmp/nlm-exp286-ci-gatea-seal.json
+      - run: python scripts/verify_protocol.py
+      - run: python -m compileall -q src scripts

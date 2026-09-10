@@ -590,6 +590,38 @@ def validate_exp286_paired_development(payload: dict[str, Any]) -> list[str]:
         errors.append("EXP-286 training replicate lineage must start at 0")
     if train_count <= 0 or len(train_digests) != train_count or len(set(train_digests)) != len(train_digests):
         errors.append("EXP-286 training batch lineage is incomplete or non-unique")
+
+    optimizer = training.get("optimizer") or {}
+    if optimizer != {"type": "AdamW", "lr": lr, "weight_decay": weight_decay}:
+        errors.append("EXP-286 training optimizer contract drift")
+    training_loss_fields = {
+        "chronological_failure": list(training.get("chronological_failure_losses") or []),
+        "oracle_conflict_core": list(training.get("oracle_conflict_core_losses") or []),
+    }
+    means = training.get("mean_losses") or {}
+    for arm_id, losses in training_loss_fields.items():
+        if len(losses) != train_count or any(
+            not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(float(value))
+            for value in losses
+        ):
+            errors.append(f"EXP-286 {arm_id} training loss lineage is incomplete or invalid")
+        elif abs(float(means.get(arm_id, float("nan"))) - sum(float(value) for value in losses) / len(losses)) > 1e-12:
+            errors.append(f"EXP-286 {arm_id} training mean-loss receipt mismatch")
+
+    final_state = payload.get("final_state") or {}
+    expected_final_keys = {"chronological_failure_digest", "oracle_conflict_core_digest"}
+    if set(final_state) != expected_final_keys:
+        errors.append("EXP-286 final functional-state digest set is incomplete")
+    else:
+        for arm_id, digest in final_state.items():
+            if not isinstance(digest, str) or len(digest) != 64:
+                errors.append(f"EXP-286 {arm_id} final functional-state digest invalid")
+            else:
+                try:
+                    int(digest, 16)
+                except ValueError:
+                    errors.append(f"EXP-286 {arm_id} final functional-state digest invalid")
+
     if generator is not None and train_count > 0:
         for replicate in range(min(train_count, len(train_digests))):
             regenerated = generator.make_batch(
@@ -693,7 +725,7 @@ def validate_exp286_paired_development(payload: dict[str, Any]) -> list[str]:
                 if int(episode_result.get("contradiction_count", -1)) != contradictions:
                     errors.append(f"EXP-286 {arm_id} episode contradiction-count receipt mismatch")
                 if int(episode_result.get("conflict_core_delivery_count", -1)) != deliveries:
-                    errors.append(f"EXP-286 {arm_id} episode conflict-core delivery-count mismatch")
+                    errors.append(f"EXP-286 {arm_id} episode conflict-core delivery-count receipt mismatch")
                 if episode_result.get("conflict_core_precontradiction_delivery") is not False:
                     errors.append(f"EXP-286 {arm_id} episode claims pre-contradiction core delivery")
                 total_contradictions += contradictions
@@ -957,6 +989,11 @@ def run_exp286_paired_development(
                 )
             )
 
+    final_state = {
+        "chronological_failure_digest": _functional_state_digest(chronological),
+        "oracle_conflict_core_digest": _functional_state_digest(oracle),
+    }
+
     for arm in arms.values():
         arm.eval()
     rows: list[dict[str, Any]] = []
@@ -1014,6 +1051,7 @@ def run_exp286_paired_development(
         "arm_order": list(ARM_ORDER),
         "model_init_seed": int(model_init_seed),
         "initial_state": initial,
+        "final_state": final_state,
         "information_receipt": deepcopy(_INFORMATION_RECEIPT),
         "primary_endpoint": {
             "metric": PRIMARY_METRIC,
@@ -1056,6 +1094,13 @@ def run_exp286_paired_development(
             "start_replicate": 0,
             "replicates": train_replicates,
             "paired_batch_digests": training_digests,
+            "optimizer": {
+                "type": "AdamW",
+                "lr": float(lr),
+                "weight_decay": float(weight_decay),
+            },
+            "chronological_failure_losses": list(training_losses["chronological_failure"]),
+            "oracle_conflict_core_losses": list(training_losses["oracle_conflict_core"]),
             "mean_losses": {
                 arm_id: sum(losses) / len(losses)
                 for arm_id, losses in training_losses.items()

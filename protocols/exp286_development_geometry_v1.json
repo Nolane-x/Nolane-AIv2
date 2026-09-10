@@ -1,0 +1,30 @@
+{
+  "authority_scope": "DEVELOPMENT_PILOT_ONLY",
+  "challenge_materialized": false,
+  "confirmatory_authority": false,
+  "experiment_id": "EXP-286",
+  "geometry": {
+    "batch_size": 8,
+    "d_model": 64,
+    "decoys": 3,
+    "eval_replicates": 32,
+    "eval_start_replicate": 30000,
+    "hidden_size": 48,
+    "lr": 0.002,
+    "max_accounted_flops_per_episode": null,
+    "max_search_steps": 16,
+    "noise_std": 0.05,
+    "root_seed": "20260906-exp286-paired-dev",
+    "target_parameters": 500000,
+    "timesteps": 4,
+    "tiny": false,
+    "train_replicates": 16,
+    "variables": 8,
+    "weight_decay": 0.0
+  },
+  "pilot_reuse_as_confirmatory": false,
+  "predeclaration": "BEFORE_AUTHORITATIVE_DEVELOPMENT_RUN",
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "runner": "scripts/run_exp286_paired_dev.py",
+  "schema": "NLM-EXP-286-DEVELOPMENT-GEOMETRY-V1"
+}
