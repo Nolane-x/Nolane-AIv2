@@ -128,9 +128,31 @@ jobs:
             --authorization-output /tmp/nlm-exp289-execution-authorization.json \
             --seal-output /tmp/nlm-exp289-gatea-seal.json
       - name: Assert immutable EXP-289 Gate A seal is still pre-beacon EV-E2
-        run: >-
-          python -c 'import json; from pathlib import Path; p=json.loads(Path("/tmp/nlm-exp289-sealed-prep.json").read_text()); s=json.loads(Path("/tmp/nlm-exp289-gatea-seal.json").read_text()); assert p["prep_digest"] == json.loads(Path("/tmp/nlm-exp289-authoritative-gatea-prep.json").read_text())["prep_digest"]; assert s["evidence_level"] == "EV-E2"; assert s["decision"] == "UNVERIFIED"; assert s["confirmatory_data_consumed"] is False; assert s["seed_materialization_status"] == "NOT_EXECUTED"; assert s["challenge_materialized"] is False; assert s["decision_rule_executed"] is False; assert s["confirmatory_n"] == 32'
-      - name: Materialize TEST-ONLY post-freeze beacon
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import json
+          from pathlib import Path
+
+          def parse_utc(value: str) -> datetime:
+              return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+
+          prep = json.loads(Path("/tmp/nlm-exp289-sealed-prep.json").read_text())
+          preflight = json.loads(Path("/tmp/nlm-exp289-authoritative-gatea-prep.json").read_text())
+          seal = json.loads(Path("/tmp/nlm-exp289-gatea-seal.json").read_text())
+          assert prep["prep_digest"] == preflight["prep_digest"]
+          assert seal["evidence_level"] == "EV-E2"
+          assert seal["decision"] == "UNVERIFIED"
+          assert seal["confirmatory_data_consumed"] is False
+          assert seal["seed_materialization_status"] == "NOT_EXECUTED"
+          assert seal["challenge_materialized"] is False
+          assert seal["decision_rule_executed"] is False
+          assert seal["confirmatory_n"] == 32
+          assert parse_utc(seal["seal_created_at_utc"]) > parse_utc(seal["freeze_commit_timestamp_utc"])
+          PY
+      - name: Materialize TEST-ONLY post-seal beacon
         shell: bash
         run: |
           set -euo pipefail
@@ -139,18 +161,31 @@ jobs:
           import json
           from pathlib import Path
 
-          from nolane_ai.experiments.exp289_beacon import build_test_beacon_receipt
+          from nolane_ai.experiments.exp289_beacon import (
+              build_test_beacon_receipt,
+              validate_exp289_beacon_receipt,
+          )
 
-          raw = Path("/tmp/nlm-exp289-freeze-time.txt").read_text().strip()
-          freeze = datetime.fromisoformat(raw.replace("Z", "+00:00")).astimezone(timezone.utc)
-          published = (freeze + timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
+          def parse_utc(value: str) -> datetime:
+              return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+
+          seal = json.loads(Path("/tmp/nlm-exp289-gatea-seal.json").read_text())
+          sealed = parse_utc(seal["seal_created_at_utc"])
+          published = (sealed + timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
           receipt = build_test_beacon_receipt(
               source="synthetic-ci",
-              beacon_id="exp289-focused-test-only-post-freeze",
+              beacon_id="exp289-focused-test-only-post-seal",
               published_at_utc=published,
               entropy_hex="ab" * 32,
               evidence_reference="TEST-ONLY",
           )
+          errors = validate_exp289_beacon_receipt(
+              receipt,
+              freeze_commit_timestamp_utc=seal["freeze_commit_timestamp_utc"],
+              seal_created_at_utc=seal["seal_created_at_utc"],
+          )
+          if errors:
+              raise RuntimeError("invalid EXP-289 TEST-ONLY post-seal beacon: " + "; ".join(errors))
           Path("/tmp/nlm-exp289-test-beacon.json").write_text(
               json.dumps(receipt, sort_keys=True, indent=2) + "\n",
               encoding="utf-8",
