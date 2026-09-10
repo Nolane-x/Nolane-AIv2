@@ -1,0 +1,85 @@
+name: exp289-confirmatory-ci
+
+on:
+  pull_request:
+    paths:
+      - 'src/nolane_ai/experiments/exp289_*.py'
+      - 'scripts/*exp289*.py'
+      - 'tests/test_exp289_*.py'
+      - 'tests/test_matched_nogood_arms.py'
+      - 'protocols/stage_a_v1.json'
+      - 'protocols/stage_a_v1.sha256'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/exp289-confirmatory-ci.yml'
+  push:
+    branches: [main, exp289-confirmatory-gate-a]
+    paths:
+      - 'src/nolane_ai/experiments/exp289_*.py'
+      - 'scripts/*exp289*.py'
+      - 'tests/test_exp289_*.py'
+      - 'tests/test_matched_nogood_arms.py'
+      - 'protocols/stage_a_v1.json'
+      - 'protocols/stage_a_v1.sha256'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/exp289-confirmatory-ci.yml'
+
+concurrency:
+  group: exp289-confirmatory-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,model]'
+      - name: Run EXP-289 focused contract
+        run: >-
+          pytest -q
+          tests/test_exp289_neural_import.py
+          tests/test_matched_nogood_arms.py
+          tests/test_exp289_nogood_worlds.py
+          tests/test_exp289_paired_runner.py
+          tests/test_exp289_ground_truth_boundary.py
+          tests/test_exp289_registry_integration.py
+          tests/test_exp289_paired_cli.py
+          tests/test_exp289_confirmatory_prep.py
+          tests/test_exp289_confirmatory_prep_cli.py
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Build EXP-289 Gate A DEVELOPMENT pilot
+        run: >-
+          python scripts/run_exp289_paired_dev.py
+          --tiny
+          --train-replicates 2
+          --eval-replicates 32
+          --eval-start-replicate 20000
+          --batch-size 2
+          --timesteps 3
+          --restarts 3
+          --variables 6
+          --decoys 2
+          --max-search-steps 12
+          --output /tmp/nlm-exp289-gatea-smoke-dev.json
+          --registry-output /tmp/nlm-exp289-gatea-smoke-registry.json
+      - name: Prepare EXP-289 Gate A
+        run: >-
+          python scripts/prepare_exp289_confirmatory_gate_a.py
+          --execution /tmp/nlm-exp289-gatea-smoke-dev.json
+          --registry /tmp/nlm-exp289-gatea-smoke-registry.json
+          --output /tmp/nlm-exp289-gatea-smoke-prep.json
+      - name: Assert EXP-289 Gate A pre-beacon boundary
+        run: >-
+          python -c 'import json; from pathlib import Path; p=json.loads(Path("/tmp/nlm-exp289-gatea-smoke-prep.json").read_text()); assert p["evidence_level"] == "EV-E2"; assert p["decision"] == "UNVERIFIED"; assert p["confirmatory_data_consumed"] is False; assert p["challenge_materialized"] is False; assert p["decision_rule_executed"] is False; assert p["confirmatory_lineage"]["seed_materialization_status"] == "NOT_EXECUTED"; assert p["status"] in {"CONFIRMATORY_GATE_A_PREPARED", "NOT_READY_VARIANCE_EXCEEDS_MAX_N"}; f=p["sample_size_freeze"]; assert (p["confirmatory_ready"] is False and f["confirmatory_n"] is None and p["confirmatory_lineage"]["reserved_replicate_ids"] == []) if p["status"] == "NOT_READY_VARIANCE_EXCEEDS_MAX_N" else (p["confirmatory_ready"] is True and 32 <= f["confirmatory_n"] <= 128)'
+      - name: Remove EXP-289 temporary artifacts
+        if: always()
+        run: >-
+          rm -f
+          /tmp/nlm-exp289-gatea-smoke-dev.json
+          /tmp/nlm-exp289-gatea-smoke-registry.json
+          /tmp/nlm-exp289-gatea-smoke-prep.json
+      - run: python -m compileall -q src scripts
