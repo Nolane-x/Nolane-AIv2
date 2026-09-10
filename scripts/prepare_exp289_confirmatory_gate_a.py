@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from copy import deepcopy
 import json
 import os
 from pathlib import Path
@@ -14,6 +15,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from nolane_ai.experiments.exp289_confirmatory_prep import (
+    _prep_digest,
     build_exp289_confirmatory_prep,
     validate_exp289_confirmatory_prep,
 )
@@ -103,6 +105,73 @@ def _require_valid(label: str, errors: list[str]) -> None:
         raise RuntimeError(f"invalid {label}: " + "; ".join(errors))
 
 
+def _unwrap_authoritative_execution(
+    execution: dict[str, Any],
+    *,
+    protocol_digest: str,
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """Validate and remove only the external geometry authority envelope.
+
+    EXP-289's deterministic reconstruction court owns the scientific execution
+    payload. A predeclared geometry manifest is external authority, so it is
+    validated against the canonical repository manifest and then stripped for
+    deterministic reconstruction. Both the scientific and enveloped artifact
+    digests are subsequently bound into Gate-A prep.
+    """
+
+    authority = execution.get("development_geometry_authority")
+    if authority is None:
+        return execution, None
+    if not isinstance(authority, dict):
+        raise RuntimeError("EXP-289 development geometry authority must be an object")
+
+    from nolane_ai.experiments.exp289_development_geometry import (
+        AUTHORITY_SCOPE,
+        SCHEMA as GEOMETRY_SCHEMA,
+        load_exp289_development_geometry,
+    )
+    from nolane_ai.experiments.exp289_paired_runner import _artifact_digest
+
+    if authority.get("schema") != GEOMETRY_SCHEMA:
+        raise RuntimeError("EXP-289 development geometry authority schema drift")
+    if authority.get("authority_scope") != AUTHORITY_SCOPE:
+        raise RuntimeError("EXP-289 development geometry authority scope drift")
+    if authority.get("confirmatory_authority") is not False:
+        raise RuntimeError("EXP-289 DEVELOPMENT geometry cannot claim confirmatory authority")
+
+    full_digest = execution.get("artifact_digest")
+    if not isinstance(full_digest, str) or full_digest != _artifact_digest(execution):
+        raise RuntimeError("EXP-289 authoritative DEVELOPMENT artifact self-hash mismatch")
+
+    manifest = ROOT / "protocols" / "exp289_authoritative_development_v1.json"
+    digest_file = ROOT / "protocols" / "exp289_authoritative_development_v1.sha256"
+    geometry, geometry_digest = load_exp289_development_geometry(
+        manifest,
+        digest_file,
+        protocol_digest=protocol_digest,
+    )
+    if authority.get("manifest_digest") != geometry_digest:
+        raise RuntimeError("EXP-289 DEVELOPMENT geometry manifest digest drift")
+
+    scientific = deepcopy(execution)
+    scientific.pop("development_geometry_authority", None)
+    scientific["artifact_digest"] = _artifact_digest(scientific)
+    if authority.get("scientific_execution_digest") != scientific["artifact_digest"]:
+        raise RuntimeError("EXP-289 DEVELOPMENT geometry scientific execution digest drift")
+
+    configuration = scientific.get("configuration") or {}
+    for key, expected in geometry.items():
+        if key == "tiny":
+            continue
+        if configuration.get(key) != expected:
+            raise RuntimeError(f"EXP-289 authoritative DEVELOPMENT geometry execution drift: {key}")
+
+    binding = deepcopy(authority)
+    binding["authoritative_execution_digest"] = full_digest
+    binding["geometry_configuration_match"] = True
+    return scientific, binding
+
+
 def _publish_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     data = (json.dumps(payload, sort_keys=True, indent=2) + "\n").encode("utf-8")
@@ -134,8 +203,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     protocol, protocol_digest = _verified_protocol(args.protocol, args.protocol_digest_file)
     code_digest = source_tree_digest(ROOT)
-    execution = _load_json(args.execution, label="EXP-289 DEVELOPMENT execution")
+    raw_execution = _load_json(args.execution, label="EXP-289 DEVELOPMENT execution")
     registry = _load_json(args.registry, label="EXP-289 arm registry")
+    execution, geometry_binding = _unwrap_authoritative_execution(
+        raw_execution,
+        protocol_digest=protocol_digest,
+    )
 
     _require_valid("EXP-289 DEVELOPMENT execution", validate_exp289_paired_development(execution))
     _require_valid("EXP-289 arm registry", validate_neural_arm_registry(registry))
@@ -157,6 +230,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         analysis_code_digest=code_digest,
         familywise_alpha=_familywise_alpha(protocol),
     )
+    if geometry_binding is not None:
+        prep["development_geometry_authority"] = geometry_binding
+        prep["prep_digest"] = _prep_digest(prep)
     _require_valid("EXP-289 confirmatory prep", validate_exp289_confirmatory_prep(prep))
     _publish_json_exclusive(args.output, prep)
 
