@@ -1,0 +1,243 @@
+name: exp289-confirmatory-ci
+
+on:
+  pull_request:
+    paths:
+      - 'src/nolane_ai/experiments/exp289_*.py'
+      - 'scripts/*exp289*.py'
+      - 'tests/test_exp289_*.py'
+      - 'tests/exp289_confirmatory_fixtures.py'
+      - 'tests/test_matched_nogood_arms.py'
+      - 'protocols/exp289_authoritative_development_v1.json'
+      - 'protocols/exp289_authoritative_development_v1.sha256'
+      - 'protocols/stage_a_v1.json'
+      - 'protocols/stage_a_v1.sha256'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/exp289-confirmatory-ci.yml'
+  push:
+    branches: [main, exp289-confirmatory-gate-a]
+    paths:
+      - 'src/nolane_ai/experiments/exp289_*.py'
+      - 'scripts/*exp289*.py'
+      - 'tests/test_exp289_*.py'
+      - 'tests/exp289_confirmatory_fixtures.py'
+      - 'tests/test_matched_nogood_arms.py'
+      - 'protocols/exp289_authoritative_development_v1.json'
+      - 'protocols/exp289_authoritative_development_v1.sha256'
+      - 'protocols/stage_a_v1.json'
+      - 'protocols/stage_a_v1.sha256'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/exp289-confirmatory-ci.yml'
+
+concurrency:
+  group: exp289-confirmatory-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,model]'
+      - name: Run EXP-289 focused contract
+        run: >-
+          pytest -q
+          tests/test_exp289_neural_import.py
+          tests/test_matched_nogood_arms.py
+          tests/test_exp289_nogood_worlds.py
+          tests/test_exp289_paired_runner.py
+          tests/test_exp289_ground_truth_boundary.py
+          tests/test_exp289_registry_integration.py
+          tests/test_exp289_paired_cli.py
+          tests/test_exp289_confirmatory_prep.py
+          tests/test_exp289_confirmatory_prep_cli.py
+          tests/test_exp289_authoritative_development.py
+          tests/test_exp289_checkpoint.py
+          tests/test_exp289_confirmatory_authorization.py
+          tests/test_exp289_confirmatory_ceremony.py
+          tests/test_exp289_beacon.py
+          tests/test_exp289_confirmatory_gate_b.py
+          tests/test_exp289_real_ceremony.py
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Build EXP-289 Gate A DEVELOPMENT pilot
+        run: >-
+          python scripts/run_exp289_paired_dev.py
+          --tiny
+          --train-replicates 2
+          --eval-replicates 32
+          --eval-start-replicate 20000
+          --batch-size 2
+          --timesteps 3
+          --restarts 3
+          --variables 6
+          --decoys 2
+          --max-search-steps 12
+          --output /tmp/nlm-exp289-gatea-smoke-dev.json
+          --registry-output /tmp/nlm-exp289-gatea-smoke-registry.json
+      - name: Prepare EXP-289 Gate A
+        run: >-
+          python scripts/prepare_exp289_confirmatory_gate_a.py
+          --execution /tmp/nlm-exp289-gatea-smoke-dev.json
+          --registry /tmp/nlm-exp289-gatea-smoke-registry.json
+          --output /tmp/nlm-exp289-gatea-smoke-prep.json
+      - name: Assert EXP-289 Gate A pre-beacon boundary
+        run: >-
+          python -c 'import json; from pathlib import Path; p=json.loads(Path("/tmp/nlm-exp289-gatea-smoke-prep.json").read_text()); assert p["evidence_level"] == "EV-E2"; assert p["decision"] == "UNVERIFIED"; assert p["confirmatory_data_consumed"] is False; assert p["challenge_materialized"] is False; assert p["decision_rule_executed"] is False; assert p["confirmatory_lineage"]["seed_materialization_status"] == "NOT_EXECUTED"; assert p["status"] in {"CONFIRMATORY_GATE_A_PREPARED", "NOT_READY_VARIANCE_EXCEEDS_MAX_N"}; f=p["sample_size_freeze"]; assert (p["confirmatory_ready"] is False and f["confirmatory_n"] is None and p["confirmatory_lineage"]["reserved_replicate_ids"] == []) if p["status"] == "NOT_READY_VARIANCE_EXCEEDS_MAX_N" else (p["confirmatory_ready"] is True and 32 <= f["confirmatory_n"] <= 128)'
+      - name: Run locked authoritative EXP-289 DEVELOPMENT geometry
+        run: >-
+          python scripts/run_exp289_paired_dev.py
+          --geometry-manifest protocols/exp289_authoritative_development_v1.json
+          --geometry-digest-file protocols/exp289_authoritative_development_v1.sha256
+          --output /tmp/nlm-exp289-authoritative-dev.json
+          --registry-output /tmp/nlm-exp289-authoritative-registry.json
+      - name: Assert authoritative EXP-289 DEVELOPMENT geometry binding
+        run: >-
+          python -c 'import json; from pathlib import Path; e=json.loads(Path("/tmp/nlm-exp289-authoritative-dev.json").read_text()); expected=Path("protocols/exp289_authoritative_development_v1.sha256").read_text().strip(); a=e["development_geometry_authority"]; assert a["manifest_digest"] == expected; assert a["authority_scope"] == "DEVELOPMENT_PILOT_ONLY"; assert a["confirmatory_authority"] is False; assert e["evidence_level"] == "EV-E2"; assert e["decision"] == "UNVERIFIED"; assert e["confirmatory_data_consumed"] is False; assert e["challenge_materialized"] is False'
+      - name: Prepare authoritative EXP-289 Gate A
+        run: >-
+          python scripts/prepare_exp289_confirmatory_gate_a.py
+          --execution /tmp/nlm-exp289-authoritative-dev.json
+          --registry /tmp/nlm-exp289-authoritative-registry.json
+          --output /tmp/nlm-exp289-authoritative-gatea-prep.json
+      - name: Assert authoritative EXP-289 pre-beacon boundary
+        run: >-
+          python -c 'import json; from pathlib import Path; e=json.loads(Path("/tmp/nlm-exp289-authoritative-dev.json").read_text()); p=json.loads(Path("/tmp/nlm-exp289-authoritative-gatea-prep.json").read_text()); assert e["evidence_level"] == "EV-E2"; assert e["confirmatory_data_consumed"] is False; assert e["challenge_materialized"] is False; assert p["evidence_level"] == "EV-E2"; assert p["decision"] == "UNVERIFIED"; assert p["confirmatory_data_consumed"] is False; assert p["challenge_materialized"] is False; assert p["decision_rule_executed"] is False; assert p["confirmatory_lineage"]["seed_materialization_status"] == "NOT_EXECUTED"; assert p["status"] in {"CONFIRMATORY_GATE_A_PREPARED", "NOT_READY_VARIANCE_EXCEEDS_MAX_N"}'
+      - name: Record TEST-ONLY freeze lineage for ceremony rehearsal
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > /tmp/nlm-exp289-freeze-sha.txt
+          git show -s --format=%cI HEAD > /tmp/nlm-exp289-freeze-time.txt
+      - name: Build checkpoint and immutable EXP-289 Gate A seal
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/seal_exp289_confirmatory_gate_a.py \
+            --execution /tmp/nlm-exp289-authoritative-dev.json \
+            --registry /tmp/nlm-exp289-authoritative-registry.json \
+            --freeze-commit-sha "$(cat /tmp/nlm-exp289-freeze-sha.txt)" \
+            --freeze-commit-timestamp-utc "$(cat /tmp/nlm-exp289-freeze-time.txt)" \
+            --checkpoint-output /tmp/nlm-exp289-trained.pt \
+            --checkpoint-receipt-output /tmp/nlm-exp289-checkpoint-receipt.json \
+            --prep-output /tmp/nlm-exp289-sealed-prep.json \
+            --authorization-output /tmp/nlm-exp289-execution-authorization.json \
+            --seal-output /tmp/nlm-exp289-gatea-seal.json
+      - name: Assert immutable EXP-289 Gate A seal is still pre-beacon EV-E2
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import json
+          from pathlib import Path
+
+          def parse_utc(value: str) -> datetime:
+              return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+
+          prep = json.loads(Path("/tmp/nlm-exp289-sealed-prep.json").read_text())
+          preflight = json.loads(Path("/tmp/nlm-exp289-authoritative-gatea-prep.json").read_text())
+          seal = json.loads(Path("/tmp/nlm-exp289-gatea-seal.json").read_text())
+          assert prep["prep_digest"] == preflight["prep_digest"]
+          assert seal["evidence_level"] == "EV-E2"
+          assert seal["decision"] == "UNVERIFIED"
+          assert seal["confirmatory_data_consumed"] is False
+          assert seal["seed_materialization_status"] == "NOT_EXECUTED"
+          assert seal["challenge_materialized"] is False
+          assert seal["decision_rule_executed"] is False
+          assert seal["confirmatory_n"] == 32
+          assert parse_utc(seal["seal_created_at_utc"]) > parse_utc(seal["freeze_commit_timestamp_utc"])
+          PY
+      - name: Materialize TEST-ONLY post-seal beacon
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from datetime import datetime, timedelta, timezone
+          import json
+          from pathlib import Path
+
+          from nolane_ai.experiments.exp289_beacon import (
+              build_test_beacon_receipt,
+              validate_exp289_beacon_receipt,
+          )
+
+          def parse_utc(value: str) -> datetime:
+              return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+
+          seal = json.loads(Path("/tmp/nlm-exp289-gatea-seal.json").read_text())
+          sealed = parse_utc(seal["seal_created_at_utc"])
+          published = (sealed + timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
+          receipt = build_test_beacon_receipt(
+              source="synthetic-ci",
+              beacon_id="exp289-focused-test-only-post-seal",
+              published_at_utc=published,
+              entropy_hex="ab" * 32,
+              evidence_reference="TEST-ONLY",
+          )
+          errors = validate_exp289_beacon_receipt(
+              receipt,
+              freeze_commit_timestamp_utc=seal["freeze_commit_timestamp_utc"],
+              seal_created_at_utc=seal["seal_created_at_utc"],
+          )
+          if errors:
+              raise RuntimeError("invalid EXP-289 TEST-ONLY post-seal beacon: " + "; ".join(errors))
+          Path("/tmp/nlm-exp289-test-beacon.json").write_text(
+              json.dumps(receipt, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+      - name: Execute TEST-ONLY EXP-289 Gate B through operational CLI
+        run: >-
+          python scripts/run_exp289_confirmatory_gate_b.py
+          --seal /tmp/nlm-exp289-gatea-seal.json
+          --beacon /tmp/nlm-exp289-test-beacon.json
+          --checkpoint /tmp/nlm-exp289-trained.pt
+          --checkpoint-receipt /tmp/nlm-exp289-checkpoint-receipt.json
+          --test-only
+          --raw-output /tmp/nlm-exp289-test-gateb-raw.json
+          --analysis-output /tmp/nlm-exp289-test-gateb-analysis.json
+      - name: Assert TEST-ONLY Gate B cannot promote
+        run: >-
+          python -c 'import json; from pathlib import Path; r=json.loads(Path("/tmp/nlm-exp289-test-gateb-raw.json").read_text()); a=json.loads(Path("/tmp/nlm-exp289-test-gateb-analysis.json").read_text()); assert r["test_only"] is True; assert r["scientific_evidence_eligible"] is False; assert r["confirmatory_data_consumed"] is False; assert r["decision_rule_executed"] is False; assert a["test_only"] is True; assert a["scientific_evidence_eligible"] is False; assert a["evidence_level"] == "EV-E2"; assert a["decision"] == "UNVERIFIED"; assert a["confirmatory_data_consumed"] is False; assert a["decision_rule_executed"] is False; assert a["test_only_would_be_decision"] in {"PROMOTE_TO_NEXT_STAGE", "HOLD_UNSTABLE", "KILL_SUBSYSTEM"}'
+      - name: Upload authoritative EXP-289 DEVELOPMENT Gate A evidence and TEST-ONLY ceremony evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp289-authoritative-development-gatea
+          path: |
+            /tmp/nlm-exp289-authoritative-dev.json
+            /tmp/nlm-exp289-authoritative-registry.json
+            /tmp/nlm-exp289-authoritative-gatea-prep.json
+            /tmp/nlm-exp289-checkpoint-receipt.json
+            /tmp/nlm-exp289-sealed-prep.json
+            /tmp/nlm-exp289-execution-authorization.json
+            /tmp/nlm-exp289-gatea-seal.json
+            /tmp/nlm-exp289-test-beacon.json
+            /tmp/nlm-exp289-test-gateb-raw.json
+            /tmp/nlm-exp289-test-gateb-analysis.json
+          if-no-files-found: error
+      - name: Remove EXP-289 temporary artifacts
+        if: always()
+        run: >-
+          rm -f
+          /tmp/nlm-exp289-gatea-smoke-dev.json
+          /tmp/nlm-exp289-gatea-smoke-registry.json
+          /tmp/nlm-exp289-gatea-smoke-prep.json
+          /tmp/nlm-exp289-authoritative-dev.json
+          /tmp/nlm-exp289-authoritative-registry.json
+          /tmp/nlm-exp289-authoritative-gatea-prep.json
+          /tmp/nlm-exp289-freeze-sha.txt
+          /tmp/nlm-exp289-freeze-time.txt
+          /tmp/nlm-exp289-trained.pt
+          /tmp/nlm-exp289-checkpoint-receipt.json
+          /tmp/nlm-exp289-sealed-prep.json
+          /tmp/nlm-exp289-execution-authorization.json
+          /tmp/nlm-exp289-gatea-seal.json
+          /tmp/nlm-exp289-test-beacon.json
+          /tmp/nlm-exp289-test-gateb-raw.json
+          /tmp/nlm-exp289-test-gateb-analysis.json
+      - run: python -m compileall -q src scripts
