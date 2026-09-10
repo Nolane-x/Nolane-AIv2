@@ -56,6 +56,19 @@ def _forbidden_material_present(payload: dict[str, Any]) -> list[str]:
     return [item for item in forbidden if item in rendered]
 
 
+def _scientific_geometry_configuration(
+    expected_geometry_configuration: dict[str, Any],
+) -> dict[str, Any]:
+    """Project manifest authority onto fields serialized by scientific execution."""
+
+    normalized = deepcopy(expected_geometry_configuration)
+    if "tiny" in normalized:
+        if normalized["tiny"] is not False:
+            raise ValueError("EXP-289 authoritative DEVELOPMENT geometry tiny marker must be false")
+        normalized.pop("tiny")
+    return normalized
+
+
 def _scientific_execution(
     execution_artifact: dict[str, Any],
     *,
@@ -66,6 +79,7 @@ def _scientific_execution(
         raise ValueError("EXP-289 expected authoritative geometry digest must be a 64-hex SHA-256 digest")
     if not isinstance(expected_geometry_configuration, dict) or not expected_geometry_configuration:
         raise ValueError("EXP-289 expected authoritative geometry configuration is required")
+    scientific_geometry = _scientific_geometry_configuration(expected_geometry_configuration)
 
     authority = execution_artifact.get("development_geometry_authority")
     if not isinstance(authority, dict):
@@ -88,7 +102,7 @@ def _scientific_execution(
     scientific_digest = scientific["artifact_digest"]
     if authority.get("scientific_execution_digest") != scientific_digest:
         raise ValueError("EXP-289 authoritative geometry scientific execution digest mismatch")
-    if scientific.get("configuration") != expected_geometry_configuration:
+    if scientific.get("configuration") != scientific_geometry:
         raise ValueError("EXP-289 authoritative DEVELOPMENT geometry configuration mismatch")
 
     errors = validate_exp289_paired_development(scientific)
@@ -140,7 +154,7 @@ def _checkpoint_errors(
     for key, value in expected.items():
         if contract.get(key) != value:
             errors.append(f"EXP-289 checkpoint execution contract lineage mismatch: {key}")
-    if contract.get("configuration") != expected_geometry_configuration:
+    if contract.get("configuration") != _scientific_geometry_configuration(expected_geometry_configuration):
         errors.append("EXP-289 checkpoint execution contract geometry configuration mismatch")
     if (
         contract_authority.get("schema") != GEOMETRY_SCHEMA
