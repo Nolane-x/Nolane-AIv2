@@ -85,6 +85,19 @@ def test_exp286_authorization_rejects_smoke_gate_a_even_when_prep_is_ready() -> 
         )
 
 
+def test_exp286_authorization_rejects_execution_code_lineage_drift() -> None:
+    from nolane_ai.experiments.exp286_confirmatory_authorization import authorize_exp286_confirmatory_execution
+
+    execution, prep = _prepared(authoritative=True)
+    with pytest.raises(ValueError, match="authorization code lineage mismatch"):
+        authorize_exp286_confirmatory_execution(
+            execution_artifact=execution,
+            prep_artifact=prep,
+            expected_geometry_digest=GEOMETRY_DIGEST,
+            execution_code_digest="b" * 64,
+        )
+
+
 def test_exp286_authorization_closes_geometry_and_prep_lineage_without_materializing_challenge() -> None:
     from nolane_ai.experiments.exp286_confirmatory_authorization import (
         authorize_exp286_confirmatory_execution,
