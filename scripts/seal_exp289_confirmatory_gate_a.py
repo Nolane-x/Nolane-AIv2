@@ -119,6 +119,26 @@ def _require_valid(label: str, errors: list[str]) -> None:
         raise RuntimeError(f"invalid {label}: " + "; ".join(errors))
 
 
+def _geometry_matches_execution(
+    execution_configuration: Any,
+    manifest_geometry: Any,
+) -> bool:
+    """Compare only scientific runner fields; ``tiny`` is manifest authority metadata.
+
+    The authoritative runner deliberately does not serialize the CLI-only ``tiny``
+    switch into its scientific execution configuration. Every other predeclared
+    geometry field must match exactly and no extra scientific execution field is
+    accepted here.
+    """
+
+    if not isinstance(execution_configuration, dict) or not isinstance(manifest_geometry, dict):
+        return False
+    normalized_manifest = {
+        key: value for key, value in manifest_geometry.items() if key != "tiny"
+    }
+    return execution_configuration == normalized_manifest
+
+
 def _preflight_outputs(paths: tuple[Path, ...]) -> None:
     if len(set(paths)) != len(paths):
         raise SystemExit("output paths must be distinct")
@@ -227,7 +247,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "EXP-289 DEVELOPMENT execution code digest does not match the current "
             "pre-beacon source tree; regenerate authoritative DEVELOPMENT evidence"
         )
-    if scientific_execution.get("configuration") != geometry:
+    if not _geometry_matches_execution(scientific_execution.get("configuration"), geometry):
         raise RuntimeError("EXP-289 authoritative DEVELOPMENT geometry configuration drift")
     if geometry_binding.get("manifest_digest") != geometry_digest:
         raise RuntimeError("EXP-289 authoritative DEVELOPMENT geometry digest drift")
