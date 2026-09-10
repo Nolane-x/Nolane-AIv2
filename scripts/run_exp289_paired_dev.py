@@ -221,15 +221,10 @@ def main() -> int:
         protocol_digest=protocol_digest,
         code_digest=code_digest,
     )
-    if geometry_digest is not None:
-        execution["development_geometry_authority"] = {
-            "schema": DEVELOPMENT_GEOMETRY_SCHEMA,
-            "authority_scope": DEVELOPMENT_AUTHORITY_SCOPE,
-            "manifest_digest": geometry_digest,
-            "confirmatory_authority": False,
-        }
-        execution["artifact_digest"] = _artifact_digest(execution)
 
+    # Close the deterministic scientific court before attaching the external
+    # predeclared-geometry authority envelope. The envelope is separately
+    # self-hash-bound below and never changes reconstructed scientific fields.
     execution_errors = validate_exp289_paired_development(execution)
     if execution_errors:
         raise RuntimeError(
@@ -237,6 +232,7 @@ def main() -> int:
             + "; ".join(execution_errors)
         )
     validate_exp289_execution_artifact(execution, protocol)
+    scientific_execution_digest = execution["artifact_digest"]
 
     registry: dict[str, Any] | None = None
     if args.registry_output is not None:
@@ -258,6 +254,16 @@ def main() -> int:
                 + "; ".join(registry_errors)
             )
 
+    if geometry_digest is not None:
+        execution["development_geometry_authority"] = {
+            "schema": DEVELOPMENT_GEOMETRY_SCHEMA,
+            "authority_scope": DEVELOPMENT_AUTHORITY_SCOPE,
+            "manifest_digest": geometry_digest,
+            "scientific_execution_digest": scientific_execution_digest,
+            "confirmatory_authority": False,
+        }
+        execution["artifact_digest"] = _artifact_digest(execution)
+
     payloads: list[tuple[Path, dict[str, Any]]] = [(args.output, execution)]
     if args.registry_output is not None and registry is not None:
         payloads.append((args.registry_output, registry))
@@ -275,6 +281,7 @@ def main() -> int:
                 "evidence_level": execution["evidence_level"],
                 "decision": execution["decision"],
                 "execution_digest": execution["artifact_digest"],
+                "scientific_execution_digest": scientific_execution_digest,
                 "development_geometry_digest": geometry_digest,
                 "registry_digest": registry["registry_digest"] if registry is not None else None,
                 "match_court": exp289["match_court"] if exp289 is not None else None,
