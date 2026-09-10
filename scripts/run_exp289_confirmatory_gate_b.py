@@ -234,6 +234,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     beacon_errors = validate_exp289_beacon_receipt(
         beacon,
         freeze_commit_timestamp_utc=seal.get("freeze_commit_timestamp_utc"),
+        seal_created_at_utc=seal.get("seal_created_at_utc"),
     )
     if beacon_errors:
         raise RuntimeError("invalid EXP-289 public beacon receipt: " + "; ".join(beacon_errors))
