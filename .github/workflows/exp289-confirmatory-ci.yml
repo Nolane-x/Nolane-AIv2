@@ -7,6 +7,8 @@ on:
       - 'scripts/*exp289*.py'
       - 'tests/test_exp289_*.py'
       - 'tests/test_matched_nogood_arms.py'
+      - 'protocols/exp289_authoritative_development_v1.json'
+      - 'protocols/exp289_authoritative_development_v1.sha256'
       - 'protocols/stage_a_v1.json'
       - 'protocols/stage_a_v1.sha256'
       - '.github/workflows/ci.yml'
@@ -18,6 +20,8 @@ on:
       - 'scripts/*exp289*.py'
       - 'tests/test_exp289_*.py'
       - 'tests/test_matched_nogood_arms.py'
+      - 'protocols/exp289_authoritative_development_v1.json'
+      - 'protocols/exp289_authoritative_development_v1.sha256'
       - 'protocols/stage_a_v1.json'
       - 'protocols/stage_a_v1.sha256'
       - '.github/workflows/ci.yml'
@@ -76,6 +80,34 @@ jobs:
       - name: Assert EXP-289 Gate A pre-beacon boundary
         run: >-
           python -c 'import json; from pathlib import Path; p=json.loads(Path("/tmp/nlm-exp289-gatea-smoke-prep.json").read_text()); assert p["evidence_level"] == "EV-E2"; assert p["decision"] == "UNVERIFIED"; assert p["confirmatory_data_consumed"] is False; assert p["challenge_materialized"] is False; assert p["decision_rule_executed"] is False; assert p["confirmatory_lineage"]["seed_materialization_status"] == "NOT_EXECUTED"; assert p["status"] in {"CONFIRMATORY_GATE_A_PREPARED", "NOT_READY_VARIANCE_EXCEEDS_MAX_N"}; f=p["sample_size_freeze"]; assert (p["confirmatory_ready"] is False and f["confirmatory_n"] is None and p["confirmatory_lineage"]["reserved_replicate_ids"] == []) if p["status"] == "NOT_READY_VARIANCE_EXCEEDS_MAX_N" else (p["confirmatory_ready"] is True and 32 <= f["confirmatory_n"] <= 128)'
+      - name: Run locked authoritative EXP-289 DEVELOPMENT geometry
+        run: >-
+          python scripts/run_exp289_paired_dev.py
+          --geometry-manifest protocols/exp289_authoritative_development_v1.json
+          --geometry-digest-file protocols/exp289_authoritative_development_v1.sha256
+          --output /tmp/nlm-exp289-authoritative-dev.json
+          --registry-output /tmp/nlm-exp289-authoritative-registry.json
+      - name: Assert authoritative EXP-289 DEVELOPMENT geometry binding
+        run: >-
+          python -c 'import json; from pathlib import Path; e=json.loads(Path("/tmp/nlm-exp289-authoritative-dev.json").read_text()); expected=Path("protocols/exp289_authoritative_development_v1.sha256").read_text().strip(); a=e["development_geometry_authority"]; assert a["manifest_digest"] == expected; assert a["authority_scope"] == "DEVELOPMENT_PILOT_ONLY"; assert a["confirmatory_authority"] is False; assert e["evidence_level"] == "EV-E2"; assert e["decision"] == "UNVERIFIED"; assert e["confirmatory_data_consumed"] is False; assert e["challenge_materialized"] is False'
+      - name: Prepare authoritative EXP-289 Gate A
+        run: >-
+          python scripts/prepare_exp289_confirmatory_gate_a.py
+          --execution /tmp/nlm-exp289-authoritative-dev.json
+          --registry /tmp/nlm-exp289-authoritative-registry.json
+          --output /tmp/nlm-exp289-authoritative-gatea-prep.json
+      - name: Assert authoritative EXP-289 pre-beacon boundary
+        run: >-
+          python -c 'import json; from pathlib import Path; e=json.loads(Path("/tmp/nlm-exp289-authoritative-dev.json").read_text()); p=json.loads(Path("/tmp/nlm-exp289-authoritative-gatea-prep.json").read_text()); assert e["evidence_level"] == "EV-E2"; assert e["confirmatory_data_consumed"] is False; assert e["challenge_materialized"] is False; assert p["evidence_level"] == "EV-E2"; assert p["decision"] == "UNVERIFIED"; assert p["confirmatory_data_consumed"] is False; assert p["challenge_materialized"] is False; assert p["decision_rule_executed"] is False; assert p["confirmatory_lineage"]["seed_materialization_status"] == "NOT_EXECUTED"; assert p["status"] in {"CONFIRMATORY_GATE_A_PREPARED", "NOT_READY_VARIANCE_EXCEEDS_MAX_N"}'
+      - name: Upload authoritative EXP-289 DEVELOPMENT Gate A evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp289-authoritative-development-gatea
+          path: |
+            /tmp/nlm-exp289-authoritative-dev.json
+            /tmp/nlm-exp289-authoritative-registry.json
+            /tmp/nlm-exp289-authoritative-gatea-prep.json
+          if-no-files-found: error
       - name: Remove EXP-289 temporary artifacts
         if: always()
         run: >-
@@ -83,4 +115,7 @@ jobs:
           /tmp/nlm-exp289-gatea-smoke-dev.json
           /tmp/nlm-exp289-gatea-smoke-registry.json
           /tmp/nlm-exp289-gatea-smoke-prep.json
+          /tmp/nlm-exp289-authoritative-dev.json
+          /tmp/nlm-exp289-authoritative-registry.json
+          /tmp/nlm-exp289-authoritative-gatea-prep.json
       - run: python -m compileall -q src scripts
