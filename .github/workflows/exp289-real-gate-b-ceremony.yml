@@ -18,6 +18,7 @@ env:
   PROTOCOL_SHA: c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440
   CEREMONY_ID: EXP-289-REAL-GATE-B-2026-09-10
   ARM_PATH: .github/ceremony/exp289-real-gate-b-arm.json
+  ARM_LOCK_NAME: exp289-real-gate-b-arm-lock-EXP-289-REAL-GATE-B-2026-09-10
   INFERENCE_MARKER_NAME: exp289-real-gate-b-inference-started-${{ github.sha }}
   RAW_NAME: exp289-real-gate-b-raw-${{ github.sha }}
   OUTCOME_NAME: exp289-real-gate-b-outcome-${{ github.sha }}
@@ -69,6 +70,10 @@ jobs:
           PY
           )"
           test "$PARENT_SHA" = "$BASELINE_FROM_MARKER"
+          if git cat-file -e "${BASELINE_FROM_MARKER}:${ARM_PATH}" 2>/dev/null; then
+            echo "baseline already contains EXP-289 arm marker" >&2
+            exit 1
+          fi
           mapfile -t changed < <(git diff --name-only "$BASELINE_FROM_MARKER" HEAD)
           test "${#changed[@]}" -eq 1
           test "${changed[0]}" = ".github/ceremony/exp289-real-gate-b-arm.json"
@@ -81,7 +86,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for name in "$INFERENCE_MARKER_NAME" "$RAW_NAME" "$OUTCOME_NAME"; do
+          for name in "$ARM_LOCK_NAME" "$INFERENCE_MARKER_NAME" "$RAW_NAME" "$OUTCOME_NAME"; do
             gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${name}&per_page=100" > /tmp/exp289-artifacts.json
             python - "$name" <<'PY'
           import json
@@ -95,9 +100,45 @@ jobs:
               if artifact.get('name') == name and not artifact.get('expired', False)
           ]
           if active:
-              raise SystemExit(f'authoritative EXP-289 artifact already exists for exact arm SHA: {name}')
+              raise SystemExit(f'authoritative EXP-289 artifact already exists for ceremony: {name}')
           PY
           done
+
+      - name: Materialize EXP-289 ceremony arm lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from datetime import datetime, timezone
+          import json
+          import os
+          from pathlib import Path
+
+          arm = json.loads(Path(os.environ['ARM_PATH']).read_text(encoding='utf-8'))
+          payload = {
+              'schema': 'NLM-EXP-289-REAL-GATE-B-ARM-LOCK-V1',
+              'ceremony_id': os.environ['CEREMONY_ID'],
+              'ceremony_sha': os.environ['GITHUB_SHA'],
+              'source_baseline_sha': arm['source_baseline_sha'],
+              'protocol_digest': arm['protocol_digest'],
+              'confirmatory_scope': arm['confirmatory_scope'],
+              'created_at_utc': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+              'scientific_evidence_eligible': False,
+              'confirmatory_data_consumed': False,
+              'challenge_materialized': False,
+          }
+          Path('/tmp/exp289-arm-lock.json').write_text(
+              json.dumps(payload, sort_keys=True, indent=2) + '\n', encoding='utf-8'
+          )
+          PY
+
+      - name: Publish irreversible EXP-289 ceremony arm lock
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARM_LOCK_NAME }}
+          path: /tmp/exp289-arm-lock.json
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Require exact baseline normal and focused CI
         env:
