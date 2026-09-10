@@ -42,6 +42,16 @@ def _valid_entropy_hex(value: Any) -> bool:
     return len(raw) >= 32
 
 
+def _valid_freeze_commit_sha(value: Any) -> bool:
+    if not isinstance(value, str) or len(value) not in {40, 64}:
+        return False
+    try:
+        int(value, 16)
+    except ValueError:
+        return False
+    return True
+
+
 def build_test_beacon_receipt(
     *,
     source: str,
@@ -154,16 +164,19 @@ def validate_exp286_beacon_receipt(
 def derive_exp286_challenge_seed(
     *,
     protocol_digest: str,
+    freeze_commit_sha: str,
+    freeze_commit_timestamp_utc: str,
     beacon_receipt: dict[str, Any],
     stream: str,
     replicate: int,
-    freeze_commit_timestamp_utc: str | None = None,
     authorization_created_at_utc: str | None = None,
 ) -> int:
-    """Derive one domain-separated post-freeze seed from a validated receipt."""
+    """Derive one domain-separated seed bound to the frozen Gate-A lineage."""
 
     if not isinstance(protocol_digest, str) or not protocol_digest:
         raise ValueError("protocol_digest is required")
+    if not _valid_freeze_commit_sha(freeze_commit_sha):
+        raise ValueError("freeze_commit_sha must be a 40- or 64-hex digest")
     if not isinstance(stream, str) or not stream:
         raise ValueError("stream is required")
     if not isinstance(replicate, int) or isinstance(replicate, bool) or replicate < 0:
@@ -178,7 +191,7 @@ def derive_exp286_challenge_seed(
         raise ValueError("invalid EXP-286 beacon receipt: " + "; ".join(errors))
 
     material = (
-        f"{protocol_digest}|{beacon_receipt['receipt_digest']}|"
+        f"{protocol_digest}|{freeze_commit_sha}|{beacon_receipt['receipt_digest']}|"
         f"{EXPERIMENT_ID}|{stream}|{replicate}"
     )
     digest = sha256(material.encode("utf-8")).digest()
