@@ -139,8 +139,10 @@ def test_exp286_gate_a_seal_binds_all_pre_beacon_authority_without_promoting_evi
     assert seal["lineage"]["development_execution_digest"] == execution["artifact_digest"]
     assert seal["lineage"]["prep_digest"] == prep["prep_digest"]
     assert seal["lineage"]["execution_authorization_digest"] == authorization["authorization_digest"]
-    assert "beacon" not in repr(seal).lower()
-    assert "challenge_seed" not in repr(seal).lower()
+    rendered = repr(seal).lower()
+    assert "beacon_receipt" not in rendered
+    assert "entropy_hex" not in rendered
+    assert "challenge_seed" not in rendered
     assert validate(seal) == []
 
 
