@@ -169,7 +169,7 @@ jobs:
       - name: Assert TEST-ONLY Gate B cannot promote
         run: >-
           python -c 'import json; from pathlib import Path; r=json.loads(Path("/tmp/nlm-exp289-test-gateb-raw.json").read_text()); a=json.loads(Path("/tmp/nlm-exp289-test-gateb-analysis.json").read_text()); assert r["test_only"] is True; assert r["scientific_evidence_eligible"] is False; assert r["confirmatory_data_consumed"] is False; assert r["decision_rule_executed"] is False; assert a["test_only"] is True; assert a["scientific_evidence_eligible"] is False; assert a["evidence_level"] == "EV-E2"; assert a["decision"] == "UNVERIFIED"; assert a["confirmatory_data_consumed"] is False; assert a["decision_rule_executed"] is False; assert a["test_only_would_be_decision"] in {"PROMOTE_TO_NEXT_STAGE", "HOLD_UNSTABLE", "KILL_SUBSYSTEM"}'
-      - name: Upload authoritative EXP-289 DEVELOPMENT and TEST-ONLY ceremony evidence
+      - name: Upload authoritative EXP-289 DEVELOPMENT Gate A evidence and TEST-ONLY ceremony evidence
         uses: actions/upload-artifact@v4
         with:
           name: exp289-authoritative-development-gatea
