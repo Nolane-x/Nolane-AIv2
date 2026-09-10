@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Any
 
 from nolane_ai.protocol.evidence import canonical_sha256
+from .exp286_challenge_worlds import challenge_contract_digest
 from .exp286_confirmatory_prep import validate_exp286_confirmatory_prep
 from .exp286_paired_runner import validate_exp286_paired_development
 
@@ -65,10 +66,13 @@ def validate_exp286_confirmatory_execution_authorization(payload: dict[str, Any]
         "prep_digest",
         "protocol_digest",
         "execution_code_digest",
+        "challenge_contract_digest",
     ):
         value = lineage.get(key)
         if not isinstance(value, str) or not value:
             errors.append(f"EXP-286 authorization lineage is missing {key}")
+    if lineage.get("challenge_contract_digest") not in (None, "") and lineage.get("challenge_contract_digest") != challenge_contract_digest():
+        errors.append("EXP-286 authorization lineage challenge_contract_digest mismatch")
 
     preflight = payload.get("preflight") or {}
     expected_checks = {
@@ -78,6 +82,7 @@ def validate_exp286_confirmatory_execution_authorization(payload: dict[str, Any]
         "authoritative_geometry_bound": True,
         "development_prep_lineage_bound": True,
         "protocol_lineage_bound": True,
+        "challenge_contract_bound": True,
         "pre_beacon_boundary_preserved": True,
     }
     for key, expected in expected_checks.items():
@@ -136,6 +141,7 @@ def authorize_exp286_confirmatory_execution(
     if not isinstance(confirmatory_n, int) or isinstance(confirmatory_n, bool) or not 32 <= confirmatory_n <= 128:
         raise ValueError("EXP-286 authorization requires confirmatory_n within frozen bounds")
 
+    challenge_digest = challenge_contract_digest()
     payload: dict[str, Any] = {
         "schema": SCHEMA,
         "experiment_id": EXPERIMENT_ID,
@@ -152,6 +158,7 @@ def authorize_exp286_confirmatory_execution(
             "prep_digest": prep_artifact.get("prep_digest"),
             "protocol_digest": execution_artifact.get("protocol_digest"),
             "execution_code_digest": execution_code_digest,
+            "challenge_contract_digest": challenge_digest,
         },
         "preflight": {
             "development_artifact_valid": True,
@@ -160,6 +167,7 @@ def authorize_exp286_confirmatory_execution(
             "authoritative_geometry_bound": True,
             "development_prep_lineage_bound": True,
             "protocol_lineage_bound": True,
+            "challenge_contract_bound": True,
             "pre_beacon_boundary_preserved": True,
             "all_checks_passed": True,
         },
