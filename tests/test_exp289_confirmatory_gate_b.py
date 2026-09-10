@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -11,16 +12,20 @@ from tests.test_exp289_confirmatory_authorization import _authorize
 from tests.test_exp289_confirmatory_ceremony import _seal
 
 
-BEACON_TIME = "2026-09-10T10:46:00Z"
+def _parse_utc(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
 
 
 def _beacon(seal: dict) -> dict:
     from nolane_ai.experiments.exp289_beacon import build_test_beacon_receipt
 
+    published = (
+        _parse_utc(seal["seal_created_at_utc"]) + timedelta(seconds=1)
+    ).isoformat().replace("+00:00", "Z")
     return build_test_beacon_receipt(
         source="TEST-ONLY EXP-289 Gate-B beacon",
         beacon_id="exp289-test-gate-b-1",
-        published_at_utc=BEACON_TIME,
+        published_at_utc=published,
         entropy_hex="ab" * 32,
         evidence_reference="test-only://exp289/gate-b",
     )
