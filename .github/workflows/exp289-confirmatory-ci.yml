@@ -59,6 +59,7 @@ jobs:
           tests/test_exp289_checkpoint.py
           tests/test_exp289_confirmatory_authorization.py
           tests/test_exp289_confirmatory_ceremony.py
+          tests/test_exp289_beacon.py
       - name: Verify frozen Stage-A protocol
         run: python scripts/verify_protocol.py
       - name: Build EXP-289 Gate A DEVELOPMENT pilot
