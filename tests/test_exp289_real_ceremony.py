@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import importlib.util
 from pathlib import Path
 import subprocess
 import sys
@@ -85,6 +86,32 @@ def test_exp289_operational_ceremony_cli_entrypoints_exist_and_expose_no_raw_see
     )
     assert rejected.returncode != 0
     assert "unrecognized arguments" in rejected.stderr + rejected.stdout
+
+
+def test_exp289_gate_a_seal_geometry_match_treats_tiny_as_manifest_only_marker() -> None:
+    spec = importlib.util.spec_from_file_location("exp289_seal_cli", GATE_A_SEAL_SCRIPT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    manifest_geometry = {
+        "tiny": False,
+        "root_seed": "authority-test",
+        "d_model": 64,
+        "hidden_size": 48,
+    }
+    execution_configuration = {
+        "root_seed": "authority-test",
+        "d_model": 64,
+        "hidden_size": 48,
+    }
+    assert module._geometry_matches_execution(
+        execution_configuration,
+        manifest_geometry,
+    )
+    drifted = deepcopy(execution_configuration)
+    drifted["d_model"] = 32
+    assert not module._geometry_matches_execution(drifted, manifest_geometry)
 
 
 def test_exp289_real_beacon_executes_raw_before_analysis_and_promotes_only_analysis(
