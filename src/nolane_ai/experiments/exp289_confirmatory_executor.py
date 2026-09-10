@@ -106,6 +106,7 @@ def _validate_execution_inputs(
     beacon_errors = validate_exp289_beacon_receipt(
         beacon_receipt,
         freeze_commit_timestamp_utc=str(seal.get("freeze_commit_timestamp_utc") or ""),
+        seal_created_at_utc=str(seal.get("seal_created_at_utc") or ""),
     )
     if beacon_errors:
         raise ValueError("invalid EXP-289 beacon receipt: " + "; ".join(beacon_errors))
@@ -214,6 +215,7 @@ def _expected_rows(
             beacon_receipt=beacon_receipt,
             stream=STREAM,
             replicate=replicate,
+            seal_created_at_utc=str(seal["seal_created_at_utc"]),
         )
         generator = Exp289NogoodGenerator(
             root_seed=f"NLM|EXP-289|POST_FREEZE_CHALLENGE|{challenge_seed}"
@@ -441,6 +443,7 @@ def validate_exp289_confirmatory_raw(
     beacon_errors = validate_exp289_beacon_receipt(
         beacon,
         freeze_commit_timestamp_utc=str(seal.get("freeze_commit_timestamp_utc") or ""),
+        seal_created_at_utc=str(seal.get("seal_created_at_utc") or ""),
     )
     if beacon_errors:
         errors.append("EXP-289 raw beacon invalid: " + "; ".join(beacon_errors))
