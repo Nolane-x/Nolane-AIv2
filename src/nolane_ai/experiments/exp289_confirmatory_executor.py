@@ -21,11 +21,13 @@ from .matched_nogood_arms import audit_matched_exp289_arm_pair
 SCHEMA = "NLM-EXP-289-CONFIRMATORY-CHALLENGE-RAW-V1"
 EXPERIMENT_ID = "EXP-289"
 TEST_ONLY_STATUS = "TEST_ONLY_CHALLENGE_EXECUTED_UNANALYZED"
+SCIENTIFIC_STATUS = "CONFIRMATORY_CHALLENGE_EXECUTED_UNANALYZED"
 STREAM = "challenge"
 SEARCH_PATH_PAIRING_POLICY = (
     "same_initial_world_restart_lineage_with_causal_post_memory_divergence_preserved"
 )
 TEST_ONLY_SCOPE = "synthetic-exp289-post-freeze-challenge-test-only"
+SCIENTIFIC_SCOPE = "exp289-post-freeze-confirmatory-challenge"
 
 _EXPECTED_ROWS_CACHE: dict[str, list[dict[str, Any]]] = {}
 
@@ -66,6 +68,22 @@ def _reserved_errors(value: Any, confirmatory_n: Any) -> list[str]:
     return []
 
 
+def _beacon_mode(beacon_receipt: dict[str, Any]) -> bool:
+    test_only = beacon_receipt.get("test_only")
+    scientific = beacon_receipt.get("scientific_evidence_eligible")
+    if test_only is True:
+        if scientific is not False:
+            raise ValueError("EXP-289 TEST-ONLY beacon cannot be scientific evidence")
+        return True
+    if test_only is False:
+        if scientific is not True:
+            raise ValueError(
+                "EXP-289 non-test beacon must be explicitly marked scientific_evidence_eligible"
+            )
+        return False
+    raise ValueError("EXP-289 beacon evidence mode is invalid")
+
+
 def _validate_execution_inputs(
     *,
     seal: dict[str, Any],
@@ -91,8 +109,7 @@ def _validate_execution_inputs(
     )
     if beacon_errors:
         raise ValueError("invalid EXP-289 beacon receipt: " + "; ".join(beacon_errors))
-    if beacon_receipt.get("test_only") is not True or beacon_receipt.get("scientific_evidence_eligible") is not False:
-        raise ValueError("EXP-289 Task-6 executor is TEST-ONLY and cannot consume a scientific beacon")
+    _beacon_mode(beacon_receipt)
 
     checkpoint_errors = validate_exp289_checkpoint_receipt(checkpoint_receipt)
     if checkpoint_errors:
@@ -164,6 +181,8 @@ def _expected_rows(
         current_source_tree_digest=current_source_tree_digest,
         executor_code_digest=executor_code_digest,
     )
+    test_only = beacon_receipt.get("test_only") is True
+    challenge_scope = TEST_ONLY_SCOPE if test_only else SCIENTIFIC_SCOPE
     cache_key = canonical_sha256(
         {
             "seal_digest": seal.get("seal_digest"),
@@ -172,6 +191,7 @@ def _expected_rows(
             "checkpoint_scientific_identity_digest": checkpoint_receipt.get("scientific_identity_digest"),
             "source_tree_digest": current_source_tree_digest,
             "executor_code_digest": executor_code_digest,
+            "challenge_scope": challenge_scope,
         }
     )
     cached = _EXPECTED_ROWS_CACHE.get(cache_key)
@@ -208,7 +228,7 @@ def _expected_rows(
             d_model=int(config["d_model"]),
             noise_std=float(config["noise_std"]),
             rng_stream="evaluation",
-            scope=TEST_ONLY_SCOPE,
+            scope=challenge_scope,
             device="cpu",
         )
         no_episodes: list[dict[str, Any]] = []
@@ -259,6 +279,7 @@ def _expected_rows(
             "challenge_seed": int(challenge_seed),
             "challenge_batch_digest": batch.digest,
             "challenge_seed_domain": "beacon_derived_root_then_frozen_exp289_generator",
+            "challenge_scope": challenge_scope,
             "initial_world_pairing_closed": True,
             "opportunity_manifest_pairing_closed": True,
             "evaluator_metadata_delivered_to_arm": False,
@@ -300,18 +321,19 @@ def execute_exp289_confirmatory_challenge(
         current_source_tree_digest=current_source_tree_digest,
         executor_code_digest=executor_code_digest,
     )
+    test_only = beacon_receipt.get("test_only") is True
     payload: dict[str, Any] = {
         "schema": SCHEMA,
         "experiment_id": EXPERIMENT_ID,
-        "status": TEST_ONLY_STATUS,
-        "test_only": True,
-        "scientific_evidence_eligible": False,
+        "status": TEST_ONLY_STATUS if test_only else SCIENTIFIC_STATUS,
+        "test_only": test_only,
+        "scientific_evidence_eligible": not test_only,
         "evidence_level": "EV-E2",
         "decision": "UNVERIFIED",
-        "confirmatory_data_consumed": False,
-        "synthetic_challenge_data_consumed": True,
+        "confirmatory_data_consumed": not test_only,
+        "synthetic_challenge_data_consumed": test_only,
         "challenge_materialized": True,
-        "seed_materialization_status": "TEST_ONLY_EXECUTED",
+        "seed_materialization_status": "TEST_ONLY_EXECUTED" if test_only else "EXECUTED",
         "decision_rule_executed": False,
         "confirmatory_n": int(seal["confirmatory_n"]),
         "reserved_replicate_ids": deepcopy(seal["reserved_replicate_ids"]),
@@ -327,6 +349,7 @@ def execute_exp289_confirmatory_challenge(
             "checkpoint_scientific_identity_digest": checkpoint_receipt.get("scientific_identity_digest"),
             "checkpoint_file_sha256": checkpoint_receipt.get("checkpoint_file_sha256"),
             "checkpoint_execution_contract_digest": checkpoint_receipt.get("execution_contract_digest"),
+            "beacon_receipt_digest": beacon_receipt.get("receipt_digest"),
             "source_tree_digest": current_source_tree_digest,
             "executor_code_digest": executor_code_digest,
         },
@@ -341,7 +364,7 @@ def execute_exp289_confirmatory_challenge(
         checkpoint_receipt=checkpoint_receipt,
     )
     if errors:
-        raise RuntimeError("invalid EXP-289 TEST-ONLY raw challenge artifact: " + "; ".join(errors))
+        raise RuntimeError("invalid EXP-289 raw challenge artifact: " + "; ".join(errors))
     return payload
 
 
@@ -357,22 +380,46 @@ def validate_exp289_confirmatory_raw(
         return ["EXP-289 raw challenge artifact must be an object"]
     if payload.get("schema") != SCHEMA or payload.get("experiment_id") != EXPERIMENT_ID:
         errors.append("invalid EXP-289 raw challenge identity")
-    if payload.get("status") != TEST_ONLY_STATUS:
-        errors.append("EXP-289 raw challenge status must remain TEST-ONLY")
-    expected_boundary = {
-        "test_only": True,
-        "scientific_evidence_eligible": False,
-        "evidence_level": "EV-E2",
-        "decision": "UNVERIFIED",
-        "confirmatory_data_consumed": False,
-        "synthetic_challenge_data_consumed": True,
-        "challenge_materialized": True,
-        "seed_materialization_status": "TEST_ONLY_EXECUTED",
-        "decision_rule_executed": False,
-    }
+
+    test_only = payload.get("test_only")
+    scientific = payload.get("scientific_evidence_eligible")
+    if test_only is True:
+        expected_status = TEST_ONLY_STATUS
+        expected_boundary = {
+            "test_only": True,
+            "scientific_evidence_eligible": False,
+            "evidence_level": "EV-E2",
+            "decision": "UNVERIFIED",
+            "confirmatory_data_consumed": False,
+            "synthetic_challenge_data_consumed": True,
+            "challenge_materialized": True,
+            "seed_materialization_status": "TEST_ONLY_EXECUTED",
+            "decision_rule_executed": False,
+        }
+    elif test_only is False:
+        expected_status = SCIENTIFIC_STATUS
+        expected_boundary = {
+            "test_only": False,
+            "scientific_evidence_eligible": True,
+            "evidence_level": "EV-E2",
+            "decision": "UNVERIFIED",
+            "confirmatory_data_consumed": True,
+            "synthetic_challenge_data_consumed": False,
+            "challenge_materialized": True,
+            "seed_materialization_status": "EXECUTED",
+            "decision_rule_executed": False,
+        }
+    else:
+        expected_status = None
+        expected_boundary = {}
+        errors.append("EXP-289 raw evidence mode invalid")
+    if payload.get("status") != expected_status:
+        errors.append("EXP-289 raw challenge status/evidence-mode mismatch")
     for key, expected in expected_boundary.items():
         if payload.get(key) != expected:
-            errors.append(f"EXP-289 TEST-ONLY raw evidence boundary drift: {key}")
+            errors.append(f"EXP-289 raw evidence boundary drift: {key}")
+    if not isinstance(scientific, bool):
+        errors.append("EXP-289 raw scientific evidence flag invalid")
 
     seal_errors = validate_exp289_confirmatory_gate_a_seal(seal)
     if seal_errors:
@@ -397,8 +444,13 @@ def validate_exp289_confirmatory_raw(
     )
     if beacon_errors:
         errors.append("EXP-289 raw beacon invalid: " + "; ".join(beacon_errors))
-    if beacon.get("test_only") is not True or beacon.get("scientific_evidence_eligible") is not False:
-        errors.append("EXP-289 raw challenge must use TEST-ONLY beacon")
+    try:
+        beacon_test_only = _beacon_mode(beacon)
+    except ValueError as exc:
+        errors.append(str(exc))
+    else:
+        if beacon_test_only is not test_only:
+            errors.append("EXP-289 raw/beacon evidence mode mismatch")
 
     checkpoint_errors = validate_exp289_checkpoint_receipt(checkpoint_receipt)
     if checkpoint_errors:
@@ -422,6 +474,7 @@ def validate_exp289_confirmatory_raw(
         "checkpoint_scientific_identity_digest": checkpoint_receipt.get("scientific_identity_digest"),
         "checkpoint_file_sha256": checkpoint_receipt.get("checkpoint_file_sha256"),
         "checkpoint_execution_contract_digest": checkpoint_receipt.get("execution_contract_digest"),
+        "beacon_receipt_digest": beacon.get("receipt_digest"),
         "source_tree_digest": seal.get("code_tree_digest"),
         "executor_code_digest": seal.get("code_tree_digest"),
     }
@@ -439,6 +492,7 @@ def validate_exp289_confirmatory_raw(
     else:
         if [row.get("replicate") for row in rows if isinstance(row, dict)] != reserved:
             errors.append("EXP-289 raw replicate IDs are not the exact sealed reserved IDs")
+        expected_scope = TEST_ONLY_SCOPE if test_only is True else SCIENTIFIC_SCOPE
         for row in rows:
             if not isinstance(row, dict) or row.get("row_digest") != _row_digest(row):
                 errors.append("EXP-289 raw row digest mismatch")
@@ -448,6 +502,9 @@ def validate_exp289_confirmatory_raw(
                 break
             if not _is_hex(row.get("challenge_batch_digest")):
                 errors.append("EXP-289 raw challenge batch digest invalid")
+                break
+            if row.get("challenge_scope") != expected_scope:
+                errors.append("EXP-289 raw challenge scope/evidence-mode mismatch")
                 break
 
     if payload.get("artifact_digest") != _artifact_digest(payload):

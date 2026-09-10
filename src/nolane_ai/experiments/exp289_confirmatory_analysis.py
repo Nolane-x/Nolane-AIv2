@@ -16,6 +16,7 @@ from .exp289_confirmatory_executor import validate_exp289_confirmatory_raw
 SCHEMA = "NLM-EXP-289-CONFIRMATORY-ANALYSIS-V1"
 EXPERIMENT_ID = "EXP-289"
 TEST_ONLY_STATUS = "TEST_ONLY_CHALLENGE_ANALYZED"
+SCIENTIFIC_STATUS = "CONFIRMATORY_CHALLENGE_ANALYZED"
 PRIMARY_ENDPOINT = "repeat_dead_end_rate"
 PRIMARY_EFFECT_TYPE = "paired_relative_rder_reduction"
 MESI_RELATIVE_REDUCTION = 0.25
@@ -236,6 +237,18 @@ def _compute_inferences(raw_artifact: dict[str, Any]) -> tuple[dict[str, Any], d
     return primary, overprune, solution, decision
 
 
+def _raw_mode(raw_artifact: dict[str, Any]) -> bool:
+    test_only = raw_artifact.get("test_only")
+    scientific = raw_artifact.get("scientific_evidence_eligible")
+    if test_only is True and scientific is False:
+        return True
+    if test_only is False and scientific is True:
+        if raw_artifact.get("confirmatory_data_consumed") is not True:
+            raise ValueError("EXP-289 scientific raw artifact must consume confirmatory data")
+        return False
+    raise ValueError("EXP-289 raw artifact evidence mode is invalid")
+
+
 def build_exp289_confirmatory_analysis(
     *,
     raw_artifact: dict[str, Any],
@@ -252,25 +265,24 @@ def build_exp289_confirmatory_analysis(
     )
     if raw_errors:
         raise ValueError("invalid EXP-289 raw/reconstruction evidence: " + "; ".join(raw_errors))
-    if raw_artifact.get("test_only") is not True or raw_artifact.get("scientific_evidence_eligible") is not False:
-        raise ValueError("EXP-289 Task-6 analysis is TEST-ONLY and cannot promote scientific evidence")
+    test_only = _raw_mode(raw_artifact)
     if analysis_code_digest != seal.get("code_tree_digest"):
         raise ValueError("EXP-289 analysis code digest does not match sealed code tree")
 
-    primary, overprune, solution, would_be_decision = _compute_inferences(raw_artifact)
+    primary, overprune, solution, inferred_decision = _compute_inferences(raw_artifact)
     payload: dict[str, Any] = {
         "schema": SCHEMA,
         "experiment_id": EXPERIMENT_ID,
-        "status": TEST_ONLY_STATUS,
-        "test_only": True,
-        "scientific_evidence_eligible": False,
-        "evidence_level": "EV-E2",
-        "decision": "UNVERIFIED",
-        "confirmatory_data_consumed": False,
-        "synthetic_challenge_data_consumed": True,
-        "decision_rule_executed": False,
-        "test_only_decision_executed": True,
-        "test_only_would_be_decision": would_be_decision,
+        "status": TEST_ONLY_STATUS if test_only else SCIENTIFIC_STATUS,
+        "test_only": test_only,
+        "scientific_evidence_eligible": not test_only,
+        "evidence_level": "EV-E2" if test_only else "EV-E3",
+        "decision": "UNVERIFIED" if test_only else inferred_decision,
+        "confirmatory_data_consumed": False if test_only else True,
+        "synthetic_challenge_data_consumed": True if test_only else False,
+        "decision_rule_executed": False if test_only else True,
+        "test_only_decision_executed": True if test_only else False,
+        "test_only_would_be_decision": inferred_decision if test_only else None,
         "confirmatory_n": raw_artifact.get("confirmatory_n"),
         "reserved_replicate_ids": deepcopy(raw_artifact.get("reserved_replicate_ids")),
         "raw_artifact_digest": raw_artifact.get("artifact_digest"),
@@ -293,6 +305,7 @@ def build_exp289_confirmatory_analysis(
             "gate_a_seal_digest": seal.get("seal_digest"),
             "pre_beacon_binding_digest": seal.get("pre_beacon_binding_digest"),
             "raw_artifact_digest": raw_artifact.get("artifact_digest"),
+            "beacon_receipt_digest": (raw_artifact.get("beacon_receipt") or {}).get("receipt_digest"),
             "checkpoint_scientific_identity_digest": checkpoint_receipt.get("scientific_identity_digest"),
             "analysis_code_digest": analysis_code_digest,
         },
@@ -307,7 +320,7 @@ def build_exp289_confirmatory_analysis(
         checkpoint_receipt=checkpoint_receipt,
     )
     if errors:
-        raise RuntimeError("invalid EXP-289 TEST-ONLY Gate-B analysis: " + "; ".join(errors))
+        raise RuntimeError("invalid EXP-289 Gate-B analysis: " + "; ".join(errors))
     return payload
 
 
@@ -324,21 +337,48 @@ def validate_exp289_confirmatory_analysis(
         return ["EXP-289 confirmatory analysis must be an object"]
     if payload.get("schema") != SCHEMA or payload.get("experiment_id") != EXPERIMENT_ID:
         errors.append("invalid EXP-289 Gate-B analysis identity")
-    if payload.get("status") != TEST_ONLY_STATUS:
-        errors.append("EXP-289 Gate-B analysis status must remain TEST-ONLY")
-    expected_boundary = {
-        "test_only": True,
-        "scientific_evidence_eligible": False,
-        "evidence_level": "EV-E2",
-        "decision": "UNVERIFIED",
-        "confirmatory_data_consumed": False,
-        "synthetic_challenge_data_consumed": True,
-        "decision_rule_executed": False,
-        "test_only_decision_executed": True,
-    }
+
+    try:
+        raw_test_only = _raw_mode(raw_artifact)
+    except ValueError as exc:
+        errors.append(str(exc))
+        raw_test_only = None
+
+    if raw_test_only is True:
+        expected_status = TEST_ONLY_STATUS
+        expected_boundary = {
+            "test_only": True,
+            "scientific_evidence_eligible": False,
+            "evidence_level": "EV-E2",
+            "decision": "UNVERIFIED",
+            "confirmatory_data_consumed": False,
+            "synthetic_challenge_data_consumed": True,
+            "decision_rule_executed": False,
+            "test_only_decision_executed": True,
+        }
+    elif raw_test_only is False:
+        expected_status = SCIENTIFIC_STATUS
+        expected_boundary = {
+            "test_only": False,
+            "scientific_evidence_eligible": True,
+            "evidence_level": "EV-E3",
+            "confirmatory_data_consumed": True,
+            "synthetic_challenge_data_consumed": False,
+            "decision_rule_executed": True,
+            "test_only_decision_executed": False,
+        }
+    else:
+        expected_status = None
+        expected_boundary = {}
+    if payload.get("status") != expected_status:
+        errors.append("EXP-289 Gate-B analysis status/evidence-mode mismatch")
     for key, expected in expected_boundary.items():
         if payload.get(key) != expected:
-            errors.append(f"EXP-289 TEST-ONLY analysis evidence boundary drift: {key}")
+            errors.append(f"EXP-289 analysis evidence boundary drift: {key}")
+    if raw_test_only is False and payload.get("decision") not in VALID_DECISIONS:
+        errors.append("EXP-289 scientific Gate-B decision is invalid")
+    if raw_test_only is False and payload.get("test_only_would_be_decision") is not None:
+        errors.append("EXP-289 scientific Gate-B cannot report a TEST-ONLY would-be decision")
 
     raw_errors = validate_exp289_confirmatory_raw(
         raw_artifact,
@@ -389,6 +429,7 @@ def validate_exp289_confirmatory_analysis(
         "gate_a_seal_digest": seal.get("seal_digest"),
         "pre_beacon_binding_digest": seal.get("pre_beacon_binding_digest"),
         "raw_artifact_digest": raw_artifact.get("artifact_digest"),
+        "beacon_receipt_digest": (raw_artifact.get("beacon_receipt") or {}).get("receipt_digest"),
         "checkpoint_scientific_identity_digest": checkpoint_receipt.get("scientific_identity_digest"),
         "analysis_code_digest": seal.get("code_tree_digest"),
     }
@@ -408,8 +449,20 @@ def validate_exp289_confirmatory_analysis(
                 errors.append("EXP-289 over-prune analysis semantic reconstruction mismatch")
             if solution != expected_solution:
                 errors.append("EXP-289 solution analysis semantic reconstruction mismatch")
-            if payload.get("test_only_would_be_decision") != expected_decision or expected_decision not in VALID_DECISIONS:
-                errors.append("EXP-289 TEST-ONLY decision semantic reconstruction mismatch")
+            if expected_decision not in VALID_DECISIONS:
+                errors.append("EXP-289 reconstructed decision is outside frozen decision set")
+            elif raw_test_only is True:
+                if (
+                    payload.get("test_only_would_be_decision") != expected_decision
+                    or payload.get("decision") != "UNVERIFIED"
+                ):
+                    errors.append("EXP-289 TEST-ONLY decision semantic reconstruction mismatch")
+            elif raw_test_only is False:
+                if (
+                    payload.get("test_only_would_be_decision") is not None
+                    or payload.get("decision") != expected_decision
+                ):
+                    errors.append("EXP-289 scientific decision semantic reconstruction mismatch")
     if payload.get("analysis_digest") != _analysis_digest(payload):
         errors.append("EXP-289 analysis digest mismatch")
     return errors

@@ -107,7 +107,69 @@ jobs:
       - name: Assert authoritative EXP-289 pre-beacon boundary
         run: >-
           python -c 'import json; from pathlib import Path; e=json.loads(Path("/tmp/nlm-exp289-authoritative-dev.json").read_text()); p=json.loads(Path("/tmp/nlm-exp289-authoritative-gatea-prep.json").read_text()); assert e["evidence_level"] == "EV-E2"; assert e["confirmatory_data_consumed"] is False; assert e["challenge_materialized"] is False; assert p["evidence_level"] == "EV-E2"; assert p["decision"] == "UNVERIFIED"; assert p["confirmatory_data_consumed"] is False; assert p["challenge_materialized"] is False; assert p["decision_rule_executed"] is False; assert p["confirmatory_lineage"]["seed_materialization_status"] == "NOT_EXECUTED"; assert p["status"] in {"CONFIRMATORY_GATE_A_PREPARED", "NOT_READY_VARIANCE_EXCEEDS_MAX_N"}'
-      - name: Upload authoritative EXP-289 DEVELOPMENT Gate A evidence
+      - name: Record TEST-ONLY freeze lineage for ceremony rehearsal
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD > /tmp/nlm-exp289-freeze-sha.txt
+          git show -s --format=%cI HEAD > /tmp/nlm-exp289-freeze-time.txt
+      - name: Build checkpoint and immutable EXP-289 Gate A seal
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/seal_exp289_confirmatory_gate_a.py \
+            --execution /tmp/nlm-exp289-authoritative-dev.json \
+            --registry /tmp/nlm-exp289-authoritative-registry.json \
+            --freeze-commit-sha "$(cat /tmp/nlm-exp289-freeze-sha.txt)" \
+            --freeze-commit-timestamp-utc "$(cat /tmp/nlm-exp289-freeze-time.txt)" \
+            --checkpoint-output /tmp/nlm-exp289-trained.pt \
+            --checkpoint-receipt-output /tmp/nlm-exp289-checkpoint-receipt.json \
+            --prep-output /tmp/nlm-exp289-sealed-prep.json \
+            --authorization-output /tmp/nlm-exp289-execution-authorization.json \
+            --seal-output /tmp/nlm-exp289-gatea-seal.json
+      - name: Assert immutable EXP-289 Gate A seal is still pre-beacon EV-E2
+        run: >-
+          python -c 'import json; from pathlib import Path; p=json.loads(Path("/tmp/nlm-exp289-sealed-prep.json").read_text()); s=json.loads(Path("/tmp/nlm-exp289-gatea-seal.json").read_text()); assert p["prep_digest"] == json.loads(Path("/tmp/nlm-exp289-authoritative-gatea-prep.json").read_text())["prep_digest"]; assert s["evidence_level"] == "EV-E2"; assert s["decision"] == "UNVERIFIED"; assert s["confirmatory_data_consumed"] is False; assert s["seed_materialization_status"] == "NOT_EXECUTED"; assert s["challenge_materialized"] is False; assert s["decision_rule_executed"] is False; assert s["confirmatory_n"] == 32'
+      - name: Materialize TEST-ONLY post-freeze beacon
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from datetime import datetime, timedelta, timezone
+          import json
+          from pathlib import Path
+
+          from nolane_ai.experiments.exp289_beacon import build_test_beacon_receipt
+
+          raw = Path("/tmp/nlm-exp289-freeze-time.txt").read_text().strip()
+          freeze = datetime.fromisoformat(raw.replace("Z", "+00:00")).astimezone(timezone.utc)
+          published = (freeze + timedelta(seconds=1)).isoformat().replace("+00:00", "Z")
+          receipt = build_test_beacon_receipt(
+              source="synthetic-ci",
+              beacon_id="exp289-focused-test-only-post-freeze",
+              published_at_utc=published,
+              entropy_hex="ab" * 32,
+              evidence_reference="TEST-ONLY",
+          )
+          Path("/tmp/nlm-exp289-test-beacon.json").write_text(
+              json.dumps(receipt, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+      - name: Execute TEST-ONLY EXP-289 Gate B through operational CLI
+        run: >-
+          python scripts/run_exp289_confirmatory_gate_b.py
+          --seal /tmp/nlm-exp289-gatea-seal.json
+          --beacon /tmp/nlm-exp289-test-beacon.json
+          --checkpoint /tmp/nlm-exp289-trained.pt
+          --checkpoint-receipt /tmp/nlm-exp289-checkpoint-receipt.json
+          --test-only
+          --raw-output /tmp/nlm-exp289-test-gateb-raw.json
+          --analysis-output /tmp/nlm-exp289-test-gateb-analysis.json
+      - name: Assert TEST-ONLY Gate B cannot promote
+        run: >-
+          python -c 'import json; from pathlib import Path; r=json.loads(Path("/tmp/nlm-exp289-test-gateb-raw.json").read_text()); a=json.loads(Path("/tmp/nlm-exp289-test-gateb-analysis.json").read_text()); assert r["test_only"] is True; assert r["scientific_evidence_eligible"] is False; assert r["confirmatory_data_consumed"] is False; assert r["decision_rule_executed"] is False; assert a["test_only"] is True; assert a["scientific_evidence_eligible"] is False; assert a["evidence_level"] == "EV-E2"; assert a["decision"] == "UNVERIFIED"; assert a["confirmatory_data_consumed"] is False; assert a["decision_rule_executed"] is False; assert a["test_only_would_be_decision"] in {"PROMOTE_TO_NEXT_STAGE", "HOLD_UNSTABLE", "KILL_SUBSYSTEM"}'
+      - name: Upload authoritative EXP-289 DEVELOPMENT and TEST-ONLY ceremony evidence
         uses: actions/upload-artifact@v4
         with:
           name: exp289-authoritative-development-gatea
@@ -115,6 +177,13 @@ jobs:
             /tmp/nlm-exp289-authoritative-dev.json
             /tmp/nlm-exp289-authoritative-registry.json
             /tmp/nlm-exp289-authoritative-gatea-prep.json
+            /tmp/nlm-exp289-checkpoint-receipt.json
+            /tmp/nlm-exp289-sealed-prep.json
+            /tmp/nlm-exp289-execution-authorization.json
+            /tmp/nlm-exp289-gatea-seal.json
+            /tmp/nlm-exp289-test-beacon.json
+            /tmp/nlm-exp289-test-gateb-raw.json
+            /tmp/nlm-exp289-test-gateb-analysis.json
           if-no-files-found: error
       - name: Remove EXP-289 temporary artifacts
         if: always()
@@ -126,4 +195,14 @@ jobs:
           /tmp/nlm-exp289-authoritative-dev.json
           /tmp/nlm-exp289-authoritative-registry.json
           /tmp/nlm-exp289-authoritative-gatea-prep.json
+          /tmp/nlm-exp289-freeze-sha.txt
+          /tmp/nlm-exp289-freeze-time.txt
+          /tmp/nlm-exp289-trained.pt
+          /tmp/nlm-exp289-checkpoint-receipt.json
+          /tmp/nlm-exp289-sealed-prep.json
+          /tmp/nlm-exp289-execution-authorization.json
+          /tmp/nlm-exp289-gatea-seal.json
+          /tmp/nlm-exp289-test-beacon.json
+          /tmp/nlm-exp289-test-gateb-raw.json
+          /tmp/nlm-exp289-test-gateb-analysis.json
       - run: python -m compileall -q src scripts
