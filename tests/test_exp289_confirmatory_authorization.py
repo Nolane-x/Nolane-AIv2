@@ -117,6 +117,24 @@ def test_exp289_execution_authorization_binds_checkpoint_and_all_pre_beacon_line
     assert validate(authorization) == []
 
 
+def test_exp289_execution_authorization_accepts_manifest_only_tiny_marker(task5_inputs: dict) -> None:
+    manifest_geometry = deepcopy(task5_inputs["expected_geometry_configuration"])
+    manifest_geometry["tiny"] = False
+
+    authorization = _authorize(
+        task5_inputs,
+        expected_geometry_configuration=manifest_geometry,
+    )
+
+    assert authorization["status"] == "AUTHORIZED_NOT_EXECUTED"
+    assert authorization["evidence_level"] == "EV-E2"
+    assert authorization["decision"] == "UNVERIFIED"
+    assert authorization["confirmatory_data_consumed"] is False
+    assert authorization["seed_materialization_status"] == "NOT_EXECUTED"
+    assert authorization["challenge_materialized"] is False
+    assert authorization["lineage"]["development_geometry_configuration_digest"] == canonical_sha256(manifest_geometry)
+
+
 def test_exp289_execution_authorization_rejects_unenveloped_smoke_even_if_prep_is_ready(task5_inputs: dict) -> None:
     with pytest.raises(ValueError, match="authoritative|geometry"):
         _authorize(
