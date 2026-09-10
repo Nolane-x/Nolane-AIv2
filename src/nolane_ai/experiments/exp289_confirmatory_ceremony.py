@@ -38,6 +38,21 @@ def _valid_hex_digest(value: Any, lengths: set[int]) -> bool:
     return True
 
 
+def _reserved_id_errors(value: Any, *, confirmatory_n: Any) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(confirmatory_n, int) or isinstance(confirmatory_n, bool) or not MIN_N <= confirmatory_n <= MAX_N:
+        return ["EXP-289 Gate-A reserved IDs require valid confirmatory_n"]
+    if not isinstance(value, list) or len(value) != confirmatory_n:
+        return ["EXP-289 Gate-A reserved replicate count mismatch"]
+    if any(not isinstance(item, int) or isinstance(item, bool) or item < 0 for item in value):
+        errors.append("EXP-289 Gate-A reserved replicate IDs must be non-negative integers")
+    elif len(set(value)) != len(value):
+        errors.append("EXP-289 Gate-A reserved replicate IDs must be unique")
+    elif value and value != list(range(value[0], value[0] + len(value))):
+        errors.append("EXP-289 Gate-A reserved replicate IDs must be contiguous and ordered")
+    return errors
+
+
 def _parse_utc(value: Any) -> datetime:
     if not isinstance(value, str) or not value:
         raise ValueError("freeze commit timestamp must be a non-empty string")
@@ -71,6 +86,7 @@ def _pre_beacon_binding(payload: dict[str, Any]) -> str:
             "code_tree_digest": payload.get("code_tree_digest"),
             "challenge_contract_digest": payload.get("challenge_contract_digest"),
             "confirmatory_n": payload.get("confirmatory_n"),
+            "reserved_replicate_ids": payload.get("reserved_replicate_ids"),
             "lineage": payload.get("lineage"),
             "execution_authorization_digest": (payload.get("execution_authorization") or {}).get("authorization_digest"),
         }
@@ -250,6 +266,14 @@ def seal_exp289_confirmatory_gate_a(
     prep_n = (prep_artifact.get("sample_size_freeze") or {}).get("confirmatory_n")
     if not isinstance(confirmatory_n, int) or isinstance(confirmatory_n, bool) or not MIN_N <= confirmatory_n <= MAX_N or prep_n != confirmatory_n:
         raise ValueError("EXP-289 Gate-A seal confirmatory sample-size lineage mismatch")
+    reserved_replicate_ids = deepcopy(execution_authorization.get("reserved_replicate_ids"))
+    prep_reserved = deepcopy((prep_artifact.get("confirmatory_lineage") or {}).get("reserved_replicate_ids"))
+    reserved_errors = _reserved_id_errors(reserved_replicate_ids, confirmatory_n=confirmatory_n)
+    if reserved_errors or reserved_replicate_ids != prep_reserved:
+        raise ValueError(
+            "EXP-289 Gate-A seal reserved replicate lineage mismatch"
+            + ((": " + "; ".join(reserved_errors)) if reserved_errors else "")
+        )
 
     lineage = {
         "protocol_digest": protocol_digest,
@@ -287,6 +311,7 @@ def seal_exp289_confirmatory_gate_a(
         "code_tree_digest": code_tree_digest,
         "challenge_contract_digest": challenge_contract_digest(),
         "confirmatory_n": confirmatory_n,
+        "reserved_replicate_ids": reserved_replicate_ids,
         "lineage": lineage,
         "execution_authorization": deepcopy(execution_authorization),
         "pre_beacon_binding_digest": "",
@@ -412,6 +437,9 @@ def validate_exp289_confirmatory_gate_a_seal(payload: dict[str, Any]) -> list[st
     confirmatory_n = payload.get("confirmatory_n")
     if not isinstance(confirmatory_n, int) or isinstance(confirmatory_n, bool) or not MIN_N <= confirmatory_n <= MAX_N or confirmatory_n != auth.get("confirmatory_n"):
         errors.append("EXP-289 Gate-A confirmatory sample-size mismatch")
+    errors.extend(_reserved_id_errors(payload.get("reserved_replicate_ids"), confirmatory_n=confirmatory_n))
+    if payload.get("reserved_replicate_ids") != auth.get("reserved_replicate_ids"):
+        errors.append("EXP-289 Gate-A reserved replicate IDs mismatch embedded authorization")
 
     if payload.get("pre_beacon_binding_digest") != _pre_beacon_binding(payload):
         errors.append("EXP-289 Gate-A pre-beacon binding digest mismatch")
