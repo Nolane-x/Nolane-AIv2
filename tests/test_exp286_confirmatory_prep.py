@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import pytest
 
-pytest.importorskip("torch")
-
 
 def test_exp286_confirmatory_prep_freezes_stage_a_authority_without_opening_challenge() -> None:
     from nolane_ai.experiments.exp286_confirmatory_prep import frozen_exp286_gate_a_contract
