@@ -1,0 +1,8 @@
+{
+  "schema": "NLM-EXP-289-REAL-GATE-B-ARM-V1",
+  "ceremony_id": "EXP-289-REAL-GATE-B-2026-09-10",
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "armed": true,
+  "source_baseline_sha": "55c73f05ebf9a94385e887a9ee6c3746bdaf0e8c",
+  "confirmatory_scope": "frozen-episode-local-exact-nogood-family"
+}
