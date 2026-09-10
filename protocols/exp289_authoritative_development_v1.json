@@ -1,0 +1,39 @@
+{
+  "authority_scope": "DEVELOPMENT_PILOT_ONLY",
+  "challenge_materialized": false,
+  "confirmatory_authority": false,
+  "epsilon_denominator_rescue": false,
+  "experiment_id": "EXP-289",
+  "geometry": {
+    "batch_size": 8,
+    "d_model": 64,
+    "decoys": 3,
+    "eval_replicates": 32,
+    "eval_start_replicate": 30000,
+    "hidden_size": 48,
+    "lr": 0.002,
+    "max_search_steps": 24,
+    "noise_std": 0.05,
+    "restarts": 4,
+    "root_seed": "20260906-exp289-paired-dev",
+    "target_parameters": 500000,
+    "timesteps": 4,
+    "tiny": false,
+    "train_replicates": 16,
+    "variables": 8,
+    "weight_decay": 0.0
+  },
+  "mesi_relative_reduction": 0.25,
+  "pilot_reuse_as_confirmatory": false,
+  "predeclaration": "BEFORE_AUTHORITATIVE_DEVELOPMENT_RUN",
+  "primary_endpoint": "repeat_dead_end_rate",
+  "protected_endpoints": {
+    "valid_state_overprune_rate_ceiling": 0.005,
+    "verified_solution_rate_floor_delta": -0.01
+  },
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "purpose": "AUTHORITATIVE_DEVELOPMENT_GATE_A",
+  "runner": "scripts/run_exp289_paired_dev.py",
+  "schema": "NLM-EXP-289-AUTHORITATIVE-DEVELOPMENT-V1",
+  "zero_opportunity_policy": "retain_raw_episode_exclude_from_rder_denominator"
+}
