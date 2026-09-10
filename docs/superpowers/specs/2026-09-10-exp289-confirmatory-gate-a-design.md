@@ -27,12 +27,14 @@ The confirmatory program is staged:
 1. RDER-specific Gate-A preparation and fail-closed validator.
 2. Authoritative DEVELOPMENT geometry declaration and exact execution evidence.
 3. Exact trained-state checkpoint/reconstruction court for both arms.
-4. Execution authorization that binds protocol, code tree, geometry, DEVELOPMENT artifact, checkpoint identity, frozen analysis, and challenge contract.
-5. Immutable pre-beacon Gate-A seal.
+4. Execution authorization that binds protocol, code tree, geometry, scientific and enveloped DEVELOPMENT artifact identities, frozen analysis, the exact trained-state checkpoint receipt/file/scientific identity, and challenge contract.
+5. Immutable pre-beacon Gate-A seal that transitively binds the same checkpoint authority and freeze commit/timestamp while containing no beacon entropy, challenge seed, generated challenge worlds, or confirmatory observations.
 6. Future public beacon receipt and domain-separated challenge seed.
 7. Hidden confirmatory world materialization with no operator raw-seed override.
 8. Raw-before-analysis Gate-B executor and frozen bootstrap/safety analysis.
 9. EV-E3 decision only for a valid real ceremony; TEST-ONLY CI ceremonies remain EV-E2 / UNVERIFIED.
+
+The trained-state checkpoint is not an auxiliary convenience artifact. Authorization must fail if its receipt digest, scientific identity digest, checkpoint-file SHA-256, execution-contract digest, final functional-state digests, or execution/geometry/code lineage is missing or inconsistent. A valid authorization therefore cannot substitute a different trained state after Gate A is frozen.
 
 ## Scientific decisions
 
