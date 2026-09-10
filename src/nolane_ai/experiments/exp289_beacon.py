@@ -72,6 +72,7 @@ def validate_exp289_beacon_receipt(
     payload: dict[str, Any],
     *,
     freeze_commit_timestamp_utc: str | None = None,
+    seal_created_at_utc: str | None = None,
 ) -> list[str]:
     errors: list[str] = []
     if not isinstance(payload, dict):
@@ -100,6 +101,8 @@ def validate_exp289_beacon_receipt(
         if scientific is not False or authenticity != "TEST_ONLY_SYNTHETIC":
             errors.append("TEST-ONLY beacon cannot be scientific evidence")
     elif test_only is False:
+        if scientific is not True:
+            errors.append("real EXP-289 beacon must be scientific-evidence eligible")
         if authenticity not in {"EXTERNAL_EVIDENCE_RECORDED", "SOURCE_VERIFIED"}:
             errors.append("external beacon authenticity status invalid")
     else:
@@ -109,6 +112,7 @@ def validate_exp289_beacon_receipt(
     if not isinstance(digest, str) or digest != _receipt_digest(payload):
         errors.append("EXP-289 beacon receipt digest mismatch")
 
+    frozen: datetime | None = None
     if freeze_commit_timestamp_utc is not None:
         try:
             frozen = _parse_utc(freeze_commit_timestamp_utc)
@@ -117,6 +121,17 @@ def validate_exp289_beacon_receipt(
         else:
             if published is not None and published <= frozen:
                 errors.append("EXP-289 beacon must be published strictly after Gate A freeze")
+
+    if seal_created_at_utc is not None:
+        try:
+            sealed = _parse_utc(seal_created_at_utc)
+        except ValueError:
+            errors.append("EXP-289 Gate A seal creation timestamp invalid")
+        else:
+            if frozen is not None and sealed < frozen:
+                errors.append("EXP-289 Gate A seal creation cannot precede Gate A freeze")
+            if published is not None and published <= sealed:
+                errors.append("EXP-289 beacon must be published strictly after actual Gate A seal creation")
     return errors
 
 
@@ -128,6 +143,7 @@ def derive_exp289_challenge_seed(
     beacon_receipt: dict[str, Any],
     stream: str,
     replicate: int,
+    seal_created_at_utc: str | None = None,
 ) -> int:
     if not isinstance(protocol_digest, str) or not protocol_digest:
         raise ValueError("protocol_digest is required")
@@ -141,6 +157,7 @@ def derive_exp289_challenge_seed(
     errors = validate_exp289_beacon_receipt(
         beacon_receipt,
         freeze_commit_timestamp_utc=freeze_commit_timestamp_utc,
+        seal_created_at_utc=seal_created_at_utc,
     )
     if errors:
         raise ValueError("invalid EXP-289 beacon receipt: " + "; ".join(errors))
