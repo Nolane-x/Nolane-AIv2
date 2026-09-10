@@ -1,10 +1,16 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from hashlib import sha256
+import inspect
 
 import pytest
 
 from nolane_ai.protocol.evidence import canonical_sha256
+
+
+FREEZE_SHA = "f" * 40
+FREEZE_TIME = "2026-09-10T04:59:59Z"
 
 
 def _api():
@@ -48,12 +54,16 @@ def test_test_beacon_is_deterministic_but_never_scientific() -> None:
 
     first = derive(
         protocol_digest="protocol-digest",
+        freeze_commit_sha=FREEZE_SHA,
+        freeze_commit_timestamp_utc=FREEZE_TIME,
         beacon_receipt=receipt,
         stream="challenge",
         replicate=30032,
     )
     second = derive(
         protocol_digest="protocol-digest",
+        freeze_commit_sha=FREEZE_SHA,
+        freeze_commit_timestamp_utc=FREEZE_TIME,
         beacon_receipt=receipt,
         stream="challenge",
         replicate=30032,
@@ -128,6 +138,8 @@ def test_seed_derivation_rejects_tampered_receipt() -> None:
     with pytest.raises(ValueError, match="invalid EXP-286 beacon receipt"):
         derive(
             protocol_digest="protocol-digest",
+            freeze_commit_sha=FREEZE_SHA,
+            freeze_commit_timestamp_utc=FREEZE_TIME,
             beacon_receipt=receipt,
             stream="challenge",
             replicate=30032,
@@ -146,20 +158,73 @@ def test_seed_derivation_is_domain_separated() -> None:
 
     seed_a = derive(
         protocol_digest="protocol-a",
+        freeze_commit_sha=FREEZE_SHA,
+        freeze_commit_timestamp_utc=FREEZE_TIME,
         beacon_receipt=receipt,
         stream="challenge",
         replicate=30032,
     )
     seed_b = derive(
         protocol_digest="protocol-b",
+        freeze_commit_sha=FREEZE_SHA,
+        freeze_commit_timestamp_utc=FREEZE_TIME,
         beacon_receipt=receipt,
         stream="challenge",
         replicate=30032,
     )
     seed_c = derive(
         protocol_digest="protocol-a",
+        freeze_commit_sha=FREEZE_SHA,
+        freeze_commit_timestamp_utc=FREEZE_TIME,
         beacon_receipt=receipt,
         stream="challenge",
         replicate=30033,
     )
     assert len({seed_a, seed_b, seed_c}) == 3
+
+
+def test_seed_derivation_exactly_binds_freeze_commit_lineage() -> None:
+    build, derive, _ = _api()
+    receipt = build(
+        source="test-fixture",
+        beacon_id="fixture-4",
+        published_at_utc="2026-09-10T05:00:00Z",
+        entropy_hex="34" * 32,
+        evidence_reference="synthetic://fixture-4",
+    )
+    protocol_digest = "p" * 64
+    expected_material = (
+        f"{protocol_digest}|{FREEZE_SHA}|{receipt['receipt_digest']}|"
+        "EXP-286|challenge|30032"
+    )
+    expected = int.from_bytes(sha256(expected_material.encode("utf-8")).digest()[:8], "big")
+
+    seed = derive(
+        protocol_digest=protocol_digest,
+        freeze_commit_sha=FREEZE_SHA,
+        freeze_commit_timestamp_utc=FREEZE_TIME,
+        beacon_receipt=receipt,
+        stream="challenge",
+        replicate=30032,
+    )
+    other_freeze = derive(
+        protocol_digest=protocol_digest,
+        freeze_commit_sha="e" * 40,
+        freeze_commit_timestamp_utc=FREEZE_TIME,
+        beacon_receipt=receipt,
+        stream="challenge",
+        replicate=30032,
+    )
+    assert seed == expected
+    assert seed != other_freeze
+
+
+def test_seed_api_requires_freeze_lineage_and_exposes_no_operator_override() -> None:
+    _, derive, _ = _api()
+    parameters = inspect.signature(derive).parameters
+    assert "seed" not in parameters
+    assert "challenge_seed" not in parameters
+    assert "freeze_commit_sha" in parameters
+    assert "freeze_commit_timestamp_utc" in parameters
+    assert parameters["freeze_commit_sha"].default is inspect.Parameter.empty
+    assert parameters["freeze_commit_timestamp_utc"].default is inspect.Parameter.empty
