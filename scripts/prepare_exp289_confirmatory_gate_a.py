@@ -17,8 +17,6 @@ from nolane_ai.experiments.exp289_confirmatory_prep import (
     build_exp289_confirmatory_prep,
     validate_exp289_confirmatory_prep,
 )
-from nolane_ai.experiments.exp289_paired_runner import validate_exp289_paired_development
-from nolane_ai.experiments.neural_arm_registry import validate_neural_arm_registry
 from nolane_ai.protocol.identity import (
     file_sha256,
     require_canonical_stage_a_v1_digest,
@@ -126,10 +124,13 @@ def _publish_json_exclusive(path: Path, payload: dict[str, Any]) -> None:
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
 
-    # Refuse a destination collision before reading evidence or computing any
-    # Gate-A state. This keeps publication fail-closed and non-destructive.
+    # Refuse a destination collision before importing torch-backed DEVELOPMENT
+    # validators, reading evidence, or computing any Gate-A state.
     if args.output.exists():
         raise SystemExit(f"output already exists: {args.output}")
+
+    from nolane_ai.experiments.exp289_paired_runner import validate_exp289_paired_development
+    from nolane_ai.experiments.neural_arm_registry import validate_neural_arm_registry
 
     protocol, protocol_digest = _verified_protocol(args.protocol, args.protocol_digest_file)
     code_digest = source_tree_digest(ROOT)
