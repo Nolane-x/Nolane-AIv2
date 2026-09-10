@@ -39,7 +39,7 @@ jobs:
       - run: python -m pip install -e '.[dev,model]'
       - name: Run EXP-286 focused contract
         run: pytest -q tests/test_exp286_*.py tests/test_matched_conflict_arms.py
-      - name: Build EXP-286 Gate A DEVELOPMENT smoke pilot
+      - name: Build EXP-286 Gate A DEVELOPMENT pilot
         run: >-
           python scripts/run_exp286_paired_dev.py
           --tiny
@@ -53,13 +53,13 @@ jobs:
           --max-search-steps 8
           --output /tmp/nlm-exp286-gatea-smoke-dev.json
           --registry-output /tmp/nlm-exp286-gatea-smoke-registry.json
-      - name: Prepare EXP-286 smoke Gate A
+      - name: Prepare EXP-286 Gate A
         run: >-
           python scripts/prepare_exp286_confirmatory_gate_a.py
           --execution /tmp/nlm-exp286-gatea-smoke-dev.json
           --registry /tmp/nlm-exp286-gatea-smoke-registry.json
           --output /tmp/nlm-exp286-gatea-smoke-prep.json
-      - name: Assert EXP-286 smoke pre-beacon boundary
+      - name: Assert EXP-286 Gate A pre-beacon boundary
         run: >-
           python -c 'import json; from pathlib import Path; p=json.loads(Path("/tmp/nlm-exp286-gatea-smoke-prep.json").read_text()); assert p["evidence_level"] == "EV-E2"; assert p["decision"] == "UNVERIFIED"; assert p["challenge_materialized"] is False; assert p["confirmatory_data_consumed"] is False; assert p["decision_rule_executed"] is False; assert p["confirmatory_lineage"]["seed_materialization_status"] == "NOT_EXECUTED"; assert p["status"] in {"CONFIRMATORY_GATE_A_PREPARED", "NOT_READY_VARIANCE_EXCEEDS_MAX_N"}'
       - name: Run locked authoritative EXP-286 DEVELOPMENT geometry
