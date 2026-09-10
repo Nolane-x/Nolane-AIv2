@@ -4,6 +4,10 @@ from pathlib import Path
 import subprocess
 import sys
 
+import pytest
+
+pytest.importorskip("torch")
+
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "run_exp286_paired_dev.py"
