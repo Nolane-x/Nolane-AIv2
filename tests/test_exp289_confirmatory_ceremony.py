@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime, timezone
 
 import pytest
 
@@ -46,6 +47,10 @@ def _seal(inputs: dict, authorization: dict | None = None, **overrides):
     return seal(**kwargs)
 
 
+def _parse_utc(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+
+
 def test_exp289_gate_a_seal_transitively_binds_checkpoint_and_pre_beacon_authority(task5_inputs: dict) -> None:
     _, validate = _api()
     authorization = _authorize(task5_inputs)
@@ -64,6 +69,7 @@ def test_exp289_gate_a_seal_transitively_binds_checkpoint_and_pre_beacon_authori
     assert seal["decision_rule_executed"] is False
     assert seal["freeze_commit_sha"] == FREEZE_SHA
     assert seal["freeze_commit_timestamp_utc"] == FREEZE_TIME
+    assert _parse_utc(seal["seal_created_at_utc"]) > _parse_utc(FREEZE_TIME)
     assert seal["code_tree_digest"] == CODE_DIGEST
     assert seal["confirmatory_n"] == authorization["confirmatory_n"]
 
@@ -112,6 +118,10 @@ def test_exp289_gate_a_seal_validator_rejects_freeze_and_lineage_tampering(task5
     changed = deepcopy(seal)
     changed["freeze_commit_sha"] = "not-a-sha"
     assert any("freeze commit sha" in item.lower() for item in validate(changed))
+
+    changed = deepcopy(seal)
+    changed["seal_created_at_utc"] = "not-a-timestamp"
+    assert any("seal" in item.lower() and "timestamp" in item.lower() for item in validate(changed))
 
     changed = deepcopy(seal)
     changed["lineage"]["development_geometry_digest"] = "0" * 64
