@@ -216,7 +216,7 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
-          import json, math, time, urllib.request
+          import json, math, os, time, urllib.request
           from datetime import datetime, timezone
           from pathlib import Path
           from nolane_ai.experiments.exp286_beacon import _receipt_digest, validate_exp286_beacon_receipt
@@ -238,15 +238,22 @@ jobs:
           published=datetime.fromtimestamp(genesis+(target_round-1)*period, timezone.utc)
           while datetime.now(timezone.utc) <= published: time.sleep(1)
           primary_url=f'https://api.drand.sh/public/{target_round}'
-          try: beacon=fetch_json(primary_url)
-          except Exception: beacon=fetch_json(f'https://api2.drand.sh/public/{target_round}')
-          if int(beacon.get('round',-1)) != target_round: raise SystemExit('drand round mismatch')
+          mirror_url=f'https://api2.drand.sh/public/{target_round}'
+          primary=fetch_json(primary_url)
+          mirror=fetch_json(mirror_url)
+          observed_at=datetime.now(timezone.utc)
+          if int(primary.get('round',-1)) != target_round or int(mirror.get('round',-1)) != target_round:
+              raise SystemExit('drand round mismatch')
+          for field in ('round', 'randomness', 'signature'):
+              if primary.get(field) != mirror.get(field):
+                  raise SystemExit(f'drand primary/mirror mismatch for {field}')
           if published <= boundary: raise SystemExit('drand beacon is not strictly after actual Gate-A seal')
+          chain_hash=str(info.get('hash','unknown'))
           receipt={
-              'schema':'NLM-EXP-286-PUBLIC-BEACON-RECEIPT-V1','experiment_id':'EXP-286','source':'drand',
+              'schema':'NLM-EXP-286-PUBLIC-BEACON-RECEIPT-V1','experiment_id':'EXP-286','source':'drand-public-http-cross-recorded',
               'beacon_id':f'drand-round-{target_round}','published_at_utc':published.isoformat().replace('+00:00','Z'),
-              'entropy_hex':str(beacon['randomness']).lower(),'evidence_reference':primary_url,
-              'test_only':False,'scientific_evidence_eligible':True,'authenticity_status':'SOURCE_VERIFIED','receipt_digest':''}
+              'entropy_hex':str(primary['randomness']).lower(),'evidence_reference':f'{primary_url};{mirror_url};chain={chain_hash}',
+              'test_only':False,'scientific_evidence_eligible':True,'authenticity_status':'EXTERNAL_EVIDENCE_RECORDED','receipt_digest':''}
           receipt['receipt_digest']=_receipt_digest(receipt)
           errors=validate_exp286_beacon_receipt(
               receipt,
@@ -254,7 +261,28 @@ jobs:
               seal_created_at_utc=actual_gate_a_seal_created_at_utc,
           )
           if errors: raise SystemExit('invalid real EXP-286 beacon: '+'; '.join(errors))
+          external={
+              'schema':'NLM-EXP-286-PUBLIC-BEACON-EXTERNAL-EVIDENCE-V1',
+              'ceremony_sha':os.environ['GITHUB_SHA'],
+              'scientific_baseline_sha':os.environ['BASELINE_SHA'],
+              'observed_at_utc':observed_at.isoformat().replace('+00:00','Z'),
+              'actual_gate_a_seal_created_at_utc':actual_gate_a_seal_created_at_utc,
+              'target_round_policy':'first_drand_round_strictly_after_actual_gate_a_seal',
+              'target_round':target_round,
+              'primary_url':primary_url,
+              'mirror_url':mirror_url,
+              'chain_info_url':'https://api.drand.sh/info',
+              'chain_info':info,
+              'primary_response':primary,
+              'mirror_response':mirror,
+              'signature_recorded':primary.get('signature'),
+              'cross_source_fields_checked':['round','randomness','signature'],
+              'cryptographic_signature_verified_by_ceremony':False,
+              'authenticity_status':'EXTERNAL_EVIDENCE_RECORDED',
+              'beacon_receipt_digest':receipt['receipt_digest'],
+          }
           Path('/tmp/exp286-beacon.json').write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n')
+          Path('/tmp/exp286-public-beacon-external-evidence.json').write_text(json.dumps(external,sort_keys=True,indent=2)+'\n')
           PY
 
       - name: Materialize EXP-286 inference-start marker
@@ -353,7 +381,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/exp286-evidence
-          cp /tmp/exp286-development.json /tmp/exp286-registry.json /tmp/exp286-prep.json /tmp/exp286-auth.json /tmp/exp286-checkpoint-receipt.json /tmp/exp286-gate-a-seal.json /tmp/exp286-beacon.json /tmp/exp286-inference-start.json /tmp/exp286-raw.json /tmp/exp286-analysis.json /tmp/exp286-outcome.json /tmp/exp286-evidence/
+          cp /tmp/exp286-development.json /tmp/exp286-registry.json /tmp/exp286-prep.json /tmp/exp286-auth.json /tmp/exp286-checkpoint-receipt.json /tmp/exp286-gate-a-seal.json /tmp/exp286-beacon.json /tmp/exp286-public-beacon-external-evidence.json /tmp/exp286-inference-start.json /tmp/exp286-raw.json /tmp/exp286-analysis.json /tmp/exp286-outcome.json /tmp/exp286-evidence/
           python - <<'PY'
           import hashlib, json, os
           from pathlib import Path
