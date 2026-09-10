@@ -128,6 +128,8 @@ def authorize_exp286_confirmatory_execution(
         raise ValueError("EXP-286 authorization development/prep lineage mismatch")
     if prep_artifact.get("protocol_digest") != execution_artifact.get("protocol_digest"):
         raise ValueError("EXP-286 authorization protocol lineage mismatch")
+    if prep_artifact.get("analysis_code_digest") != execution_code_digest:
+        raise ValueError("EXP-286 authorization code lineage mismatch")
 
     freeze = prep_artifact.get("sample_size_freeze") or {}
     confirmatory_n = freeze.get("confirmatory_n")
