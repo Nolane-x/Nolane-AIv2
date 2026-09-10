@@ -1,0 +1,117 @@
+{
+  "ceremony_sha": "f0faf3c47674df3933e62fe7f4e6bdd1aa79805f",
+  "challenge_materialized": false,
+  "confirmatory_data_consumed": false,
+  "confirmatory_ready": false,
+  "decision": "UNVERIFIED",
+  "derived_from_canonical_file": "gate-a-preflight-prep.json",
+  "derived_from_canonical_sha256": "0e9c7beaeabaa5bcc2b5a303df5c94536b7cf4bce11e3cb174c194c48f425aa9",
+  "evidence_level": "EV-E2",
+  "experiment_id": "EXP-279",
+  "pilot_summary": {
+    "contrasts": {
+      "hybrid_vs_branch_only": {
+        "blocked_effect_digest": "2b2993e33c0d3cfc2d7c66bbfe6f9eb27f2564e41284f1385f4415c3f63a51dc",
+        "blocked_within_stratum_sd": 0.40064508732840776,
+        "denominator_valid": true,
+        "effect_type": "equal_weight_blocked_ratio_of_means_relative_gain",
+        "hybrid_blocked_mean_utility": 4.718712174466159e-07,
+        "hybrid_stratum_mean_utility": {
+          "BRANCH_FIT": 2.5278815220354424e-07,
+          "MIXED_RESIDUAL": 5.561339348477973e-07,
+          "PROPAGATION_FIT": 6.06691565288506e-07
+        },
+        "observed_blocked_relative_gain": -0.024809802194282082,
+        "scientific_denominator_policy": "no_epsilon; every simpler-arm blocked mean denominator must be finite and positive",
+        "simple_arm": "branch_only",
+        "simple_blocked_mean_utility": 4.83876087463119e-07,
+        "simple_stratum_mean_utility": {
+          "BRANCH_FIT": 3.387132612241833e-07,
+          "MIXED_RESIDUAL": 5.322636962094309e-07,
+          "PROPAGATION_FIT": 5.806513049557427e-07
+        },
+        "stratum_counts": {
+          "BRANCH_FIT": 11,
+          "MIXED_RESIDUAL": 10,
+          "PROPAGATION_FIT": 11
+        },
+        "stratum_relative_gains": {
+          "BRANCH_FIT": -0.25368097106705256,
+          "MIXED_RESIDUAL": 0.0448466405061263,
+          "PROPAGATION_FIT": 0.0448466405061263
+        }
+      },
+      "hybrid_vs_propagation_only": {
+        "blocked_effect_digest": "c438ac00dabeed74eddc51a365c07ef1fc5ab24aa04fb6ea5acb23252324444b",
+        "blocked_within_stratum_sd": 0.4166687277058522,
+        "denominator_valid": true,
+        "effect_type": "equal_weight_blocked_ratio_of_means_relative_gain",
+        "hybrid_blocked_mean_utility": 4.718712174466159e-07,
+        "hybrid_stratum_mean_utility": {
+          "BRANCH_FIT": 2.5278815220354424e-07,
+          "MIXED_RESIDUAL": 5.561339348477973e-07,
+          "PROPAGATION_FIT": 6.06691565288506e-07
+        },
+        "observed_blocked_relative_gain": -0.3600495132221462,
+        "scientific_denominator_policy": "no_epsilon; every simpler-arm blocked mean denominator must be finite and positive",
+        "simple_arm": "propagation_only",
+        "simple_blocked_mean_utility": 7.373558223582016e-07,
+        "simple_stratum_mean_utility": {
+          "BRANCH_FIT": 3.277136988258674e-07,
+          "MIXED_RESIDUAL": 9.012126717711353e-07,
+          "PROPAGATION_FIT": 9.83141096477602e-07
+        },
+        "stratum_counts": {
+          "BRANCH_FIT": 11,
+          "MIXED_RESIDUAL": 10,
+          "PROPAGATION_FIT": 11
+        },
+        "stratum_relative_gains": {
+          "BRANCH_FIT": -0.22863110968740818,
+          "MIXED_RESIDUAL": -0.3829048877499266,
+          "PROPAGATION_FIT": -0.3829048877499266
+        }
+      }
+    },
+    "development_descriptive_best_simple_arm": "propagation_only",
+    "n": 32,
+    "pilot_best_simple_not_carried_into_confirmatory": true,
+    "replicate_ids": [10000,10001,10002,10003,10004,10005,10006,10007,10008,10009,10010,10011,10012,10013,10014,10015,10016,10017,10018,10019,10020,10021,10022,10023,10024,10025,10026,10027,10028,10029,10030,10031],
+    "source_lane": "DEVELOPMENT_PILOT_ONLY",
+    "stratum_counts": {
+      "BRANCH_FIT": 11,
+      "MIXED_RESIDUAL": 10,
+      "PROPAGATION_FIT": 11
+    },
+    "training_replicate_ids": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+  },
+  "prep_digest": "3d73d19b5b8a2e66396687134c85890a615208d8267ece3d3d5b1129f60564b7",
+  "remaining_blockers": [
+    "worst blocked pilot contrast requires n above frozen maximum 128; challenge remains unmaterialized"
+  ],
+  "sample_size_freeze": {
+    "confirmatory_n": null,
+    "contrast_required_n": {
+      "hybrid_vs_branch_only": 264,
+      "hybrid_vs_propagation_only": 286
+    },
+    "max_n": 128,
+    "method": "max-two-contrast-blocked-within-stratum-normal-approximation-v1",
+    "min_n": 32,
+    "paired": true,
+    "pilot_reuse_as_confirmatory": false,
+    "planning_constants": {
+      "familywise_alpha": 0.05,
+      "holm_family_size": 2,
+      "mesi_relative_gain": 0.08,
+      "planning_alpha": 0.025,
+      "power_target": 0.9,
+      "z_alpha": 1.9599639845400536,
+      "z_power": 1.2815515655446008
+    },
+    "power_target": 0.9,
+    "unclamped_required_n": 286
+  },
+  "schema": "NLM-EXP-279-REAL-GATE-B-PREFLIGHT-COMPACT-V1",
+  "status": "NOT_READY_VARIANCE_EXCEEDS_MAX_N"
+}

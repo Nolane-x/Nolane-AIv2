@@ -383,6 +383,8 @@ def _validate_execution(
     if pair_audit is None:
         label = "matched triplet audit" if experiment_id == "EXP-279" else "matched pair audit"
         raise ValueError(f"{experiment_id} paired execution artifact requires {label}")
+    if execution_artifact.get("protocol_digest") != protocol_digest:
+        raise ValueError(f"{experiment_id} paired execution artifact protocol digest mismatch")
     if (
         experiment_id == "EXP-286"
         and execution_artifact.get("learned_conflict_localizer_validated") not in (None, False)
@@ -416,8 +418,6 @@ def _validate_execution(
         raise ValueError(
             f"{experiment_id} paired execution artifact is invalid: " + "; ".join(execution_errors)
         )
-    if execution_artifact.get("protocol_digest") != protocol_digest:
-        raise ValueError(f"{experiment_id} paired execution artifact protocol digest mismatch")
 
 
 def _base_arm_payload(

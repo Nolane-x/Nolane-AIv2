@@ -1,0 +1,125 @@
+name: exp279-development-routing-training-sweep
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - exp279-confirmatory-gate-a
+    paths:
+      - .github/workflows/exp279-development-routing-training-sweep.yml
+      - src/nolane_ai/experiments/exp279_paired_runner.py
+      - src/nolane_ai/experiments/matched_routing_arms.py
+      - tests/test_exp279_routing_gradient_isolation.py
+
+permissions:
+  contents: read
+
+jobs:
+  training-sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [15, 60, 120]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev,model]'
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run DEVELOPMENT tuning lane
+        run: |
+          WORK=/tmp/exp279-training-${{ matrix.train_replicates }}
+          mkdir -p "$WORK"
+          python scripts/run_exp279_paired_dev.py \
+            --root-seed 20260906-exp279-paired-dev \
+            --d-model 64 \
+            --hidden-size 48 \
+            --target-parameters 500000 \
+            --route-threshold 0.5 \
+            --train-replicates ${{ matrix.train_replicates }} \
+            --eval-replicates 33 \
+            --eval-start-replicate 20000 \
+            --batch-size 8 \
+            --timesteps 4 \
+            --variables 6 \
+            --constraints 3 \
+            --noise-std 0.05 \
+            --lr 0.002 \
+            --weight-decay 0.0 \
+            --output "$WORK/development.json" \
+            --registry-output "$WORK/registry.json"
+      - name: Compute tuning diagnostics and planning estimate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from nolane_ai.experiments.exp279_confirmatory_prep import build_exp279_confirmatory_prep, validate_exp279_confirmatory_prep
+          from nolane_ai.protocol.identity import source_tree_digest
+
+          n = ${{ matrix.train_replicates }}
+          root = Path.cwd()
+          work = Path(f'/tmp/exp279-training-{n}')
+          protocol = json.loads((root / 'protocols/stage_a_v1.json').read_text())
+          experiment = next(x for x in protocol['experiments'] if x.get('experiment_id') == 'EXP-279')
+          execution = json.loads((work / 'development.json').read_text())
+          registry = json.loads((work / 'registry.json').read_text())
+          prep = build_exp279_confirmatory_prep(
+              experiment=experiment,
+              execution_artifact=execution,
+              arm_registry=registry,
+              analysis_code_digest=source_tree_digest(root),
+          )
+          errors = validate_exp279_confirmatory_prep(prep)
+          if errors:
+              raise SystemExit('invalid prep: ' + '; '.join(errors))
+          rows = execution['evaluation']['per_replicate']
+          routes = [float(r['hybrid_route_receipt']['route_fraction']) for r in rows]
+          residuals = [float(r['hybrid_route_receipt']['mean_residual_uncertainty']) for r in rows]
+          freeze = prep['sample_size_freeze']
+          agg = execution['evaluation']['aggregate']
+          summary = {
+              'lane': 'DEVELOPMENT_TUNING_ONLY',
+              'scientific_evidence_eligible': False,
+              'train_replicates': n,
+              'eval_replicate_ids': [20000, 20032],
+              'prep_status': prep['status'],
+              'unclamped_required_n': freeze['unclamped_required_n'],
+              'contrast_required_n': freeze['contrast_required_n'],
+              'mean_route_fraction': sum(routes) / len(routes),
+              'min_route_fraction': min(routes),
+              'max_route_fraction': max(routes),
+              'mean_residual_failure_probability': sum(residuals) / len(residuals),
+              'min_residual_failure_probability': min(residuals),
+              'max_residual_failure_probability': max(residuals),
+              'best_simple_arm': agg['best_simple_arm'],
+              'hybrid_relative_utility_gain_descriptive': agg['hybrid_relative_utility_gain'],
+              'mean_propagation_solution_rate': agg['mean_propagation_solution_rate'],
+              'mean_branch_solution_rate': agg['mean_branch_solution_rate'],
+              'mean_hybrid_solution_rate': agg['mean_hybrid_solution_rate'],
+              'challenge_materialized': prep['challenge_materialized'],
+              'confirmatory_data_consumed': prep['confirmatory_data_consumed'],
+              'decision': prep['decision'],
+              'evidence_level': prep['evidence_level'],
+          }
+          (work / 'prep.json').write_text(json.dumps(prep, sort_keys=True, indent=2) + '\n')
+          (work / 'summary.json').write_text(json.dumps(summary, sort_keys=True, indent=2) + '\n')
+          print(json.dumps(summary, sort_keys=True))
+          assert summary['challenge_materialized'] is False
+          assert summary['confirmatory_data_consumed'] is False
+          assert summary['decision'] == 'UNVERIFIED'
+          assert summary['evidence_level'] == 'EV-E2'
+          PY
+      - name: Upload DEVELOPMENT tuning artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-development-training-${{ matrix.train_replicates }}-${{ github.sha }}
+          path: /tmp/exp279-training-${{ matrix.train_replicates }}
+          if-no-files-found: error
+          retention-days: 90

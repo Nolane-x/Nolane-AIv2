@@ -1,0 +1,10 @@
+{
+  "ceremony_id": "EXP-279-REAL-GATE-B-2026-09-09",
+  "ceremony_sha": "f0faf3c47674df3933e62fe7f4e6bdd1aa79805f",
+  "focused_ci_run_id": 34358558030,
+  "normal_ci_run_id": 34358557993,
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "schema": "NLM-EXP-279-REAL-GATE-B-SOURCE-IDENTITY-V1",
+  "scientific_baseline_sha": "2d8532371f05798d2d8be5fb19731503192363e0",
+  "source_tree_digest": "157ec83aced2462aa64ae1b26e27ba16302931ddad2114d32998babb50fd8b5f"
+}
