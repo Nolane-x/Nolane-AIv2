@@ -55,14 +55,14 @@ def _reserved_id_errors(value: Any, *, confirmatory_n: Any) -> list[str]:
 
 def _parse_utc(value: Any) -> datetime:
     if not isinstance(value, str) or not value:
-        raise ValueError("freeze commit timestamp must be a non-empty string")
+        raise ValueError("timestamp must be a non-empty string")
     text = value[:-1] + "+00:00" if value.endswith("Z") else value
     try:
         parsed = datetime.fromisoformat(text)
     except ValueError as exc:
-        raise ValueError("freeze commit timestamp is not valid ISO-8601") from exc
+        raise ValueError("timestamp is not valid ISO-8601") from exc
     if parsed.tzinfo is None or parsed.utcoffset() != timezone.utc.utcoffset(parsed):
-        raise ValueError("freeze commit timestamp must be timezone-aware UTC")
+        raise ValueError("timestamp must be timezone-aware UTC")
     return parsed.astimezone(timezone.utc)
 
 
@@ -83,6 +83,7 @@ def _pre_beacon_binding(payload: dict[str, Any]) -> str:
         {
             "freeze_commit_sha": payload.get("freeze_commit_sha"),
             "freeze_commit_timestamp_utc": payload.get("freeze_commit_timestamp_utc"),
+            "seal_created_at_utc": payload.get("seal_created_at_utc"),
             "code_tree_digest": payload.get("code_tree_digest"),
             "challenge_contract_digest": payload.get("challenge_contract_digest"),
             "confirmatory_n": payload.get("confirmatory_n"),
@@ -194,7 +195,7 @@ def seal_exp289_confirmatory_gate_a(
     if not _valid_hex_digest(freeze_commit_sha, {40, 64}):
         raise ValueError("EXP-289 freeze commit SHA must be a 40- or 64-hex digest")
     try:
-        _parse_utc(freeze_commit_timestamp_utc)
+        frozen_at = _parse_utc(freeze_commit_timestamp_utc)
     except ValueError as exc:
         raise ValueError(f"EXP-289 freeze commit timestamp invalid: {exc}") from exc
 
@@ -275,6 +276,11 @@ def seal_exp289_confirmatory_gate_a(
             + ((": " + "; ".join(reserved_errors)) if reserved_errors else "")
         )
 
+    seal_created_at = datetime.now(timezone.utc)
+    if seal_created_at <= frozen_at:
+        raise ValueError("EXP-289 Gate-A seal creation time must be strictly after freeze commit time")
+    seal_created_at_utc = seal_created_at.isoformat().replace("+00:00", "Z")
+
     lineage = {
         "protocol_digest": protocol_digest,
         "development_geometry_digest": expected_geometry_digest,
@@ -308,6 +314,7 @@ def seal_exp289_confirmatory_gate_a(
         "decision_rule_executed": False,
         "freeze_commit_sha": freeze_commit_sha,
         "freeze_commit_timestamp_utc": freeze_commit_timestamp_utc,
+        "seal_created_at_utc": seal_created_at_utc,
         "code_tree_digest": code_tree_digest,
         "challenge_contract_digest": challenge_contract_digest(),
         "confirmatory_n": confirmatory_n,
@@ -358,10 +365,18 @@ def validate_exp289_confirmatory_gate_a_seal(payload: dict[str, Any]) -> list[st
 
     if not _valid_hex_digest(payload.get("freeze_commit_sha"), {40, 64}):
         errors.append("EXP-289 Gate-A freeze commit SHA invalid")
+    frozen_at: datetime | None = None
     try:
-        _parse_utc(payload.get("freeze_commit_timestamp_utc"))
+        frozen_at = _parse_utc(payload.get("freeze_commit_timestamp_utc"))
     except ValueError:
         errors.append("EXP-289 Gate-A freeze commit timestamp invalid")
+    seal_created_at: datetime | None = None
+    try:
+        seal_created_at = _parse_utc(payload.get("seal_created_at_utc"))
+    except ValueError:
+        errors.append("EXP-289 Gate-A seal creation timestamp invalid")
+    if frozen_at is not None and seal_created_at is not None and seal_created_at <= frozen_at:
+        errors.append("EXP-289 Gate-A seal creation timestamp must be strictly after freeze commit timestamp")
     if not _valid_hex_digest(payload.get("code_tree_digest"), {64}):
         errors.append("EXP-289 Gate-A code-tree digest invalid")
 
