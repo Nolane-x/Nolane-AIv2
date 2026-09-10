@@ -55,6 +55,18 @@ def test_exp289_real_gate_b_workflow_closes_irreversible_evidence_order() -> Non
     assert inference_barrier < raw_execution < raw_persistence < analysis < outcome
 
 
+def test_exp289_raw_execution_requires_durable_inference_barrier() -> None:
+    assert WORKFLOW.is_file(), "EXP-289 real Gate-B ceremony workflow is missing"
+    text = WORKFLOW.read_text(encoding="utf-8")
+    start = text.index("- name: Execute frozen EXP-289 raw challenge once")
+    end = text.index("- name: Detect raw evidence", start)
+    raw_step = text[start:end]
+    assert "steps.barrier.outcome == 'success'" in raw_step, (
+        "EXP-289 scientific raw execution must not start unless the irreversible "
+        "inference-start artifact was durably uploaded"
+    )
+
+
 def test_exp289_real_gate_b_workflow_requires_arm_only_baseline_and_no_scientific_drift() -> None:
     assert WORKFLOW.is_file(), "EXP-289 real Gate-B ceremony workflow is missing"
     text = WORKFLOW.read_text(encoding="utf-8")
