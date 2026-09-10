@@ -77,3 +77,11 @@ def test_exp286_real_gate_b_requires_arm_only_baseline_without_scientific_drift(
     )
     for item in required:
         assert item in text, f"missing baseline/evidence invariant: {item}"
+
+
+def test_exp286_real_gate_b_propagates_actual_seal_time_into_validation_and_execution() -> None:
+    assert WORKFLOW.is_file(), "EXP-286 real Gate-B ceremony workflow is missing"
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "seal_created_at_utc=actual_gate_a_seal_created_at_utc" in text
+    assert "seal_created_at_utc=Path('/tmp/exp286-actual-gate-a-seal-created-at.txt').read_text().strip()" in text
+    assert "receipt['receipt_digest']=_receipt_digest(receipt)" in text
