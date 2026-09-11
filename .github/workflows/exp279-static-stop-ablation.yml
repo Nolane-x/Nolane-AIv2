@@ -15,44 +15,46 @@ jobs:
   ablation:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        route_threshold: ['0.5', '1.0']
-        train_replicates: [15, 60, 120]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install model environment
+      - name: Install CPU-only model environment
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e '.[dev,model]'
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
       - name: Verify canonical frozen Stage-A protocol is untouched
         run: python scripts/verify_protocol.py
-      - name: Run DEVELOPMENT-only routing-vs-static-stop ablation
+      - name: Run all DEVELOPMENT-only routing-vs-static-stop cells
         run: |
-          WORK=/tmp/exp279-static-stop-${{ matrix.route_threshold }}-${{ matrix.train_replicates }}
-          mkdir -p "$WORK"
-          python scripts/run_exp279_paired_dev.py \
-            --root-seed 20260906-exp279-paired-dev \
-            --d-model 64 \
-            --hidden-size 48 \
-            --target-parameters 500000 \
-            --route-threshold ${{ matrix.route_threshold }} \
-            --train-replicates ${{ matrix.train_replicates }} \
-            --eval-replicates 33 \
-            --eval-start-replicate 20000 \
-            --batch-size 8 \
-            --timesteps 4 \
-            --variables 6 \
-            --constraints 3 \
-            --noise-std 0.05 \
-            --lr 0.002 \
-            --weight-decay 0.0 \
-            --output "$WORK/development.json" \
-            --registry-output "$WORK/registry.json"
+          ROOT=/tmp/exp279-static-stop-ablation
+          mkdir -p "$ROOT"
+          for threshold in 0.5 1.0; do
+            for train in 15 60 120; do
+              WORK="$ROOT/${threshold}-${train}"
+              mkdir -p "$WORK"
+              python scripts/run_exp279_paired_dev.py \
+                --root-seed 20260906-exp279-paired-dev \
+                --d-model 64 \
+                --hidden-size 48 \
+                --target-parameters 500000 \
+                --route-threshold "$threshold" \
+                --train-replicates "$train" \
+                --eval-replicates 33 \
+                --eval-start-replicate 20000 \
+                --batch-size 8 \
+                --timesteps 4 \
+                --variables 6 \
+                --constraints 3 \
+                --noise-std 0.05 \
+                --lr 0.002 \
+                --weight-decay 0.0 \
+                --output "$WORK/development.json" \
+                --registry-output "$WORK/registry.json"
+            done
+          done
       - name: Assert DEVELOPMENT boundary and summarize causal diagnostics
         run: |
           python - <<'PY'
@@ -60,56 +62,61 @@ jobs:
           from pathlib import Path
           from nolane_ai.experiments.exp279_paired_runner import validate_exp279_paired_development
 
-          threshold = float('${{ matrix.route_threshold }}')
-          train = int('${{ matrix.train_replicates }}')
-          work = Path(f'/tmp/exp279-static-stop-{threshold:.1f}-{train}')
-          execution = json.loads((work / 'development.json').read_text())
-          errors = validate_exp279_paired_development(execution)
-          if errors:
-              raise SystemExit('invalid DEVELOPMENT artifact: ' + '; '.join(errors))
+          root = Path('/tmp/exp279-static-stop-ablation')
+          summaries = []
+          for threshold in (0.5, 1.0):
+              for train in (15, 60, 120):
+                  work = root / f'{threshold:.1f}-{train}'
+                  execution = json.loads((work / 'development.json').read_text())
+                  errors = validate_exp279_paired_development(execution)
+                  if errors:
+                      raise SystemExit('invalid DEVELOPMENT artifact: ' + '; '.join(errors))
 
-          rows = execution['evaluation']['per_replicate']
-          aggregate = execution['evaluation']['aggregate']
-          routes = [float(row['hybrid_route_receipt']['route_fraction']) for row in rows]
-          hybrid_flops = [float(row['hybrid']['accounted_flops_per_episode']) for row in rows]
-          propagation_flops = [float(row['propagation_only']['accounted_flops_per_episode']) for row in rows]
-          summary = {
-              'schema': 'NLM-EXP-279-STATIC-STOP-ABLATION-DEV-V1',
-              'lane': 'DEVELOPMENT_CAUSAL_ABLATION_ONLY',
-              'scientific_evidence_eligible': False,
-              'route_threshold': threshold,
-              'mode': 'STATIC_STOP' if threshold == 1.0 else 'DYNAMIC_ROUTING_BASELINE',
-              'train_replicates': train,
-              'eval_replicate_ids': [20000, 20032],
-              'mean_route_fraction': sum(routes) / len(routes),
-              'max_route_fraction': max(routes),
-              'mean_hybrid_accounted_flops': sum(hybrid_flops) / len(hybrid_flops),
-              'mean_propagation_accounted_flops': sum(propagation_flops) / len(propagation_flops),
-              'hybrid_to_propagation_flop_ratio': (sum(hybrid_flops) / len(hybrid_flops)) / (sum(propagation_flops) / len(propagation_flops)),
-              'best_simple_arm': aggregate['best_simple_arm'],
-              'hybrid_relative_utility_gain_descriptive': aggregate['hybrid_relative_utility_gain'],
-              'mean_propagation_solution_rate': aggregate['mean_propagation_solution_rate'],
-              'mean_branch_solution_rate': aggregate['mean_branch_solution_rate'],
-              'mean_hybrid_solution_rate': aggregate['mean_hybrid_solution_rate'],
-              'decision': execution['decision'],
-              'evidence_level': execution['evidence_level'],
-              'challenge_materialized': execution['challenge_materialized'],
-              'confirmatory_data_consumed': execution['confirmatory_data_consumed'],
-          }
-          if threshold == 1.0:
-              assert summary['mean_route_fraction'] == 0.0
-              assert summary['max_route_fraction'] == 0.0
-          assert summary['decision'] == 'UNVERIFIED'
-          assert summary['evidence_level'] == 'EV-E2'
-          assert summary['challenge_materialized'] is False
-          assert summary['confirmatory_data_consumed'] is False
-          (work / 'summary.json').write_text(json.dumps(summary, sort_keys=True, indent=2) + '\n')
-          print(json.dumps(summary, sort_keys=True))
+                  rows = execution['evaluation']['per_replicate']
+                  aggregate = execution['evaluation']['aggregate']
+                  routes = [float(row['hybrid_route_receipt']['route_fraction']) for row in rows]
+                  hybrid_flops = [float(row['hybrid']['accounted_flops_per_episode']) for row in rows]
+                  propagation_flops = [float(row['propagation_only']['accounted_flops_per_episode']) for row in rows]
+                  summary = {
+                      'schema': 'NLM-EXP-279-STATIC-STOP-ABLATION-DEV-V1',
+                      'lane': 'DEVELOPMENT_CAUSAL_ABLATION_ONLY',
+                      'scientific_evidence_eligible': False,
+                      'route_threshold': threshold,
+                      'mode': 'STATIC_STOP' if threshold == 1.0 else 'DYNAMIC_ROUTING_BASELINE',
+                      'train_replicates': train,
+                      'eval_replicate_ids': [20000, 20032],
+                      'mean_route_fraction': sum(routes) / len(routes),
+                      'max_route_fraction': max(routes),
+                      'mean_hybrid_accounted_flops': sum(hybrid_flops) / len(hybrid_flops),
+                      'mean_propagation_accounted_flops': sum(propagation_flops) / len(propagation_flops),
+                      'hybrid_to_propagation_flop_ratio': (sum(hybrid_flops) / len(hybrid_flops)) / (sum(propagation_flops) / len(propagation_flops)),
+                      'best_simple_arm': aggregate['best_simple_arm'],
+                      'hybrid_relative_utility_gain_descriptive': aggregate['hybrid_relative_utility_gain'],
+                      'mean_propagation_solution_rate': aggregate['mean_propagation_solution_rate'],
+                      'mean_branch_solution_rate': aggregate['mean_branch_solution_rate'],
+                      'mean_hybrid_solution_rate': aggregate['mean_hybrid_solution_rate'],
+                      'decision': execution['decision'],
+                      'evidence_level': execution['evidence_level'],
+                      'challenge_materialized': execution['challenge_materialized'],
+                      'confirmatory_data_consumed': execution['confirmatory_data_consumed'],
+                  }
+                  if threshold == 1.0:
+                      assert summary['mean_route_fraction'] == 0.0
+                      assert summary['max_route_fraction'] == 0.0
+                  assert summary['decision'] == 'UNVERIFIED'
+                  assert summary['evidence_level'] == 'EV-E2'
+                  assert summary['challenge_materialized'] is False
+                  assert summary['confirmatory_data_consumed'] is False
+                  (work / 'summary.json').write_text(json.dumps(summary, sort_keys=True, indent=2) + '\n')
+                  summaries.append(summary)
+                  print(json.dumps(summary, sort_keys=True))
+
+          (root / 'summaries.json').write_text(json.dumps(summaries, sort_keys=True, indent=2) + '\n')
           PY
       - name: Upload DEVELOPMENT ablation artifact
         uses: actions/upload-artifact@v4
         with:
-          name: exp279-static-stop-${{ matrix.route_threshold }}-train-${{ matrix.train_replicates }}-${{ github.sha }}
-          path: /tmp/exp279-static-stop-${{ matrix.route_threshold }}-${{ matrix.train_replicates }}
+          name: exp279-static-stop-ablation-${{ github.sha }}
+          path: /tmp/exp279-static-stop-ablation
           if-no-files-found: error
           retention-days: 90
