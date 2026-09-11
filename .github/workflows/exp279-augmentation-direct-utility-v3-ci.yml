@@ -30,6 +30,6 @@ jobs:
       - name: Verify frozen Stage-A protocol
         run: python scripts/verify_protocol.py
       - name: Run V3 direct-utility contract
-        run: pytest -q tests/test_exp279_augmentation_direct_utility_v3.py tests/test_exp279_augmentation_direct_utility_v3_cli.py
+        run: pytest -q tests/test_exp279_augmentation_direct_utility_v3.py tests/test_exp279_augmentation_direct_utility_v3_cli.py tests/test_exp279_augmentation_direct_utility_v3_cross_cell.py
       - name: Compile analysis surface
         run: python -m compileall -q src scripts
