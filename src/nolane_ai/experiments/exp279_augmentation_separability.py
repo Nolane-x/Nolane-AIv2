@@ -304,7 +304,7 @@ def _cross_fitted_probe(
         "parameter_count": sum(parameter.numel() for parameter in _build_probe(
             kind,
             hidden_size=hidden_size,
-            seed=derive_stream_seed(probe_root_seed, f"EXP-279-SEPARABILITY-{kind}", 0, "parameter_audit"),
+            seed=0,
         ).parameters()),
         "folds": fold_rows,
         "support_closed": support_closed,
