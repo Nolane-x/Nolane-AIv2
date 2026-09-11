@@ -1,0 +1,54 @@
+name: exp279-dev-route-calibration-patch
+
+on:
+  push:
+    branches: [exp279-dev-route-calibration]
+    paths:
+      - '.github/workflows/exp279-dev-route-calibration-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: exp279-dev-route-calibration
+          fetch-depth: 1
+      - name: Apply minimal EXP-279 calibration fix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/nolane_ai/experiments/exp279_paired_runner.py')
+          text = path.read_text()
+
+          old_contract = '''    "hybrid_route_teacher": {\n        "positive": "stop_exact_failure_and_forced_branch_exact_success",\n        "negative": "otherwise",\n        "evaluation_targets_used_for_routing": False,\n    },'''
+          new_contract = '''    "hybrid_route_teacher": {\n        "positive": "stop_exact_failure_and_forced_branch_exact_success",\n        "negative": "otherwise",\n        "class_balance": "equal_positive_negative_mass_when_both_present",\n        "decision_threshold_changed": False,\n        "evaluation_targets_used_for_routing": False,\n    },'''
+          if text.count(old_contract) != 1:
+              raise SystemExit('hybrid route teacher contract anchor drift')
+          text = text.replace(old_contract, new_contract, 1)
+
+          anchor = '''def _hybrid_stop_decision_logits(\n'''
+          helper = '''def _balanced_binary_cross_entropy(\n    probabilities: torch.Tensor,\n    targets: torch.Tensor,\n) -> torch.Tensor:\n    if probabilities.shape != targets.shape:\n        raise ValueError("routing probabilities and targets must have identical shape")\n    positive = targets > 0.5\n    negative = ~positive\n    if bool(positive.any().item()) and bool(negative.any().item()):\n        positive_loss = F.binary_cross_entropy(\n            probabilities[positive], targets[positive]\n        )\n        negative_loss = F.binary_cross_entropy(\n            probabilities[negative], targets[negative]\n        )\n        return 0.5 * (positive_loss + negative_loss)\n    return F.binary_cross_entropy(probabilities, targets)\n\n\n'''
+          if text.count(anchor) != 1:
+              raise SystemExit('hybrid stop helper anchor drift')
+          text = text.replace(anchor, helper + anchor, 1)
+
+          old_loss = '''    routing_loss = F.binary_cross_entropy(\n        output.residual_uncertainty,\n        routing_target,\n    )'''
+          new_loss = '''    if arm_id == "hybrid":\n        routing_loss = _balanced_binary_cross_entropy(\n            output.residual_uncertainty,\n            routing_target,\n        )\n    else:\n        routing_loss = F.binary_cross_entropy(\n            output.residual_uncertainty,\n            routing_target,\n        )'''
+          if text.count(old_loss) != 1:
+              raise SystemExit('routing loss anchor drift')
+          text = text.replace(old_loss, new_loss, 1)
+          path.write_text(text)
+          PY
+      - name: Commit exact patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/nolane_ai/experiments/exp279_paired_runner.py
+          git diff --cached --check
+          git commit -m 'fix(exp279): balance sparse rescue routing calibration'
+          git push origin HEAD:exp279-dev-route-calibration
