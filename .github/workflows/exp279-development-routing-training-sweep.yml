@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - exp279-confirmatory-gate-a
+      - dev/exp279-stop-state-routing-representation
     paths:
       - .github/workflows/exp279-development-routing-training-sweep.yml
       - src/nolane_ai/experiments/exp279_paired_runner.py
