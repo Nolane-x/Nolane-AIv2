@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from nolane_ai.experiments.exp279_prebranch_observability_v4 import PROBE_KINDS, SCHEMA
-from nolane_ai.protocol.identity import canonical_sha256
+from nolane_ai.protocol.evidence import canonical_sha256
 
 CROSS_CELL_SCHEMA = "NLM-EXP-279-PREBRANCH-OBSERVABILITY-CROSS-CELL-V4"
 
