@@ -1,0 +1,30 @@
+name: exp279-routing-marginal-shadow-ci
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/exp279-routing-marginal-shadow-ci.yml
+      - src/nolane_ai/experiments/exp279_routing_marginal.py
+      - scripts/run_exp279_routing_marginal_dev.py
+      - tests/test_exp279_routing_marginal_shadow.py
+      - docs/superpowers/plans/2026-09-11-exp279-routing-marginal-shadow.md
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev,model]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run routing marginal shadow contract
+        run: pytest -q tests/test_exp279_routing_marginal_shadow.py
