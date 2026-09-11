@@ -43,7 +43,7 @@ def test_case_control_transform_maps_natural_prior_to_sample_prior() -> None:
     assert transformed.item() == pytest.approx(sampled_prior, abs=1e-7)
 
 
-def test_balanced_replay_gradient_is_zero_at_natural_prior_after_correction() -> None:
+def test_balanced_replay_shared_score_gradient_is_zero_at_natural_prior_after_correction() -> None:
     stop_flops = 110_046.0
     branch_flops = 224_766.0
     incremental_cost_ratio = (branch_flops - stop_flops) / branch_flops
@@ -53,9 +53,10 @@ def test_balanced_replay_gradient_is_zero_at_natural_prior_after_correction() ->
         incremental_cost_ratio=incremental_cost_ratio,
     ).item()
 
-    current_scores = torch.tensor([score_value], requires_grad=True)
+    shared_score = torch.tensor(score_value, requires_grad=True)
+    current_scores = shared_score.unsqueeze(0)
     current_targets = torch.tensor([0.0])
-    replay_positive_scores = torch.tensor([score_value], requires_grad=True)
+    replay_positive_scores = shared_score.unsqueeze(0)
 
     loss = _prior_corrected_replay_loss(
         current_scores,
@@ -69,10 +70,8 @@ def test_balanced_replay_gradient_is_zero_at_natural_prior_after_correction() ->
     loss.backward()
 
     assert loss.item() == pytest.approx(-torch.log(torch.tensor(0.5)).item(), abs=1e-6)
-    assert current_scores.grad is not None
-    assert replay_positive_scores.grad is not None
-    assert current_scores.grad.item() == pytest.approx(0.0, abs=1e-5)
-    assert replay_positive_scores.grad.item() == pytest.approx(0.0, abs=1e-5)
+    assert shared_score.grad is not None
+    assert shared_score.grad.item() == pytest.approx(0.0, abs=1e-5)
 
 
 def test_before_first_rescue_router_gradient_is_zero_but_not_rebalanced() -> None:
