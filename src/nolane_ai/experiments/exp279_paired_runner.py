@@ -43,6 +43,8 @@ ROUTING_SUPERVISION = {
     "hybrid_route_teacher": {
         "positive": "stop_exact_failure_and_forced_branch_exact_success",
         "negative": "otherwise",
+        "class_balance": "equal_positive_negative_mass_when_both_present",
+        "decision_threshold_changed": False,
         "evaluation_targets_used_for_routing": False,
     },
     "hybrid_stop_path_supervision": {
@@ -135,6 +137,25 @@ def _hybrid_branch_rescue_target(
     stop_exact = (stop_predictions == targets).all(dim=-1)
     branch_exact = (branch_predictions == targets).all(dim=-1)
     return ((~stop_exact) & branch_exact).to(dtype=stop_logits.dtype)
+
+
+def _balanced_binary_cross_entropy(
+    probabilities: torch.Tensor,
+    targets: torch.Tensor,
+) -> torch.Tensor:
+    if probabilities.shape != targets.shape:
+        raise ValueError("routing probabilities and targets must have identical shape")
+    positive = targets > 0.5
+    negative = ~positive
+    if bool(positive.any().item()) and bool(negative.any().item()):
+        positive_loss = F.binary_cross_entropy(
+            probabilities[positive], targets[positive]
+        )
+        negative_loss = F.binary_cross_entropy(
+            probabilities[negative], targets[negative]
+        )
+        return 0.5 * (positive_loss + negative_loss)
+    return F.binary_cross_entropy(probabilities, targets)
 
 
 def _hybrid_stop_decision_logits(
@@ -233,10 +254,16 @@ def _train_step(
         )
     else:
         routing_target = _episode_failure_target(output.decision_logits, targets)
-    routing_loss = F.binary_cross_entropy(
-        output.residual_uncertainty,
-        routing_target,
-    )
+    if arm_id == "hybrid":
+        routing_loss = _balanced_binary_cross_entropy(
+            output.residual_uncertainty,
+            routing_target,
+        )
+    else:
+        routing_loss = F.binary_cross_entropy(
+            output.residual_uncertainty,
+            routing_target,
+        )
     routing_weight = float(ROUTING_SUPERVISION["weight"])
     routing_parameters = tuple(arm.routing_head.parameters())
     routing_gradients = torch.autograd.grad(
