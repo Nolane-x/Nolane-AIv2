@@ -169,6 +169,7 @@ def test_ranked_rescue_runner_is_fail_closed_development_only() -> None:
     from nolane_ai.experiments.exp279_ranked_rescue_calibration import (
         RESIDUAL_STATISTIC,
         ROUTING_SUPERVISION,
+        branch_rescue_break_even_probability,
         run_exp279_ranked_rescue_development,
         validate_exp279_ranked_rescue_development,
     )
