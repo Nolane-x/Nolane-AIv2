@@ -46,3 +46,103 @@ jobs:
         run: python scripts/verify_protocol.py
       - name: Run branch-rescue oracle contract
         run: pytest -q tests/test_exp279_branch_rescue_oracle.py
+      - name: Compile analysis surface
+        run: python -m compileall -q src scripts
+
+  development-sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [15, 60, 120]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run DEVELOPMENT same-weights branch rescue oracle
+        run: |
+          WORK=/tmp/exp279-branch-rescue-${{ matrix.train_replicates }}
+          mkdir -p "$WORK"
+          python scripts/run_exp279_branch_rescue_oracle_dev.py \
+            --root-seed 20260906-exp279-paired-dev \
+            --d-model 64 \
+            --hidden-size 48 \
+            --target-parameters 500000 \
+            --route-threshold 0.5 \
+            --train-replicates ${{ matrix.train_replicates }} \
+            --eval-replicates 33 \
+            --eval-start-replicate 20000 \
+            --batch-size 8 \
+            --timesteps 4 \
+            --variables 6 \
+            --constraints 3 \
+            --noise-std 0.05 \
+            --lr 0.002 \
+            --weight-decay 0.0 \
+            --output "$WORK/receipt.json"
+      - name: Assert DEVELOPMENT-only boundary and oracle accounting
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          n = ${{ matrix.train_replicates }}
+          receipt = json.loads(Path(f'/tmp/exp279-branch-rescue-{n}/receipt.json').read_text())
+          aggregate = receipt['aggregate']
+          assert receipt['schema'] == 'NLM-EXP-279-BRANCH-RESCUE-ORACLE-DEV-V1'
+          assert receipt['evidence_level'] == 'EV-E2'
+          assert receipt['decision'] == 'UNVERIFIED'
+          assert receipt['scientific_evidence_eligible'] is False
+          assert receipt['oracle_is_deployable'] is False
+          assert receipt['oracle_uses_evaluation_targets'] is True
+          assert receipt['evaluation_targets_used_for_training'] is False
+          assert receipt['evaluation_targets_used_for_deployable_routing'] is False
+          assert receipt['training_replicates'] == n
+          assert receipt['evaluation_start_replicate'] == 20000
+          assert receipt['evaluation_replicates'] == 33
+          assert receipt['challenge_materialized'] is False
+          assert receipt['confirmatory_data_consumed'] is False
+          assert receipt['promotion_claimed'] is False
+          assert aggregate['total_episodes'] == 264
+          assert aggregate['branch_rescues'] + aggregate['branch_harms'] + aggregate['both_success'] + aggregate['both_failure'] == 264
+          assert aggregate['branch_rescue_classification'] in {
+              'NO_BRANCH_RESCUE_CAPACITY',
+              'RESCUES_EXIST_BUT_ORACLE_NOT_COST_EFFECTIVE',
+              'BRANCH_RESCUE_CAPACITY_COST_EFFECTIVE',
+          }
+          print(json.dumps({
+              'train_replicates': n,
+              'final_hybrid_digest': receipt['final_hybrid_digest'],
+              'branch_rescues': aggregate['branch_rescues'],
+              'branch_harms': aggregate['branch_harms'],
+              'both_success': aggregate['both_success'],
+              'both_failure': aggregate['both_failure'],
+              'rescue_rate_among_stop_failures': aggregate['rescue_rate_among_stop_failures'],
+              'mean_stop_solution_rate': aggregate['mean_stop_solution_rate'],
+              'mean_forced_branch_solution_rate': aggregate['mean_forced_branch_solution_rate'],
+              'mean_rescue_oracle_solution_rate': aggregate['mean_rescue_oracle_solution_rate'],
+              'mean_stop_utility': aggregate['mean_stop_utility'],
+              'mean_always_branch_utility': aggregate['mean_always_branch_utility'],
+              'mean_rescue_oracle_utility': aggregate['mean_rescue_oracle_utility'],
+              'mean_rescue_oracle_accounted_flops_per_episode': aggregate['mean_rescue_oracle_accounted_flops_per_episode'],
+              'rescue_oracle_relative_utility_gain': aggregate['rescue_oracle_relative_utility_gain'],
+              'branch_rescue_classification': aggregate['branch_rescue_classification'],
+          }, sort_keys=True))
+          print(json.dumps({'by_stratum': receipt['by_stratum']}, sort_keys=True))
+          PY
+      - name: Upload DEVELOPMENT oracle receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-branch-rescue-${{ matrix.train_replicates }}-${{ github.sha }}
+          path: /tmp/exp279-branch-rescue-${{ matrix.train_replicates }}
+          if-no-files-found: error
+          retention-days: 90
