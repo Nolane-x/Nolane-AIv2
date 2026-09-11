@@ -1,0 +1,28 @@
+name: exp279-cost-aware-routing-teacher-ci
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/exp279-cost-aware-routing-teacher-ci.yml
+      - src/nolane_ai/experiments/exp279_paired_runner.py
+      - tests/test_exp279_cost_aware_marginal_utility.py
+
+permissions:
+  contents: read
+
+jobs:
+  teacher-contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev,model]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run cost-aware routing teacher tests
+        run: pytest -q tests/test_exp279_cost_aware_marginal_utility.py
