@@ -5,6 +5,8 @@ on:
     paths:
       - .github/workflows/exp279-rescue-anchor-replay-ci.yml
       - src/nolane_ai/experiments/exp279_rescue_anchor_replay.py
+      - scripts/run_exp279_rescue_anchor_replay_dev.py
+      - scripts/run_exp279_rescue_anchor_pair_dev.py
       - tests/test_exp279_rescue_anchor_replay.py
       - docs/superpowers/plans/2026-09-11-exp279-rescue-anchor-replay.md
 
@@ -30,3 +32,114 @@ jobs:
         run: pytest -q tests/test_exp279_rescue_anchor_replay.py
       - name: Compile analysis surface
         run: python -m compileall -q src scripts
+
+  development-pair:
+    needs: contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [15, 60, 120]
+        lineage: [legacy, fresh]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run paired canonical vs rescue-anchor DEVELOPMENT control
+        run: |
+          if [ "${{ matrix.lineage }}" = "fresh" ]; then
+            EVAL_START=30000
+            LINEAGE_ROLE=fresh_primary
+          else
+            EVAL_START=20000
+            LINEAGE_ROLE=legacy_comparability
+          fi
+          WORK=/tmp/exp279-rescue-anchor-pair-${{ matrix.train_replicates }}-${{ matrix.lineage }}
+          python scripts/run_exp279_rescue_anchor_pair_dev.py \
+            --root-seed 20260906-exp279-paired-dev \
+            --d-model 64 \
+            --hidden-size 48 \
+            --target-parameters 500000 \
+            --route-threshold 0.5 \
+            --train-replicates ${{ matrix.train_replicates }} \
+            --eval-replicates 33 \
+            --eval-start-replicate "$EVAL_START" \
+            --lineage-role "$LINEAGE_ROLE" \
+            --batch-size 8 \
+            --timesteps 4 \
+            --variables 6 \
+            --constraints 3 \
+            --noise-std 0.05 \
+            --lr 0.002 \
+            --weight-decay 0.0 \
+            --output-dir "$WORK"
+      - name: Assert paired identity and DEVELOPMENT-only boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          n = ${{ matrix.train_replicates }}
+          lineage = '${{ matrix.lineage }}'
+          work = Path(f'/tmp/exp279-rescue-anchor-pair-{n}-{lineage}')
+          comparison = json.loads((work / 'comparison.json').read_text())
+          baseline = json.loads((work / 'baseline.json').read_text())
+          anchor = json.loads((work / 'rescue-anchor.json').read_text())
+
+          expected_start = 30000 if lineage == 'fresh' else 20000
+          expected_role = 'fresh_primary' if lineage == 'fresh' else 'legacy_comparability'
+          assert comparison['schema'] == 'NLM-EXP-279-RESCUE-ANCHOR-PAIR-DEV-V1'
+          assert comparison['evidence_level'] == 'EV-E2'
+          assert comparison['decision'] == 'UNVERIFIED'
+          assert comparison['scientific_evidence_eligible'] is False
+          assert comparison['training_replicates'] == n
+          assert comparison['evaluation_start_replicate'] == expected_start
+          assert comparison['evaluation_replicates'] == 33
+          assert comparison['lineage_role'] == expected_role
+          assert comparison['fresh_primary_single_use'] is (lineage == 'fresh')
+          assert comparison['route_threshold'] == 0.5
+          assert all(comparison['control_identity'].values())
+          assert comparison['challenge_materialized'] is False
+          assert comparison['confirmatory_data_consumed'] is False
+          assert comparison['promotion_claimed'] is False
+
+          for receipt in (baseline, anchor):
+              assert receipt['evidence_level'] == 'EV-E2'
+              assert receipt['decision'] == 'UNVERIFIED'
+              assert receipt['challenge_materialized'] is False
+              assert receipt['confirmatory_data_consumed'] is False
+              assert receipt['route_config']['threshold'] == 0.5
+              assert receipt['evaluation']['start_replicate'] == expected_start
+              assert receipt['evaluation']['replicates'] == 33
+          replay = anchor['training']['rescue_anchor_replay']
+          assert replay['source'] == 'augmentation_training_only'
+          assert replay['evaluation_examples_used'] is False
+          assert replay['evaluation_targets_used'] is False
+
+          print(json.dumps({
+              'train_replicates': n,
+              'lineage': lineage,
+              'lineage_role': comparison['lineage_role'],
+              'baseline': comparison['baseline'],
+              'rescue_anchor': comparison['rescue_anchor'],
+              'delta_anchor_minus_baseline': comparison['delta_anchor_minus_baseline'],
+              'control_identity': comparison['control_identity'],
+              'comparison_digest': comparison['comparison_digest'],
+          }, sort_keys=True))
+          PY
+      - name: Upload paired DEVELOPMENT receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-rescue-anchor-pair-${{ matrix.train_replicates }}-${{ matrix.lineage }}-${{ github.sha }}
+          path: /tmp/exp279-rescue-anchor-pair-${{ matrix.train_replicates }}-${{ matrix.lineage }}
+          if-no-files-found: error
+          retention-days: 90
