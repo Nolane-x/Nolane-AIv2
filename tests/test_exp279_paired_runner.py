@@ -37,12 +37,17 @@ EXPECTED_ROUTING_SUPERVISION = {
     "episode_targets": {
         "propagation_only": "arm_exact_failure",
         "branch_only": "arm_exact_failure",
-        "hybrid": "branch_rescue_required",
+        "hybrid": "cost_aware_soft_marginal_utility",
     },
     "hybrid_route_teacher": {
-        "positive": "stop_exact_failure_and_forced_branch_exact_success",
-        "negative": "otherwise",
+        "target": "soft_exact_utility_branch_share",
+        "soft_exact_surrogate": "exp_sum_log_target_probability",
+        "utility": "soft_exact_probability_divided_by_accounted_flops",
+        "temperature": 1.0,
+        "cost_source": "sealed_pair_audit_hybrid_stop_and_branch_ledgers",
+        "uses_same_paired_training_targets": True,
         "evaluation_targets_used_for_routing": False,
+        "decision_threshold_changed": False,
     },
     "hybrid_stop_path_supervision": {
         "loss": "cross_entropy",
