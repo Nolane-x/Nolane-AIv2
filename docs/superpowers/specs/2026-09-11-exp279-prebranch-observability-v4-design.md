@@ -1,7 +1,7 @@
 # EXP-279 V4 — Cheap Pre-Branch Observability Court
 
 Date: 2026-09-11
-Status: design approved in chat; written spec pending final review before implementation
+Status: written design ready for user review before implementation
 Base: `main@803fb474eca9cf57713f190e89ef17a113f335e5`
 Evidence boundary: DEVELOPMENT only (`EV-E2 / UNVERIFIED`)
 
@@ -65,7 +65,7 @@ For a frozen canonical hybrid and an augmentation batch:
 - `propagated = _propagate(variables, incidence)`;
 - `propagation_state = variables + propagated`, shape `[B, V, H]`.
 
-The V4 feature extractor must **not call** `_branch_context`, `branch_gru`, or `HybridRoutingArm.forward` in a way that conditionally executes branch recurrence for selector feature construction.
+The V4 feature extractor must **not call** `_branch_context`, `branch_gru`, or `HybridRoutingArm.forward` in a way that conditionally executes branch recurrence for selector feature construction. The existing forced-branch helper may execute the branch GRU only to produce the explicitly non-deployable training/diagnostic rescue label and counterfactual outcome; those outcomes are never fed back as selector features.
 
 Pre-branch summaries are fixed before data:
 
@@ -114,7 +114,9 @@ Use 3-fold cross-fitting. Each probe is independently initialized and fitted on 
 
 `softplus(-(positive_score - negative_score))`.
 
-Because this loss is shift-invariant, raw logits from different folds must never be globally ranked or calibrated. Every selector decision is fold-local.
+For every fold and every probe family, **both** the probe-fit partition and the held-out partition must contain at least one rescue and at least one non-rescue. If any required partition lacks support, that train cell is support-inconclusive and cannot be classified as positive or negative.
+
+Because the pairwise loss is shift-invariant, raw logits from different folds must never be globally ranked or calibrated. Every selector decision is fold-local.
 
 ## 8. Route cardinality and direct counterfactual utility
 
@@ -140,7 +142,7 @@ Across folds, aggregate **counts and FLOPs**, never raw scores and never average
 
 A probe is positive in one train cell iff:
 
-- every held-out fold has positive and negative support; and
+- all probe-fit and held-out partitions satisfy the support requirement above; and
 - `U_routed > U_stop` strictly.
 
 AUC, average precision, and selected-rescue precision are descriptive only. There is no AUC floor, AP floor, posterior break-even threshold, or calibrated probability threshold in the decision rule.
@@ -201,7 +203,7 @@ Allowed cross-cell decisions:
 - `ROBUST_EVENT_MEAN_PREBRANCH_SIGNAL`: state-only is not robust, but `STATE_EVENT_MEAN` has positive direct utility at both train=60 and train=120.
 - `ROBUST_EVENT_RESIDUAL_PREBRANCH_SIGNAL`: neither simpler family is robust, but `STATE_EVENT_RESIDUAL` has positive direct utility at both train=60 and train=120.
 - `NO_ROBUST_PREBRANCH_OBSERVABILITY`: all required support is closed but no single family is direct-utility-positive in both decision cells.
-- `INCONCLUSIVE_SUPPORT`: either decision cell lacks required positive/negative support in any required fold.
+- `INCONCLUSIVE_SUPPORT`: either decision cell lacks required fit/held-out positive/negative support for any required fold/probe family.
 
 The ordering above prevents cherry-picking a more complex family when a simpler family already survives.
 
@@ -223,6 +225,7 @@ Every V4 cell artifact must include:
 - augmentation-only RNG declarations;
 - frozen canonical final-state digest;
 - feature semantics and explicit `branch_gru_used_for_probe_features=false`;
+- per-probe/per-fold fit-support and held-out-support receipts;
 - per-probe/per-fold sufficient statistics;
 - aggregate direct utility;
 - probe parameter/FLOP diagnostics;
