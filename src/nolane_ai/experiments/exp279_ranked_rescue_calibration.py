@@ -18,6 +18,47 @@ def pairwise_rescue_harm_loss(
     return F.softplus(harm_scores - rescue_scores).mean()
 
 
+def balanced_log_likelihood_ratio_loss(
+    rescue_logits: torch.Tensor,
+    nonrescue_logits: torch.Tensor,
+) -> torch.Tensor:
+    """Balanced logistic proper loss whose optimal logit is a log likelihood ratio.
+
+    Class means are weighted equally, independently of the natural rescue prior.
+    This estimates discrimination on a balanced case-control surface; the natural
+    prior is reintroduced only by the analytic routing calibration.
+    """
+    if rescue_logits.ndim != 1 or nonrescue_logits.ndim != 1:
+        raise ValueError("rescue_logits and nonrescue_logits must be rank-1")
+    if rescue_logits.numel() == 0 or nonrescue_logits.numel() == 0:
+        raise ValueError("both rescue and nonrescue logits must be non-empty")
+    positive = F.softplus(-rescue_logits).mean()
+    negative = F.softplus(nonrescue_logits).mean()
+    return 0.5 * (positive + negative)
+
+
+def branch_rescue_break_even_probability(
+    *,
+    stop_accounted_flops_per_episode: float,
+    branch_accounted_flops_per_episode: float,
+) -> float:
+    """Return the rescue probability at which expected verified utility breaks even.
+
+    With stop cost S and routed branch cost B, the incremental-cost ratio is
+    c=(B-S)/B. A successful rescue contributes the branch-path utility while a
+    non-rescue pays the extra branch cost, yielding q*=c/(1+c). This is distinct
+    from c itself and is derived only from the sealed analytical ledger.
+    """
+    stop = float(stop_accounted_flops_per_episode)
+    branch = float(branch_accounted_flops_per_episode)
+    if not math.isfinite(stop) or not math.isfinite(branch) or stop <= 0.0 or branch <= stop:
+        raise ValueError(
+            "branch_accounted_flops_per_episode must be finite and greater than positive stop cost"
+        )
+    incremental_cost_ratio = (branch - stop) / branch
+    return incremental_cost_ratio / (1.0 + incremental_cost_ratio)
+
+
 def _logit(probability: float) -> float:
     return math.log(probability) - math.log1p(-probability)
 
