@@ -20,7 +20,7 @@ def _logits(predictions: list[list[int]]) -> torch.Tensor:
     return torch.tensor(rows, dtype=torch.float32)
 
 
-def test_hybrid_route_supervision_targets_only_recoverable_stop_failures() -> None:
+def test_hard_rescue_target_remains_available_as_development_diagnostic() -> None:
     targets = torch.tensor(
         [
             [0, 0],
@@ -32,10 +32,10 @@ def test_hybrid_route_supervision_targets_only_recoverable_stop_failures() -> No
     )
     stop_logits = _logits(
         [
-            [1, 0],  # stop fails; branch rescues -> route
-            [1, 1],  # stop fails; branch also fails -> do not pay branch cost
-            [1, 1],  # stop already succeeds -> do not route
-            [1, 0],  # stop already succeeds even though branch will fail -> do not route
+            [1, 0],
+            [1, 1],
+            [1, 1],
+            [1, 0],
         ]
     )
     branch_logits = _logits(
@@ -48,14 +48,15 @@ def test_hybrid_route_supervision_targets_only_recoverable_stop_failures() -> No
     )
 
     route_target = _hybrid_branch_rescue_target(stop_logits, branch_logits, targets)
-
     assert route_target.tolist() == [1.0, 0.0, 0.0, 0.0]
 
 
-def test_hybrid_route_supervision_contract_is_branch_usefulness_not_failure_only() -> None:
-    assert ROUTING_SUPERVISION["episode_targets"]["hybrid"] == "branch_rescue_required"
+def test_hybrid_route_supervision_contract_uses_soft_branch_advantage() -> None:
+    assert ROUTING_SUPERVISION["episode_targets"]["hybrid"] == "soft_branch_advantage"
     assert ROUTING_SUPERVISION["hybrid_route_teacher"] == {
-        "positive": "stop_exact_failure_and_forced_branch_exact_success",
-        "negative": "otherwise",
+        "target": "sigmoid_per_episode_stop_ce_minus_forced_branch_ce",
+        "temperature": 1.0,
+        "uses_same_paired_training_targets": True,
         "evaluation_targets_used_for_routing": False,
+        "decision_threshold_changed": False,
     }
