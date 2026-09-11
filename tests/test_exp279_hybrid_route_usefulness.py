@@ -20,7 +20,7 @@ def _logits(predictions: list[list[int]]) -> torch.Tensor:
     return torch.tensor(rows, dtype=torch.float32)
 
 
-def test_hybrid_route_supervision_targets_only_recoverable_stop_failures() -> None:
+def test_legacy_branch_rescue_target_still_marks_only_recoverable_stop_failures() -> None:
     targets = torch.tensor(
         [
             [0, 0],
@@ -52,10 +52,15 @@ def test_hybrid_route_supervision_targets_only_recoverable_stop_failures() -> No
     assert route_target.tolist() == [1.0, 0.0, 0.0, 0.0]
 
 
-def test_hybrid_route_supervision_contract_is_branch_usefulness_not_failure_only() -> None:
-    assert ROUTING_SUPERVISION["episode_targets"]["hybrid"] == "branch_rescue_required"
+def test_hybrid_route_supervision_contract_is_cost_aware_marginal_utility() -> None:
+    assert ROUTING_SUPERVISION["episode_targets"]["hybrid"] == "cost_aware_soft_marginal_utility"
     assert ROUTING_SUPERVISION["hybrid_route_teacher"] == {
-        "positive": "stop_exact_failure_and_forced_branch_exact_success",
-        "negative": "otherwise",
+        "target": "soft_exact_utility_branch_share",
+        "soft_exact_surrogate": "exp_sum_log_target_probability",
+        "utility": "soft_exact_probability_divided_by_accounted_flops",
+        "temperature": 1.0,
+        "cost_source": "sealed_pair_audit_hybrid_stop_and_branch_ledgers",
+        "uses_same_paired_training_targets": True,
         "evaluation_targets_used_for_routing": False,
+        "decision_threshold_changed": False,
     }
