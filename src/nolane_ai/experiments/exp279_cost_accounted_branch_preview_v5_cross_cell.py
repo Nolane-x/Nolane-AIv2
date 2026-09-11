@@ -30,10 +30,14 @@ def _artifact_digest(payload: dict[str, Any]) -> str:
 def _validate_cell(cell: dict[str, Any]) -> None:
     if cell.get("schema") != CELL_SCHEMA:
         raise ValueError("V5 cross-cell input schema mismatch")
-    if cell.get("evidence_state") != "EV-E2 / UNVERIFIED":
+    if cell.get("evidence_level") != "EV-E2" or cell.get("decision") != "UNVERIFIED":
         raise ValueError("V5 cross-cell evidence state mismatch")
     if cell.get("scientific_evidence_eligible") is not False:
         raise ValueError("V5 cross-cell inputs cannot be scientific-evidence eligible")
+
+    training = cell.get("canonical_training")
+    if not isinstance(training, dict) or not isinstance(training.get("replicates"), int):
+        raise ValueError("V5 cross-cell canonical training receipt missing")
 
     boundary = cell.get("data_boundary")
     if not isinstance(boundary, dict):
@@ -86,9 +90,9 @@ def classify_exp279_cost_accounted_branch_preview_v5_cross_cell(
 
     by_steps: dict[int, dict[str, Any]] = {}
     for cell in cells:
-        steps = cell.get("train_steps")
-        if not isinstance(steps, int) or steps in by_steps:
-            raise ValueError("V5 cross-cell train_steps must be unique integers")
+        steps = cell["canonical_training"]["replicates"]
+        if steps in by_steps:
+            raise ValueError("V5 cross-cell training replicates must be unique")
         by_steps[steps] = cell
     if tuple(sorted(by_steps)) != _DECISION_STEPS:
         raise ValueError("V5 cross-cell decision cells must be exactly train60 and train120")
