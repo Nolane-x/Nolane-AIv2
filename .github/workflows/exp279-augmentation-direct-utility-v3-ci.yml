@@ -1,0 +1,35 @@
+name: exp279-augmentation-direct-utility-v3-ci
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/exp279-augmentation-direct-utility-v3-ci.yml
+      - src/nolane_ai/experiments/exp279_augmentation_direct_utility_v3.py
+      - tests/test_exp279_augmentation_direct_utility_v3.py
+      - scripts/run_exp279_augmentation_direct_utility_v3_dev.py
+      - src/nolane_ai/experiments/exp279_augmentation_direct_utility_v3_cross_cell.py
+      - tests/test_exp279_augmentation_direct_utility_v3_cli.py
+      - tests/test_exp279_augmentation_direct_utility_v3_cross_cell.py
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run V3 direct-utility RED contract
+        run: pytest -q tests/test_exp279_augmentation_direct_utility_v3.py
+      - name: Compile analysis surface
+        run: python -m compileall -q src scripts
