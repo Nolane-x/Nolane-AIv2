@@ -30,6 +30,116 @@ jobs:
       - name: Verify frozen Stage-A protocol
         run: python scripts/verify_protocol.py
       - name: Run V3 direct-utility contract
-        run: pytest -q tests/test_exp279_augmentation_direct_utility_v3.py tests/test_exp279_augmentation_direct_utility_v3_cli.py tests/test_exp279_augmentation_direct_utility_v3_cross_cell.py
+        run: |
+          pytest -q \
+            tests/test_exp279_augmentation_direct_utility_v3.py \
+            tests/test_exp279_augmentation_direct_utility_v3_cli.py \
+            tests/test_exp279_augmentation_direct_utility_v3_cross_cell.py
       - name: Compile analysis surface
         run: python -m compileall -q src scripts
+
+  development-court:
+    needs: contract
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [15, 60, 120]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run frozen augmentation-only V3 direct-utility court
+        run: |
+          python scripts/run_exp279_augmentation_direct_utility_v3_dev.py \
+            --root-seed 20260911-exp279-augmentation-direct-utility-v3-dev \
+            --train-replicates ${{ matrix.train_replicates }} \
+            --probe-replicates 198 \
+            --probe-folds 3 \
+            --probe-steps 200 \
+            --probe-lr 0.01 \
+            --batch-size 8 \
+            --timesteps 4 \
+            --variables 6 \
+            --constraints 3 \
+            --route-threshold 0.5 \
+            --noise-std 0.05 \
+            --lr 0.002 \
+            --weight-decay 0.0 \
+            --output "artifacts/exp279-augmentation-direct-utility-v3-train-${{ matrix.train_replicates }}.json"
+      - name: Hash DEVELOPMENT V3 court receipt
+        run: |
+          sha256sum "artifacts/exp279-augmentation-direct-utility-v3-train-${{ matrix.train_replicates }}.json" \
+            | tee "artifacts/exp279-augmentation-direct-utility-v3-train-${{ matrix.train_replicates }}.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-augmentation-direct-utility-v3-train-${{ matrix.train_replicates }}
+          path: |
+            artifacts/exp279-augmentation-direct-utility-v3-train-${{ matrix.train_replicates }}.json
+            artifacts/exp279-augmentation-direct-utility-v3-train-${{ matrix.train_replicates }}.sha256
+          if-no-files-found: error
+
+  cross-cell-decision:
+    needs: development-court
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: exp279-augmentation-direct-utility-v3-train-*
+          path: artifacts/cells
+          merge-multiple: true
+      - name: Apply preregistered train-60/train-120 same-family rule
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from nolane_ai.experiments.exp279_augmentation_direct_utility_v3_cross_cell import (
+              classify_exp279_direct_utility_v3_cross_cell,
+          )
+
+          root = Path("artifacts/cells")
+          cells = {}
+          for train_replicates in (60, 120):
+              path = root / f"exp279-augmentation-direct-utility-v3-train-{train_replicates}.json"
+              cells[train_replicates] = json.loads(path.read_text(encoding="utf-8"))
+          decision = classify_exp279_direct_utility_v3_cross_cell(cells)
+          output = Path("artifacts/exp279-augmentation-direct-utility-v3-cross-cell.json")
+          output.parent.mkdir(parents=True, exist_ok=True)
+          output.write_text(json.dumps(decision, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps({
+              "decision": decision["decision"],
+              "robust_probe_families": decision["robust_probe_families"],
+              "successor_design_authorized": decision["successor_design_authorized"],
+              "fresh_evaluation_lineage_may_be_reserved": decision["fresh_evaluation_lineage_may_be_reserved"],
+              "fresh_evaluation_lineage_consumed": decision["fresh_evaluation_lineage_consumed"],
+              "artifact_digest": decision["artifact_digest"],
+          }, sort_keys=True))
+          PY
+      - name: Hash cross-cell decision receipt
+        run: |
+          sha256sum artifacts/exp279-augmentation-direct-utility-v3-cross-cell.json \
+            | tee artifacts/exp279-augmentation-direct-utility-v3-cross-cell.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-augmentation-direct-utility-v3-cross-cell
+          path: |
+            artifacts/exp279-augmentation-direct-utility-v3-cross-cell.json
+            artifacts/exp279-augmentation-direct-utility-v3-cross-cell.sha256
+          if-no-files-found: error
