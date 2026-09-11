@@ -58,4 +58,6 @@ def test_hybrid_route_supervision_contract_is_branch_usefulness_not_failure_only
         "positive": "stop_exact_failure_and_forced_branch_exact_success",
         "negative": "otherwise",
         "evaluation_targets_used_for_routing": False,
+        "class_balance": "equal_positive_negative_mass_when_both_present",
+        "decision_threshold_changed": False,
     }
