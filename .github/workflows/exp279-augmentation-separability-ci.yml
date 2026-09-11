@@ -34,3 +34,52 @@ jobs:
             tests/test_exp279_augmentation_separability_cli.py
       - name: Compile analysis surface
         run: python -m compileall -q src scripts
+
+  development-court:
+    needs: contract
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [15, 60, 120]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run frozen augmentation-only separability court
+        run: |
+          python scripts/run_exp279_augmentation_separability_dev.py \
+            --root-seed 20260911-exp279-augmentation-separability-dev \
+            --train-replicates ${{ matrix.train_replicates }} \
+            --probe-replicates 198 \
+            --probe-folds 3 \
+            --probe-steps 200 \
+            --probe-lr 0.01 \
+            --batch-size 8 \
+            --timesteps 4 \
+            --variables 6 \
+            --constraints 3 \
+            --route-threshold 0.5 \
+            --noise-std 0.05 \
+            --lr 0.002 \
+            --weight-decay 0.0 \
+            --output "artifacts/exp279-augmentation-separability-train-${{ matrix.train_replicates }}.json"
+      - name: Hash DEVELOPMENT court receipt
+        run: |
+          sha256sum "artifacts/exp279-augmentation-separability-train-${{ matrix.train_replicates }}.json" \
+            | tee "artifacts/exp279-augmentation-separability-train-${{ matrix.train_replicates }}.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-augmentation-separability-train-${{ matrix.train_replicates }}
+          path: |
+            artifacts/exp279-augmentation-separability-train-${{ matrix.train_replicates }}.json
+            artifacts/exp279-augmentation-separability-train-${{ matrix.train_replicates }}.sha256
+          if-no-files-found: error
