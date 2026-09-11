@@ -39,3 +39,145 @@ jobs:
             tests/test_exp279_prebranch_observability_v4_cross_cell.py
       - name: Compile analysis surface
         run: python -m compileall -q src scripts
+
+  development-court:
+    needs: contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [15, 60, 120]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run frozen augmentation-only V4 court
+        run: |
+          WORK=/tmp/exp279-prebranch-v4-${{ matrix.train_replicates }}
+          mkdir -p "$WORK"
+          python scripts/run_exp279_prebranch_observability_v4_dev.py \
+            --root-seed 20260911-exp279-prebranch-observability-v4-dev \
+            --d-model 64 \
+            --hidden-size 48 \
+            --target-parameters 500000 \
+            --route-threshold 0.5 \
+            --train-replicates ${{ matrix.train_replicates }} \
+            --probe-replicates 198 \
+            --probe-folds 3 \
+            --probe-steps 200 \
+            --probe-lr 0.01 \
+            --batch-size 8 \
+            --timesteps 4 \
+            --variables 6 \
+            --constraints 3 \
+            --noise-std 0.05 \
+            --lr 0.002 \
+            --weight-decay 0.0 \
+            --output "$WORK/receipt.json"
+          sha256sum "$WORK/receipt.json" > "$WORK/receipt.json.sha256"
+      - name: Assert DEVELOPMENT evidence boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          n = ${{ matrix.train_replicates }}
+          p = Path(f'/tmp/exp279-prebranch-v4-{n}/receipt.json')
+          r = json.loads(p.read_text())
+          assert r['schema'] == 'NLM-EXP-279-PREBRANCH-OBSERVABILITY-COURT-V4'
+          assert r['evidence_level'] == 'EV-E2'
+          assert r['decision'] == 'UNVERIFIED'
+          assert r['scientific_evidence_eligible'] is False
+          assert r['canonical_training']['replicates'] == n
+          assert r['data_boundary']['training_rng_stream'] == 'augmentation'
+          assert r['data_boundary']['probe_rng_stream'] == 'augmentation'
+          assert r['data_boundary']['evaluation_rng_stream_used'] is False
+          assert r['data_boundary']['evaluation_targets_used'] is False
+          assert r['feature_boundary']['branch_gru_used_for_probe_features'] is False
+          assert r['route_config']['canonical_threshold'] == 0.5
+          assert r['route_config']['threshold_tuned'] is False
+          assert r['fresh_evaluation_lineage_may_be_reserved'] is False
+          assert r['fresh_evaluation_lineage_consumed'] is False
+          assert r['confirmatory_data_consumed'] is False
+          assert r['challenge_materialized'] is False
+          assert r['promotion_claimed'] is False
+          print(json.dumps({
+              'train_replicates': n,
+              'artifact_digest': r['artifact_digest'],
+              'court_classification': r['court_classification'],
+              'probe_economics': {
+                  k: {
+                      'support_closed': r['probes'][k]['aggregate']['support_closed'],
+                      'direct_utility_improved': r['probes'][k]['aggregate']['direct_utility_improved'],
+                      'stop_verified_utility': r['probes'][k]['aggregate']['stop_verified_utility'],
+                      'routed_verified_utility': r['probes'][k]['aggregate']['routed_verified_utility'],
+                  }
+                  for k in r['probe_config']['probe_kinds']
+              },
+          }, sort_keys=True))
+          PY
+      - name: Upload V4 cell receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-prebranch-v4-${{ matrix.train_replicates }}-${{ github.sha }}
+          path: /tmp/exp279-prebranch-v4-${{ matrix.train_replicates }}
+          if-no-files-found: error
+          retention-days: 90
+
+  cross-cell-decision:
+    needs: development-court
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install lightweight development environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: exp279-prebranch-v4-*-${{ github.sha }}
+          path: /tmp/exp279-prebranch-v4-inputs
+      - name: Classify preregistered train60/train120 decision cells
+        run: |
+          mkdir -p /tmp/exp279-prebranch-v4-cross-cell
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          from nolane_ai.experiments.exp279_prebranch_observability_v4_cross_cell import (
+              classify_exp279_prebranch_observability_v4_cross_cell,
+          )
+
+          cells = {}
+          for path in sorted(Path('/tmp/exp279-prebranch-v4-inputs').glob('*/receipt.json')):
+              payload = json.loads(path.read_text())
+              cells[int(payload['canonical_training']['replicates'])] = payload
+          result = classify_exp279_prebranch_observability_v4_cross_cell(cells)
+          out = Path('/tmp/exp279-prebranch-v4-cross-cell/decision.json')
+          encoded = json.dumps(result, sort_keys=True, indent=2) + '\n'
+          out.write_text(encoded)
+          digest = hashlib.sha256(encoded.encode()).hexdigest()
+          Path(str(out) + '.sha256').write_text(digest + '  decision.json\n')
+          print(json.dumps(result, sort_keys=True))
+          PY
+      - name: Upload V4 cross-cell decision
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-prebranch-v4-cross-cell-${{ github.sha }}
+          path: /tmp/exp279-prebranch-v4-cross-cell
+          if-no-files-found: error
+          retention-days: 90
