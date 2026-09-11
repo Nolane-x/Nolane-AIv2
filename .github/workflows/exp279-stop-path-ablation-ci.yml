@@ -1,0 +1,31 @@
+name: exp279-stop-path-ablation-ci
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/exp279-stop-path-ablation-ci.yml
+      - src/nolane_ai/experiments/exp279_stop_path_ablation.py
+      - scripts/analyze_exp279_stop_path_ablation.py
+      - tests/test_exp279_stop_path_ablation.py
+      - docs/superpowers/plans/2026-09-11-exp279-stop-path-cost-decomposition.md
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install development environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run stop-path decomposition contract
+        run: pytest -q tests/test_exp279_stop_path_ablation.py
