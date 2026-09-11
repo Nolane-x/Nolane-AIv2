@@ -10,6 +10,8 @@ from nolane_ai.experiments.exp279_prior_corrected_rescue import (
     _economic_rescue_score_from_probability,
     _natural_rescue_probability_from_score,
     _prior_corrected_replay_loss,
+    run_exp279_prior_corrected_rescue_development,
+    validate_exp279_prior_corrected_rescue_development,
 )
 
 
@@ -115,3 +117,43 @@ def test_prior_corrected_contract_keeps_frozen_threshold_and_training_only_prove
         "external_examples_added": False,
         "tunable_calibration_hyperparameters": False,
     }
+
+
+def test_prior_corrected_runner_emits_fail_closed_development_receipt() -> None:
+    artifact = run_exp279_prior_corrected_rescue_development(
+        root_seed="exp279-prior-corrected-test",
+        d_model=8,
+        hidden_size=6,
+        target_parameters=5_000,
+        route_threshold=0.5,
+        train_replicates=3,
+        eval_replicates=3,
+        eval_start_replicate=700,
+        batch_size=2,
+        timesteps=3,
+        variables=4,
+        constraints=2,
+        noise_std=0.05,
+        lr=1e-3,
+        weight_decay=0.0,
+        protocol_digest="p" * 64,
+        code_digest="c" * 64,
+    )
+
+    assert artifact["evidence_level"] == "EV-E2"
+    assert artifact["decision"] == "UNVERIFIED"
+    assert artifact["confirmatory_data_consumed"] is False
+    assert artifact["challenge_materialized"] is False
+    assert artifact["route_config"]["threshold"] == 0.5
+    assert artifact["training"]["routing_supervision"] == ROUTING_SUPERVISION
+
+    replay = artifact["training"]["prior_corrected_rescue_replay"]
+    assert replay["source"] == "augmentation_training_only"
+    assert replay["natural_total_count"] == 6
+    assert replay["natural_positive_count"] == replay["final_anchor_episodes"]
+    assert replay["evaluation_examples_used"] is False
+    assert replay["evaluation_targets_used"] is False
+    assert replay["decision_threshold_changed"] is False
+    assert replay["tunable_calibration_hyperparameters"] is False
+    assert 0.0 < replay["incremental_cost_ratio"] < 1.0
+    assert validate_exp279_prior_corrected_rescue_development(artifact) == []
