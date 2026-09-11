@@ -26,7 +26,6 @@ def test_pairwise_probe_loss_remains_shift_invariant() -> None:
 
 
 def test_fold_direct_utility_routes_top_k_and_charges_exact_paths() -> None:
-    # Only episode 1 is an exact rescue, so oracle diagnostic cardinality k=1.
     scores = torch.tensor([0.1, 3.0, -2.0, 0.0])
     stop_exact = torch.tensor([True, False, False, True])
     branch_exact = torch.tensor([True, True, False, False])
@@ -37,7 +36,6 @@ def test_fold_direct_utility_routes_top_k_and_charges_exact_paths() -> None:
         stop_accounted_flops_per_episode=10,
         branch_accounted_flops_per_episode=20,
     )
-
     assert row["support_closed"] is True
     assert row["rescue_count"] == 1
     assert row["route_k"] == 1
@@ -64,7 +62,6 @@ def test_fold_direct_utility_counts_harm_and_can_reject_bad_ranking() -> None:
         stop_accounted_flops_per_episode=10,
         branch_accounted_flops_per_episode=20,
     )
-
     assert row["route_k"] == 1
     assert row["selected_rescues"] == 0
     assert row["selected_harms"] == 1
@@ -107,6 +104,9 @@ def test_cross_fold_aggregate_sums_solution_and_flop_sufficient_statistics() -> 
             "selected_neutral": 0,
             "rescue_count": 1,
             "episode_count": 4,
+            "concordance_pair_count": 3,
+            "roc_auc": 1.0,
+            "average_precision": 1.0,
         },
         {
             "support_closed": True,
@@ -120,6 +120,9 @@ def test_cross_fold_aggregate_sums_solution_and_flop_sufficient_statistics() -> 
             "selected_neutral": 1,
             "rescue_count": 1,
             "episode_count": 10,
+            "concordance_pair_count": 9,
+            "roc_auc": 0.5,
+            "average_precision": 0.25,
         },
     ]
     aggregate = _aggregate_fold_direct_utility_metrics(rows)
@@ -169,7 +172,6 @@ def test_tiny_v3_court_preserves_development_boundary() -> None:
         protocol_digest="p" * 64,
         code_digest="c" * 64,
     )
-
     assert payload["schema"] == SCHEMA
     assert payload["evidence_level"] == "EV-E2"
     assert payload["decision"] == "UNVERIFIED"
