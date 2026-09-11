@@ -1,0 +1,53 @@
+{
+  "analysis_code_digest": "997b0aa7ff20beebccc2c1bb9d4f6de8368285b8353c7de16a2e48670bbe92d1",
+  "analysis_digest": "3b6fde6e5cb5f624fb1e2467b59c7b80279d4536535db54024966c29507f7c4d",
+  "confirmatory_data_consumed": true,
+  "confirmatory_n": 32,
+  "decision": "PROMOTE_TO_NEXT_STAGE",
+  "decision_rule_executed": true,
+  "evidence_level": "EV-E3",
+  "experiment_id": "EXP-286",
+  "lineage": {
+    "analysis_code_digest": "997b0aa7ff20beebccc2c1bb9d4f6de8368285b8353c7de16a2e48670bbe92d1",
+    "beacon_receipt_digest": "bb96054981e6d491a039c4dcdd99331644046c1f2e36f8a63fa39084ae49369b",
+    "gate_a_seal_digest": "9fa105b2944ae077f84f0d8515955954db888c702c588a3e7010e97c2fb25075",
+    "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+    "raw_artifact_digest": "0487f7fcf9b69fbc5e9c591d5b2f7799730d6f7004973ad1a7e3d2303b3c76cf"
+  },
+  "primary_endpoint": {
+    "alpha": 0.05,
+    "direction": "lower",
+    "effect_type": "paired_log_cost_ratio_relative_reduction",
+    "inference": {
+      "alpha": 0.05,
+      "observed_relative_reduction": 0.25,
+      "one_sided_lower": 0.25,
+      "one_sided_upper": 0.25,
+      "paired_n": 32,
+      "samples": 10000,
+      "seed_digest": "c6263cb29ca9794f60484dde64a011fd5cbee6f35c5cb2662c769a639cc60832"
+    },
+    "mesi_relative_reduction": 0.15,
+    "metric": "accounted_reasoning_flops_to_verified_solution",
+    "samples": 10000
+  },
+  "protected_solution_rate": {
+    "alpha": 0.05,
+    "floor_difference": -0.005,
+    "observed_difference": 0.0,
+    "one_sided_lower": 0.0,
+    "one_sided_upper": 0.0,
+    "paired_n": 32,
+    "samples": 10000,
+    "seed_digest": "ca394ee1f3cbbc3eb022863734f7718e77e05c73c56fcf131d09ba8b51a0c3e0"
+  },
+  "raw_artifact_digest": "0487f7fcf9b69fbc5e9c591d5b2f7799730d6f7004973ad1a7e3d2303b3c76cf",
+  "schema": "NLM-EXP-286-CONFIRMATORY-ANALYSIS-V1",
+  "scientific_evidence_eligible": true,
+  "seal_digest": "9fa105b2944ae077f84f0d8515955954db888c702c588a3e7010e97c2fb25075",
+  "status": "CONFIRMATORY_CHALLENGE_ANALYZED",
+  "synthetic_challenge_data_consumed": false,
+  "test_only": false,
+  "test_only_decision_executed": false,
+  "test_only_would_be_decision": null
+}

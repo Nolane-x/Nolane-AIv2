@@ -1,0 +1,12 @@
+{
+  "workflow_run_id": 34541785902,
+  "workflow_name": "exp286-real-gate-b-ceremony",
+  "head_sha": "5b23a45d00260128be41aa68c06eb2471751850e",
+  "artifacts": [
+    {"id": 10177525781, "name": "exp286-real-gate-b-arm-lock-EXP-286-REAL-GATE-B-2026-09-10", "digest": "sha256:2070aa870747c61201e553a5bcf0efbc7a8dbbe02c72a2d4eb281abe87558948", "created_at": "2026-09-10T23:21:40Z"},
+    {"id": 10177589455, "name": "exp286-real-gate-b-inference-started-5b23a45d00260128be41aa68c06eb2471751850e", "digest": "sha256:571ae78ea7cc14fdc5847c9338274845ecfb3e81d0379ce8d1e7b6c0337272b5", "created_at": "2026-09-10T23:24:02Z"},
+    {"id": 10177592824, "name": "exp286-real-gate-b-raw-5b23a45d00260128be41aa68c06eb2471751850e", "digest": "sha256:4e745986eabd4b3378fe56242baa39e5c47a0605cac9c44457f6391f0043a74f", "created_at": "2026-09-10T23:24:09Z"},
+    {"id": 10177594151, "name": "exp286-real-gate-b-outcome-5b23a45d00260128be41aa68c06eb2471751850e", "digest": "sha256:a363230b6de491644e575a251a5164eacdfc334cf38c731f20699f55cab5b927", "created_at": "2026-09-10T23:24:12Z"},
+    {"id": 10177594585, "name": "exp286-real-gate-b-evidence-5b23a45d00260128be41aa68c06eb2471751850e", "digest": "sha256:736ebb237afd93b68c2739673a8dc058a545888bc3fc87e397aeeda36a527d5f", "created_at": "2026-09-10T23:24:13Z"}
+  ]
+}
