@@ -1,0 +1,144 @@
+name: exp279-routing-marginal-shadow-ci
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/exp279-routing-marginal-shadow-ci.yml
+      - src/nolane_ai/experiments/exp279_routing_marginal.py
+      - scripts/run_exp279_routing_marginal_dev.py
+      - tests/test_exp279_routing_marginal_import.py
+      - tests/test_exp279_routing_marginal_shadow.py
+      - docs/superpowers/plans/2026-09-11-exp279-routing-marginal-shadow.md
+
+permissions:
+  contents: read
+
+jobs:
+  fast-import-contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install lightweight development environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run fast routing marginal import contract
+        run: pytest -q tests/test_exp279_routing_marginal_import.py
+
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run routing marginal shadow contract
+        run: pytest -q tests/test_exp279_routing_marginal_shadow.py
+      - name: Compile analysis surface
+        run: python -m compileall -q src scripts
+
+  development-sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [15, 60, 120]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run DEVELOPMENT same-weights routing marginal shadow
+        run: |
+          WORK=/tmp/exp279-routing-marginal-${{ matrix.train_replicates }}
+          mkdir -p "$WORK"
+          python scripts/run_exp279_routing_marginal_dev.py \
+            --root-seed 20260906-exp279-paired-dev \
+            --d-model 64 \
+            --hidden-size 48 \
+            --target-parameters 500000 \
+            --route-threshold 0.5 \
+            --train-replicates ${{ matrix.train_replicates }} \
+            --eval-replicates 33 \
+            --eval-start-replicate 20000 \
+            --batch-size 8 \
+            --timesteps 4 \
+            --variables 6 \
+            --constraints 3 \
+            --noise-std 0.05 \
+            --lr 0.002 \
+            --weight-decay 0.0 \
+            --output "$WORK/receipt.json"
+      - name: Assert DEVELOPMENT-only scientific boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          n = ${{ matrix.train_replicates }}
+          path = Path(f'/tmp/exp279-routing-marginal-{n}/receipt.json')
+          receipt = json.loads(path.read_text())
+          aggregate = receipt['aggregate']
+          assert receipt['schema'] == 'NLM-EXP-279-ROUTING-MARGINAL-DEV-V1'
+          assert receipt['evidence_level'] == 'EV-E2'
+          assert receipt['decision'] == 'UNVERIFIED'
+          assert receipt['scientific_evidence_eligible'] is False
+          assert receipt['training_replicates'] == n
+          assert receipt['evaluation_start_replicate'] == 20000
+          assert receipt['evaluation_replicates'] == 33
+          assert receipt['challenge_materialized'] is False
+          assert receipt['confirmatory_data_consumed'] is False
+          assert receipt['promotion_claimed'] is False
+          assert aggregate['total_routed_episodes'] == (
+              aggregate['routed_rescues']
+              + aggregate['routed_harms']
+              + aggregate['routed_success_unchanged']
+              + aggregate['routed_failure_unchanged']
+          )
+          assert aggregate['net_routed_exact_delta'] == (
+              aggregate['routed_rescues'] - aggregate['routed_harms']
+          )
+          print(json.dumps({
+              'train_replicates': n,
+              'final_hybrid_digest': receipt['final_hybrid_digest'],
+              'route_fraction': aggregate['route_fraction'],
+              'total_routed_episodes': aggregate['total_routed_episodes'],
+              'routed_rescues': aggregate['routed_rescues'],
+              'routed_harms': aggregate['routed_harms'],
+              'net_routed_exact_delta': aggregate['net_routed_exact_delta'],
+              'mean_actual_solution_rate': aggregate['mean_actual_solution_rate'],
+              'mean_forced_stop_solution_rate': aggregate['mean_forced_stop_solution_rate'],
+              'routing_marginal_solution_rate_delta': aggregate['routing_marginal_solution_rate_delta'],
+              'mean_actual_utility': aggregate['mean_actual_utility'],
+              'mean_forced_stop_utility': aggregate['mean_forced_stop_utility'],
+              'routing_marginal_utility_gain': aggregate['routing_marginal_utility_gain'],
+              'routing_classification': aggregate['routing_classification'],
+          }, sort_keys=True))
+          PY
+      - name: Upload DEVELOPMENT shadow receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-routing-marginal-${{ matrix.train_replicates }}-${{ github.sha }}
+          path: /tmp/exp279-routing-marginal-${{ matrix.train_replicates }}
+          if-no-files-found: error
+          retention-days: 90
