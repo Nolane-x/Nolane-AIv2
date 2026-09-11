@@ -13,8 +13,10 @@ from nolane_ai.experiments.exp279_rescue_likelihood_ratio import (
     _pairwise_rescue_ranking_loss,
     _solve_prevalence_intercept,
     run_exp279_rescue_likelihood_ratio_development,
-    run_exp279_rescue_likelihood_ratio_pair_development,
     validate_exp279_rescue_likelihood_ratio_development,
+)
+from nolane_ai.experiments.exp279_rescue_likelihood_ratio_pair import (
+    run_exp279_rescue_likelihood_ratio_pair_development,
 )
 
 
