@@ -174,11 +174,10 @@ class HybridRoutingArm(_MatchedExp279ArmBase):
         incidence = self._validate_incidence(incidence, variables)
         propagated = self._propagate(variables, incidence)
         propagation_state = variables + propagated
-        residual = self._residual_uncertainty(propagation_state)
-        route_mask = residual > self.route_threshold
-
         reclaimed = torch.tanh(self.reclaimed_projection(propagation_state))
         stop_state = propagation_state + reclaimed
+        residual = self._residual_uncertainty(stop_state)
+        route_mask = residual > self.route_threshold
         mixed = stop_state
 
         # Crucially, branch recurrence executes only for routed episodes. This binds
