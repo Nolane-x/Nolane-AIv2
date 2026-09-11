@@ -26,7 +26,44 @@ jobs:
           python -m pip install -e '.[dev]'
       - name: Verify frozen Stage-A protocol
         run: python scripts/verify_protocol.py
-      - name: Run rescue likelihood-ratio RED contract
+      - name: Run rescue likelihood-ratio contract
         run: pytest -q tests/test_exp279_rescue_likelihood_ratio.py
       - name: Compile analysis surface
         run: python -m compileall -q src scripts
+
+  development-sweep:
+    needs: contract
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [15, 60, 120]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run fresh single-use DEVELOPMENT pair
+        run: |
+          python scripts/run_exp279_rescue_likelihood_ratio_pair_dev.py \
+            --train-replicates ${{ matrix.train_replicates }} \
+            --eval-start-replicate 50000 \
+            --eval-replicates 33 \
+            --route-threshold 0.5 \
+            --output-dir "artifacts/exp279-rescue-likelihood-ratio-train-${{ matrix.train_replicates }}"
+      - name: Hash DEVELOPMENT receipt
+        run: |
+          sha256sum "artifacts/exp279-rescue-likelihood-ratio-train-${{ matrix.train_replicates }}/comparison.json" \
+            | tee "artifacts/exp279-rescue-likelihood-ratio-train-${{ matrix.train_replicates }}/comparison.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-rescue-likelihood-ratio-train-${{ matrix.train_replicates }}
+          path: artifacts/exp279-rescue-likelihood-ratio-train-${{ matrix.train_replicates }}
+          if-no-files-found: error
