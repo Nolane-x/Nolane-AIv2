@@ -7,6 +7,7 @@ on:
       - src/nolane_ai/experiments/exp279_augmentation_separability_v2.py
       - tests/test_exp279_augmentation_separability_v2.py
       - tests/test_exp279_augmentation_separability_v2_cli.py
+      - tests/test_exp279_augmentation_separability_v2_cross_cell.py
       - scripts/run_exp279_augmentation_separability_v2_dev.py
 
 permissions:
@@ -31,6 +32,7 @@ jobs:
         run: |
           pytest -q \
             tests/test_exp279_augmentation_separability_v2.py \
-            tests/test_exp279_augmentation_separability_v2_cli.py
+            tests/test_exp279_augmentation_separability_v2_cli.py \
+            tests/test_exp279_augmentation_separability_v2_cross_cell.py
       - name: Compile analysis surface
         run: python -m compileall -q src scripts
