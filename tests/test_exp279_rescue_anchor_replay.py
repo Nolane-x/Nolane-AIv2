@@ -5,7 +5,7 @@ import pytest
 torch = pytest.importorskip("torch")
 from torch.nn import functional as F
 
-from nolane_ai.experiments.exp279_paired_runner import (
+from nolane_ai.experiments.exp279_rescue_anchor_replay import (
     ROUTING_SUPERVISION,
     _append_rescue_anchor_states,
     _rescue_anchor_replay_loss,
