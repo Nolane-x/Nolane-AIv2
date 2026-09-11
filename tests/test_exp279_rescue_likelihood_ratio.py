@@ -13,6 +13,7 @@ from nolane_ai.experiments.exp279_rescue_likelihood_ratio import (
     _pairwise_rescue_ranking_loss,
     _solve_prevalence_intercept,
     run_exp279_rescue_likelihood_ratio_development,
+    run_exp279_rescue_likelihood_ratio_pair_development,
     validate_exp279_rescue_likelihood_ratio_development,
 )
 
@@ -163,3 +164,41 @@ def test_tiny_runner_preserves_development_boundary_and_emits_calibration_receip
         "degenerate_all_positive_all_route",
     }
     assert validate_exp279_rescue_likelihood_ratio_development(payload) == []
+
+
+def test_tiny_paired_control_closes_identity_before_comparison() -> None:
+    baseline, intervention, comparison = run_exp279_rescue_likelihood_ratio_pair_development(
+        lineage_role="test_only",
+        root_seed="exp279-likelihood-ratio-pair-test",
+        d_model=8,
+        hidden_size=6,
+        target_parameters=5_000,
+        route_threshold=0.5,
+        train_replicates=3,
+        eval_replicates=6,
+        eval_start_replicate=100,
+        batch_size=2,
+        timesteps=3,
+        variables=4,
+        constraints=2,
+        noise_std=0.05,
+        lr=1e-3,
+        weight_decay=0.0,
+        protocol_digest="p" * 64,
+        code_digest="c" * 64,
+    )
+
+    assert comparison["schema"] == "NLM-EXP-279-RESCUE-LIKELIHOOD-RATIO-PAIR-DEV-V1"
+    assert comparison["evidence_level"] == "EV-E2"
+    assert comparison["decision"] == "UNVERIFIED"
+    assert comparison["scientific_evidence_eligible"] is False
+    assert comparison["lineage_role"] == "test_only"
+    assert all(comparison["control_identity"].values())
+    assert baseline["initial_state"] == intervention["initial_state"]
+    assert (
+        baseline["training"]["paired_batch_digests"]
+        == intervention["training"]["paired_batch_digests"]
+    )
+    assert comparison["challenge_materialized"] is False
+    assert comparison["confirmatory_data_consumed"] is False
+    assert comparison["promotion_claimed"] is False
