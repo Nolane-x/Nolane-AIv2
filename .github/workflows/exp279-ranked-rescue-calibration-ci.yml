@@ -5,6 +5,7 @@ on:
     paths:
       - "src/nolane_ai/experiments/exp279_ranked_rescue_calibration.py"
       - "tests/test_exp279_ranked_rescue_calibration.py"
+      - "scripts/run_exp279_ranked_rescue_pair_dev.py"
       - ".github/workflows/exp279-ranked-rescue-calibration-ci.yml"
       - "protocols/stage-a-confirmatory-v1.json"
   workflow_dispatch:
@@ -22,3 +23,35 @@ jobs:
       - run: pytest -q tests/test_exp279_ranked_rescue_calibration.py
       - run: python scripts/verify_protocol.py
       - run: python -m compileall -q src scripts
+
+  development-sweep:
+    needs: focused
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [15, 60, 120]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,model]'
+      - name: Run fresh single-use DEVELOPMENT pair
+        run: |
+          python scripts/run_exp279_ranked_rescue_pair_dev.py \
+            --train-replicates ${{ matrix.train_replicates }} \
+            --eval-start-replicate 50000 \
+            --eval-replicates 33 \
+            --route-threshold 0.5 \
+            --output-dir "artifacts/exp279-ranked-rescue-train-${{ matrix.train_replicates }}"
+      - name: Hash DEVELOPMENT receipt
+        run: |
+          sha256sum "artifacts/exp279-ranked-rescue-train-${{ matrix.train_replicates }}/comparison.json" \
+            | tee "artifacts/exp279-ranked-rescue-train-${{ matrix.train_replicates }}/comparison.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-ranked-rescue-train-${{ matrix.train_replicates }}
+          path: artifacts/exp279-ranked-rescue-train-${{ matrix.train_replicates }}
+          if-no-files-found: error
