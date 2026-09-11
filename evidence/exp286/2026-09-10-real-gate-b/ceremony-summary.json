@@ -1,0 +1,23 @@
+{
+  "artifact_sha256": {
+    "exp286-analysis.json": "131a83841e21ac6a7cc886c7a7af9c3181d870b21d7f821067def7992ac6a66b",
+    "exp286-auth.json": "ad5e37c7c6eb91aea83544c6a726dc98773eac88f14e40ad9899114f8b241a2d",
+    "exp286-beacon.json": "d914cd3c98f06726f4d914f5ef8265c2a527bb7fd05adf74427ce8a3c748437a",
+    "exp286-checkpoint-receipt.json": "41b3999f21d20d3a1f816b70c0013d23091ed243fc22fea52f4c7d51161113a4",
+    "exp286-development.json": "e2c8dfd2b4a86fa3448c257a29790ca270173770265f85f0b0949f1f2617fd36",
+    "exp286-gate-a-seal.json": "6f71ed56d5e6ca01e009aee389af82935bc8c19c8a9256949af6e445a2c95fbb",
+    "exp286-inference-start.json": "b868212ccb5e358ac9c299fbd9291c1610e99489998cedb53ff7303c7b0cd776",
+    "exp286-outcome.json": "82fe0bf8b12bf6b21e7297e8ea08225a31ddece7a29b7a34fcef38cd27b6ebec",
+    "exp286-prep.json": "3508e7cfca2c92c4a13c9fba7246812fa369a214a586bfa56070116d8837f129",
+    "exp286-public-beacon-external-evidence.json": "013d1c4b4360a2db117cf25955987b9c776b647ad52ad6454a57257d1bc36c28",
+    "exp286-raw.json": "0b122c927307b0fbc5f58e33fa5167086296355bd6b768b4241b52d5e8b145b3",
+    "exp286-registry.json": "763eb7776fb180e515ae70e4ad940b656c25e91f86055e2a597bd545ba40d70f"
+  },
+  "ceremony_id": "EXP-286-REAL-GATE-B-2026-09-10",
+  "ceremony_sha": "5b23a45d00260128be41aa68c06eb2471751850e",
+  "confirmatory_data_consumed": true,
+  "evidence_level": "EV-E3",
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "schema": "NLM-EXP-286-REAL-GATE-B-CEREMONY-SUMMARY-V1",
+  "scientific_baseline_sha": "962a9964d27506ce387bbdfdf8e7c11f339bf5e1"
+}
