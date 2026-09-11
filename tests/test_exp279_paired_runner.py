@@ -53,6 +53,15 @@ EXPECTED_ROUTING_SUPERVISION = {
         "external_examples_added": False,
         "training_compute_match_claimed": False,
     },
+    "hybrid_forced_branch_supervision": {
+        "loss": "cross_entropy",
+        "weight": 0.5,
+        "purpose": "train_branch_expert_independent_of_current_route_gate",
+        "uses_same_paired_training_targets": True,
+        "external_examples_added": False,
+        "training_only": True,
+        "training_compute_match_claimed": False,
+    },
     "development_targets_used": True,
     "evaluation_targets_used_for_routing": False,
 }
