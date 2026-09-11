@@ -38,7 +38,12 @@ ROUTING_SUPERVISION = {
     "episode_targets": {
         "propagation_only": "arm_exact_failure",
         "branch_only": "arm_exact_failure",
-        "hybrid": "propagation_stop_exact_failure",
+        "hybrid": "branch_rescue_required",
+    },
+    "hybrid_route_teacher": {
+        "positive": "stop_exact_failure_and_forced_branch_exact_success",
+        "negative": "otherwise",
+        "evaluation_targets_used_for_routing": False,
     },
     "hybrid_stop_path_supervision": {
         "loss": "cross_entropy",
@@ -111,6 +116,18 @@ def _episode_failure_target(
     return (~exact).to(dtype=decision_logits.dtype)
 
 
+def _hybrid_branch_rescue_target(
+    stop_logits: torch.Tensor,
+    branch_logits: torch.Tensor,
+    targets: torch.Tensor,
+) -> torch.Tensor:
+    stop_predictions = stop_logits.detach().argmax(dim=-1)
+    branch_predictions = branch_logits.detach().argmax(dim=-1)
+    stop_exact = (stop_predictions == targets).all(dim=-1)
+    branch_exact = (branch_predictions == targets).all(dim=-1)
+    return ((~stop_exact) & branch_exact).to(dtype=stop_logits.dtype)
+
+
 def _hybrid_stop_decision_logits(
     arm: HybridRoutingArm,
     *,
@@ -125,6 +142,26 @@ def _hybrid_stop_decision_logits(
     reclaimed = torch.tanh(arm.reclaimed_projection(propagation_state))
     stop_state = propagation_state + reclaimed
     return arm.decision_head(stop_state)
+
+
+def _hybrid_forced_branch_decision_logits(
+    arm: HybridRoutingArm,
+    *,
+    surface_events: torch.Tensor,
+    variable_states: torch.Tensor,
+    incidence: torch.Tensor,
+) -> torch.Tensor:
+    events, variables = arm._validate_common(surface_events, variable_states)
+    checked_incidence = arm._validate_incidence(incidence, variables)
+    propagated = arm._propagate(variables, checked_incidence)
+    propagation_state = variables + propagated
+    reclaimed = torch.tanh(arm.reclaimed_projection(propagation_state))
+    branch_context = arm._branch_context(events).unsqueeze(1)
+    branch_context = branch_context.expand(-1, variables.shape[1], -1)
+    branch_state = propagation_state + torch.sigmoid(arm.mix_gate) * (
+        branch_context + reclaimed
+    )
+    return arm.decision_head(branch_state)
 
 
 def _train_step(
@@ -156,6 +193,12 @@ def _train_step(
             variable_states=variable_states,
             incidence=incidence,
         )
+        forced_branch_logits = _hybrid_forced_branch_decision_logits(
+            arm,
+            surface_events=surface_events,
+            variable_states=variable_states,
+            incidence=incidence,
+        )
         stop_path = ROUTING_SUPERVISION["hybrid_stop_path_supervision"]
         final_path_weight = float(stop_path["final_path_weight"])
         stop_path_weight = float(stop_path["stop_path_weight"])
@@ -167,7 +210,11 @@ def _train_step(
             final_path_weight * final_decision_loss
             + stop_path_weight * stop_decision_loss
         )
-        routing_target = _episode_failure_target(stop_logits, targets)
+        routing_target = _hybrid_branch_rescue_target(
+            stop_logits,
+            forced_branch_logits,
+            targets,
+        )
     else:
         routing_target = _episode_failure_target(output.decision_logits, targets)
     routing_loss = F.binary_cross_entropy(
