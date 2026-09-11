@@ -115,6 +115,29 @@ def test_fixed_half_threshold_is_exact_economic_break_even() -> None:
     assert score == pytest.approx(0.5, abs=1e-12)
 
 
+def test_tensor_calibration_uses_same_fixed_half_decision_surface() -> None:
+    from nolane_ai.experiments.exp279_ranked_rescue_calibration import (
+        branch_rescue_break_even_probability,
+        calibrated_route_scores,
+    )
+
+    prior = 0.025
+    break_even = branch_rescue_break_even_probability(
+        stop_accounted_flops_per_episode=STOP_FLOPS,
+        branch_accounted_flops_per_episode=BRANCH_FLOPS,
+    )
+    required_lr = (break_even / (1.0 - break_even)) / (prior / (1.0 - prior))
+    scores = calibrated_route_scores(
+        torch.tensor([0.0, math.log(required_lr), math.log(required_lr) + 1.0]),
+        natural_rescue_prior=prior,
+        break_even_probability=break_even,
+    )
+
+    assert scores[0].item() < 0.5
+    assert scores[1].item() == pytest.approx(0.5, abs=1e-7)
+    assert scores[2].item() > 0.5
+
+
 def test_calibration_rejects_invalid_priors_and_ledgers_without_threshold_tuning() -> None:
     from nolane_ai.experiments.exp279_ranked_rescue_calibration import (
         branch_rescue_break_even_probability,
@@ -140,3 +163,59 @@ def test_calibration_rejects_invalid_priors_and_ledgers_without_threshold_tuning
     ):
         with pytest.raises(ValueError, match="branch_accounted_flops_per_episode"):
             branch_rescue_break_even_probability(**invalid)
+
+
+def test_ranked_rescue_runner_is_fail_closed_development_only() -> None:
+    from nolane_ai.experiments.exp279_ranked_rescue_calibration import (
+        RESIDUAL_STATISTIC,
+        ROUTING_SUPERVISION,
+        run_exp279_ranked_rescue_development,
+        validate_exp279_ranked_rescue_development,
+    )
+
+    artifact = run_exp279_ranked_rescue_development(
+        root_seed="exp279-ranked-rescue-test",
+        d_model=8,
+        hidden_size=6,
+        target_parameters=5_000,
+        route_threshold=0.5,
+        train_replicates=3,
+        eval_replicates=3,
+        eval_start_replicate=700,
+        batch_size=2,
+        timesteps=3,
+        variables=4,
+        constraints=2,
+        noise_std=0.05,
+        lr=1e-3,
+        weight_decay=0.0,
+        protocol_digest="p" * 64,
+        code_digest="c" * 64,
+    )
+
+    assert artifact["evidence_level"] == "EV-E2"
+    assert artifact["decision"] == "UNVERIFIED"
+    assert artifact["confirmatory_ready"] is False
+    assert artifact["confirmatory_data_consumed"] is False
+    assert artifact["challenge_materialized"] is False
+    assert artifact["decision_rule_executed"] is False
+    assert artifact["route_config"]["threshold"] == 0.5
+    assert artifact["route_config"]["residual_statistic"] == RESIDUAL_STATISTIC
+    assert artifact["training"]["routing_supervision"] == ROUTING_SUPERVISION
+
+    receipt = artifact["training"]["ranked_rescue_calibration"]
+    assert receipt["source"] == "augmentation_training_only"
+    assert receipt["natural_total_count"] == 6
+    assert 0 <= receipt["natural_positive_count"] <= receipt["natural_total_count"]
+    assert receipt["evaluation_examples_used"] is False
+    assert receipt["evaluation_targets_used"] is False
+    assert receipt["decision_threshold_changed"] is False
+    assert receipt["tunable_calibration_hyperparameters"] is False
+    assert receipt["break_even_probability"] == pytest.approx(
+        branch_rescue_break_even_probability(
+            stop_accounted_flops_per_episode=receipt["stop_accounted_flops_per_episode"],
+            branch_accounted_flops_per_episode=receipt["branch_accounted_flops_per_episode"],
+        ),
+        abs=1e-15,
+    )
+    assert validate_exp279_ranked_rescue_development(artifact) == []
