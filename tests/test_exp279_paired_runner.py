@@ -37,7 +37,12 @@ EXPECTED_ROUTING_SUPERVISION = {
     "episode_targets": {
         "propagation_only": "arm_exact_failure",
         "branch_only": "arm_exact_failure",
-        "hybrid": "propagation_stop_exact_failure",
+        "hybrid": "branch_rescue_required",
+    },
+    "hybrid_route_teacher": {
+        "positive": "stop_exact_failure_and_forced_branch_exact_success",
+        "negative": "otherwise",
+        "evaluation_targets_used_for_routing": False,
     },
     "hybrid_stop_path_supervision": {
         "loss": "cross_entropy",
