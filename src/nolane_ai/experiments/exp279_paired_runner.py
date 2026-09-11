@@ -54,6 +54,15 @@ ROUTING_SUPERVISION = {
         "external_examples_added": False,
         "training_compute_match_claimed": False,
     },
+    "hybrid_forced_branch_supervision": {
+        "loss": "cross_entropy",
+        "weight": 0.5,
+        "purpose": "train_branch_expert_independent_of_current_route_gate",
+        "uses_same_paired_training_targets": True,
+        "external_examples_added": False,
+        "training_only": True,
+        "training_compute_match_claimed": False,
+    },
     "development_targets_used": True,
     "evaluation_targets_used_for_routing": False,
 }
@@ -206,9 +215,16 @@ def _train_step(
             stop_logits.reshape(-1, 2),
             targets.reshape(-1),
         )
+        forced_branch = ROUTING_SUPERVISION["hybrid_forced_branch_supervision"]
+        forced_branch_weight = float(forced_branch["weight"])
+        forced_branch_decision_loss = F.cross_entropy(
+            forced_branch_logits.reshape(-1, 2),
+            targets.reshape(-1),
+        )
         decision_loss = (
             final_path_weight * final_decision_loss
             + stop_path_weight * stop_decision_loss
+            + forced_branch_weight * forced_branch_decision_loss
         )
         routing_target = _hybrid_branch_rescue_target(
             stop_logits,
