@@ -35,6 +35,7 @@ jobs:
         run: |
           pytest -q \
             tests/test_exp279_prebranch_observability_v4.py \
-            tests/test_exp279_prebranch_observability_v4_cli.py
+            tests/test_exp279_prebranch_observability_v4_cli.py \
+            tests/test_exp279_prebranch_observability_v4_cross_cell.py
       - name: Compile analysis surface
         run: python -m compileall -q src scripts
