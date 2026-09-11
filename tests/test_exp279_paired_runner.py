@@ -43,6 +43,8 @@ EXPECTED_ROUTING_SUPERVISION = {
         "positive": "stop_exact_failure_and_forced_branch_exact_success",
         "negative": "otherwise",
         "evaluation_targets_used_for_routing": False,
+        "class_balance": "equal_positive_negative_mass_when_both_present",
+        "decision_threshold_changed": False,
     },
     "hybrid_stop_path_supervision": {
         "loss": "cross_entropy",
