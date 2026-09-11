@@ -29,8 +29,9 @@ def _cell(*, train_steps: int, positives: tuple[str, ...] = FAMILIES) -> dict:
     }
     return {
         "schema": "NLM-EXP-279-COST-ACCOUNTED-BRANCH-PREVIEW-COURT-V5",
-        "train_steps": train_steps,
-        "evidence_state": "EV-E2 / UNVERIFIED",
+        "canonical_training": {"replicates": train_steps},
+        "evidence_level": "EV-E2",
+        "decision": "UNVERIFIED",
         "scientific_evidence_eligible": False,
         "data_boundary": {
             "evaluation_rng_stream_used": False,
@@ -124,6 +125,14 @@ def test_requires_exactly_train60_and_train120() -> None:
         classify_exp279_cost_accounted_branch_preview_v5_cross_cell([_cell(train_steps=60)])
     with pytest.raises(ValueError):
         _classify(_cell(train_steps=15), _cell(train_steps=120))
+
+
+def test_rejects_legacy_synthetic_train_steps_shape() -> None:
+    cell = _cell(train_steps=60)
+    cell["train_steps"] = 60
+    del cell["canonical_training"]
+    with pytest.raises(ValueError):
+        _classify(cell, _cell(train_steps=120))
 
 
 def test_classifier_does_not_mutate_inputs() -> None:
