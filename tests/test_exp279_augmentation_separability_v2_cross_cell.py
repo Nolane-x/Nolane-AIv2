@@ -4,8 +4,8 @@ import pytest
 
 pytest.importorskip("torch")
 
-from nolane_ai.experiments.exp279_augmentation_separability_v2 import (
-    PROBE_KINDS,
+from nolane_ai.experiments.exp279_augmentation_separability_v2 import PROBE_KINDS
+from nolane_ai.experiments.exp279_augmentation_separability_v2_cross_cell import (
     classify_exp279_separability_v2_cross_cell,
 )
 
@@ -45,6 +45,7 @@ def test_cross_cell_requires_same_linear_family_at_60_and_120() -> None:
     assert result["decision"] == "ROBUST_LINEAR_HEAD_SIGNAL"
     assert result["robust_probe_families"] == ["LINEAR_MEAN"]
     assert result["successor_design_authorized"] is True
+    assert result["fresh_evaluation_lineage_may_be_reserved"] is False
     assert result["fresh_evaluation_lineage_consumed"] is False
 
 
@@ -59,6 +60,7 @@ def test_cross_cell_requires_same_rich_family_not_mixed_cherry_pick() -> None:
     assert robust["decision"] == "ROBUST_RICH_HEAD_SIGNAL"
     assert robust["robust_probe_families"] == ["MLP_MEAN"]
     assert robust["successor_design_authorized"] is True
+    assert robust["fresh_evaluation_lineage_may_be_reserved"] is False
     assert mixed["decision"] == "NO_ROBUST_HEAD_SIGNAL"
     assert mixed["robust_probe_families"] == []
     assert mixed["successor_design_authorized"] is False
@@ -87,3 +89,10 @@ def test_cross_cell_no_robust_family_keeps_fresh_lineage_locked() -> None:
 def test_cross_cell_rejects_missing_decision_cell() -> None:
     with pytest.raises(ValueError, match="train 60 and train 120"):
         classify_exp279_separability_v2_cross_cell({60: _cell()})
+
+
+def test_cross_cell_rejects_any_evaluation_or_promotion_boundary_violation() -> None:
+    bad = _cell()
+    bad["data_boundary"]["evaluation_rng_stream_used"] = True
+    with pytest.raises(ValueError, match="evaluation boundary"):
+        classify_exp279_separability_v2_cross_cell({60: bad, 120: _cell()})
