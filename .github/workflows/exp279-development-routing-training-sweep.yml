@@ -5,10 +5,14 @@ on:
   push:
     branches:
       - exp279-confirmatory-gate-a
+      - exp279-cost-aware-marginal-utility
     paths:
       - .github/workflows/exp279-development-routing-training-sweep.yml
       - src/nolane_ai/experiments/exp279_paired_runner.py
+      - src/nolane_ai/experiments/exp279_paired_runner_core.py
       - src/nolane_ai/experiments/matched_routing_arms.py
+      - tests/test_exp279_cost_aware_marginal_utility.py
+      - tests/test_exp279_paired_runner.py
       - tests/test_exp279_routing_gradient_isolation.py
 
 permissions:
