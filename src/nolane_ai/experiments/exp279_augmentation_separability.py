@@ -683,6 +683,7 @@ def run_exp279_augmentation_separability_court(
         "survival_rule": {
             "minimum_pooled_roc_auc": MINIMUM_POOLED_ROC_AUC,
             "tail_precision_threshold_source": "sealed_compute_ledger_break_even",
+            "economic_break_even_probability": break_even,
             "tail_k_rule": "pooled_true_rescue_count",
             "requires_all_folds_positive_and_negative_support": True,
             "decision_threshold_tuned": False,
