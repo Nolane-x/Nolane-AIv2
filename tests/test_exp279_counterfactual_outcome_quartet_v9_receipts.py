@@ -18,6 +18,8 @@ from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9 import (
     fit_root,
 )
 from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9_receipts import (
+    build_budget_receipt,
+    build_cross_receipt,
     canonical_receipt_bytes,
     receipt_sha256,
     validate_budget_receipt,
@@ -157,6 +159,19 @@ def test_v9_budget_validator_rejects_consistent_but_wrong_or_duplicate_shards() 
     assert validate_budget_receipt(mixed_head)
 
 
+def test_v9_budget_builder_derives_identity_digests_and_classification() -> None:
+    shards = [_shard(train=60, canonical=index) for index in range(4)]
+    built = build_budget_receipt(shards)
+    assert validate_budget_receipt(built) == []
+    assert built["train_replicates"] == 60
+    assert built["classification"] == "QUARTET_POLICY_RECURRENTLY_ECONOMIC"
+    assert built["source_shard_digests"] == [receipt_sha256(shard) for shard in shards]
+    assert built["root_metrics"] == [shard["root_metrics"] for shard in shards]
+
+    with pytest.raises(ValueError):
+        build_budget_receipt([shards[0], shards[1], shards[2], copy.deepcopy(shards[0])])
+
+
 def test_v9_cross_validator_requires_exact_60_120_pair_and_closed_boundaries() -> None:
     train60 = _budget(60)
     train120 = _budget(120)
@@ -189,3 +204,19 @@ def test_v9_cross_validator_requires_exact_60_120_pair_and_closed_boundaries() -
     promoted = copy.deepcopy(cross)
     promoted["promotion_claimed"] = True
     assert validate_cross_receipt(promoted)
+
+
+def test_v9_cross_builder_derives_decision_and_never_opens_scientific_boundaries() -> None:
+    train60 = build_budget_receipt([_shard(train=60, canonical=index) for index in range(4)])
+    train120 = build_budget_receipt([_shard(train=120, canonical=index) for index in range(4)])
+    built = build_cross_receipt(train60, train120)
+    assert validate_cross_receipt(built) == []
+    assert built["decision"] == "QUARTET_MECHANISM_COURT_PASSED"
+    assert built["authorization_scope"] == "IMPLEMENT_QUARTET_SUCCESSOR_DEVELOPMENT_ONLY"
+    assert built["mechanism_successor_authorized"] is True
+    assert built["scientific_evidence_eligible"] is False
+    assert built["fresh_evaluation_lineage_may_be_reserved"] is False
+    assert built["fresh_evaluation_lineage_consumed"] is False
+    assert built["confirmatory_data_consumed"] is False
+    assert built["challenge_materialized"] is False
+    assert built["promotion_claimed"] is False
