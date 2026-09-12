@@ -8,12 +8,17 @@ from nolane_ai.protocol.evidence import canonical_sha256
 from .exp279_counterfactual_delta_distill_v6_primitives import (
     CONTROL_FAMILY,
     PRIMARY_FAMILY,
+    PROBE_ROOT_SUFFIX,
     SCHEMA as CELL_SCHEMA,
 )
 
 
 SCHEMA = "NLM-EXP-279-COUNTERFACTUAL-DELTA-DISTILL-CROSS-CELL-V6"
 DECISION_TRAIN_REPLICATES = (60, 120)
+FROZEN_PROTOCOL_ID = "NLM-REASONING-STAGE-A-CONFIRMATORY-V1"
+FROZEN_PROTOCOL_DIGEST = "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440"
+FROZEN_ROOT_SEED = "20260912-exp279-counterfactual-delta-distill-v6-dev"
+FROZEN_PROBE_ROOT_SEED = FROZEN_ROOT_SEED + PROBE_ROOT_SUFFIX
 ALLOWED_DECISIONS = {
     "ROBUST_CDD_BRANCH_COMPLEMENTARITY",
     "NO_ROBUST_CDD_BRANCH_COMPLEMENTARITY",
@@ -114,6 +119,52 @@ def _validate_cell_boundary(train_replicates: int, cell: dict[str, Any]) -> None
         raise ValueError(f"train {train_replicates} control boundary violated")
 
 
+def _validate_frozen_configuration(train_replicates: int, cell: dict[str, Any]) -> None:
+    if cell.get("protocol_id") != FROZEN_PROTOCOL_ID:
+        raise ValueError(f"train {train_replicates} frozen configuration mismatch: protocol_id")
+    if cell.get("protocol_digest") != FROZEN_PROTOCOL_DIGEST:
+        raise ValueError(f"train {train_replicates} frozen configuration mismatch: protocol_digest")
+    if cell.get("root_seed") != FROZEN_ROOT_SEED:
+        raise ValueError(f"train {train_replicates} frozen configuration mismatch: root_seed")
+
+    boundary = cell.get("data_boundary") or {}
+    if boundary.get("probe_root_seed") != FROZEN_PROBE_ROOT_SEED:
+        raise ValueError(f"train {train_replicates} frozen configuration mismatch: probe_root_seed")
+
+    route = cell.get("route_config") or {}
+    if route.get("canonical_threshold") != 0.5 or route.get("threshold_tuned") is not False:
+        raise ValueError(f"train {train_replicates} frozen configuration mismatch: route_config")
+
+    world = cell.get("world_geometry") or {}
+    expected_world = {
+        "batch_size": 8,
+        "timesteps": 4,
+        "variables": 6,
+        "constraints": 3,
+        "d_model": 64,
+        "noise_std": 0.05,
+    }
+    if any(world.get(key) != value for key, value in expected_world.items()):
+        raise ValueError(f"train {train_replicates} frozen configuration mismatch: world_geometry")
+
+    arm = cell.get("arm_geometry") or {}
+    expected_arm = {"hidden_size": 48, "target_parameters": 500000}
+    if any(arm.get(key) != value for key, value in expected_arm.items()):
+        raise ValueError(f"train {train_replicates} frozen configuration mismatch: arm_geometry")
+
+    probe = cell.get("probe_config") or {}
+    expected_probe = {
+        "replicates": 198,
+        "folds": 3,
+        "distill_steps": 200,
+        "distill_lr": 0.002,
+        "selector_steps": 200,
+        "selector_lr": 0.01,
+    }
+    if any(probe.get(key) != value for key, value in expected_probe.items()):
+        raise ValueError(f"train {train_replicates} frozen configuration mismatch: probe_config")
+
+
 def _validate_shared_provenance(cells: dict[int, dict[str, Any]]) -> None:
     first = cells[DECISION_TRAIN_REPLICATES[0]]
     for replicate in DECISION_TRAIN_REPLICATES[1:]:
@@ -152,6 +203,7 @@ def classify_exp279_counterfactual_delta_distill_v6_cross_cell(
     decision_cells = {replicate: cells[replicate] for replicate in DECISION_TRAIN_REPLICATES}
     for replicate, cell in decision_cells.items():
         _validate_cell_boundary(replicate, cell)
+        _validate_frozen_configuration(replicate, cell)
     _validate_shared_provenance(decision_cells)
 
     receipts: dict[str, dict[str, Any]] = {}
