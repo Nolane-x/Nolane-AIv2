@@ -1,0 +1,204 @@
+name: exp279-multiroot-support-stability-v7-frozen-reduction
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/exp279-multiroot-support-stability-v7-frozen-reduction.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  reduce-frozen-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      V7_RELEASE_HEAD: 5de6a8d5f76afccd3b6c89496c3cd258241c90dc
+      V7_SOURCE_RUN_ID: '34673221095'
+      V7_SOURCE_MERGE_SHA: 457d252762e41adf81e63393baeb654970983bc4
+    steps:
+      - name: Checkout frozen V7 scientific release
+        uses: actions/checkout@v4
+        with:
+          ref: 5de6a8d5f76afccd3b6c89496c3cd258241c90dc
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install frozen reducer environment with CPU Torch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Download frozen train60 shard artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: exp279-v7-shard-60-*-457d252762e41adf81e63393baeb654970983bc4
+          path: /tmp/exp279-v7-shards-60
+          merge-multiple: false
+          repository: Nolane-x/Nolane-AIv2
+          run-id: 34673221095
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download frozen train120 shard artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: exp279-v7-shard-120-*-457d252762e41adf81e63393baeb654970983bc4
+          path: /tmp/exp279-v7-shards-120
+          merge-multiple: false
+          repository: Nolane-x/Nolane-AIv2
+          run-id: 34673221095
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify frozen shard bytes and prepare reducer inputs
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          release = os.environ['V7_RELEASE_HEAD']
+          source_merge = os.environ['V7_SOURCE_MERGE_SHA']
+          assert release == '5de6a8d5f76afccd3b6c89496c3cd258241c90dc'
+          assert source_merge == '457d252762e41adf81e63393baeb654970983bc4'
+
+          all_roots = set()
+          for budget in (60, 120):
+              root = Path(f'/tmp/exp279-v7-shards-{budget}')
+              receipts = sorted(root.glob('*/receipt.json'))
+              assert len(receipts) == 4, receipts
+              seen_indices = set()
+              for receipt in receipts:
+                  sidecar = receipt.with_name('receipt.json.sha256')
+                  expected = sidecar.read_text(encoding='utf-8').split()[0]
+                  actual = hashlib.sha256(receipt.read_bytes()).hexdigest()
+                  assert actual == expected, receipt
+                  data = json.loads(receipt.read_text(encoding='utf-8'))
+                  assert data['train_replicates'] == budget
+                  assert data['canonical_index'] in {0, 1, 2, 3}
+                  seen_indices.add(data['canonical_index'])
+                  roots = [data['canonical_root'], *[p['probe_root'] for p in data['probe_receipts']]]
+                  assert len(set(roots)) == 5
+                  assert not (set(roots) & all_roots)
+                  all_roots.update(roots)
+              assert seen_indices == {0, 1, 2, 3}
+              Path(f'/tmp/exp279-v7-shards-{budget}/paths.txt').write_text(
+                  '\n'.join(str(p) for p in receipts) + '\n', encoding='utf-8'
+              )
+          assert len(all_roots) == 40
+          PY
+      - name: Reduce frozen train60 and train120 receipts
+        run: |
+          for N in 60 120; do
+            mapfile -t SHARDS < /tmp/exp279-v7-shards-${N}/paths.txt
+            WORK=/tmp/exp279-v7-budget-${N}
+            mkdir -p "$WORK"
+            python scripts/aggregate_exp279_multiroot_support_stability_v7_dev.py \
+              --shard "${SHARDS[0]}" \
+              --shard "${SHARDS[1]}" \
+              --shard "${SHARDS[2]}" \
+              --shard "${SHARDS[3]}" \
+              --output "$WORK/receipt.json"
+          done
+      - name: Bind aggregate receipts to exact frozen code commit
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from nolane_ai.protocol.evidence import canonical_sha256
+
+          release = os.environ['V7_RELEASE_HEAD']
+          source_run = int(os.environ['V7_SOURCE_RUN_ID'])
+          source_merge = os.environ['V7_SOURCE_MERGE_SHA']
+          for budget in (60, 120):
+              path = Path(f'/tmp/exp279-v7-budget-{budget}/receipt.json')
+              receipt = json.loads(path.read_text(encoding='utf-8'))
+              receipt['exact_code_commit'] = release
+              receipt['source_workflow_run_id'] = source_run
+              receipt['source_pr_merge_sha'] = source_merge
+              receipt['artifact_digest'] = canonical_sha256(
+                  {key: value for key, value in receipt.items() if key != 'artifact_digest'}
+              )
+              path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              path.with_name('receipt.json.sha256').write_text(f'{digest}  receipt.json\n', encoding='utf-8')
+              assert receipt['exact_code_commit'] == release
+              assert receipt['total_episodes'] == 25344
+              assert len(receipt['pair_records']) == 16
+              assert len(receipt['fold_records']) == 48
+          PY
+      - name: Classify frozen cross-cell decision
+        run: |
+          WORK=/tmp/exp279-v7-cross-cell
+          mkdir -p "$WORK"
+          python scripts/classify_exp279_multiroot_support_stability_v7_dev.py \
+            --train60 /tmp/exp279-v7-budget-60/receipt.json \
+            --train120 /tmp/exp279-v7-budget-120/receipt.json \
+            --output "$WORK/receipt.json"
+      - name: Bind cross-cell receipt to exact frozen code commit and audit boundaries
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from nolane_ai.protocol.evidence import canonical_sha256
+
+          release = os.environ['V7_RELEASE_HEAD']
+          source_run = int(os.environ['V7_SOURCE_RUN_ID'])
+          source_merge = os.environ['V7_SOURCE_MERGE_SHA']
+          path = Path('/tmp/exp279-v7-cross-cell/receipt.json')
+          receipt = json.loads(path.read_text(encoding='utf-8'))
+          receipt['exact_code_commit'] = release
+          receipt['source_workflow_run_id'] = source_run
+          receipt['source_pr_merge_sha'] = source_merge
+          receipt['artifact_digest'] = canonical_sha256(
+              {key: value for key, value in receipt.items() if key != 'artifact_digest'}
+          )
+          path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          digest = hashlib.sha256(path.read_bytes()).hexdigest()
+          path.with_name('receipt.json.sha256').write_text(f'{digest}  receipt.json\n', encoding='utf-8')
+
+          assert receipt['decision'] in {
+              'MODEL_ROOT_SUPPORT_COLLAPSE',
+              'PROBE_SUPPORT_INTERMITTENT',
+              'SUPPORT_RECURRENT',
+          }
+          assert receipt['mechanism_successor_authorized'] is False
+          assert receipt['fresh_evaluation_lineage_may_be_reserved'] is False
+          assert receipt['fresh_evaluation_lineage_consumed'] is False
+          assert receipt['confirmatory_data_consumed'] is False
+          assert receipt['challenge_materialized'] is False
+          assert receipt['promotion_claimed'] is False
+          print(json.dumps({
+              'decision': receipt['decision'],
+              'authorization_scope': receipt['authorization_scope'],
+              'future_probe_episodes_per_canonical_root': receipt['future_probe_episodes_per_canonical_root'],
+              'artifact_digest': receipt['artifact_digest'],
+              'exact_code_commit': receipt['exact_code_commit'],
+          }, sort_keys=True))
+          PY
+      - name: Upload repaired frozen train60 receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v7-budget-60-frozen-reduction-5de6a8d5
+          path: /tmp/exp279-v7-budget-60
+          if-no-files-found: error
+          retention-days: 90
+      - name: Upload repaired frozen train120 receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v7-budget-120-frozen-reduction-5de6a8d5
+          path: /tmp/exp279-v7-budget-120
+          if-no-files-found: error
+          retention-days: 90
+      - name: Upload repaired frozen cross-cell receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v7-cross-cell-frozen-reduction-5de6a8d5
+          path: /tmp/exp279-v7-cross-cell
+          if-no-files-found: error
+          retention-days: 90
