@@ -103,7 +103,7 @@ jobs:
                   "digest": "sha256:" + os.environ["SOURCE_120_ZIP_SHA256"],
               },
           }
-          for label, item in expected.items():
+          for item in expected.values():
               data = json.loads(Path(item["path"]).read_text(encoding="utf-8"))
               assert data["id"] == item["id"]
               assert data["name"] == item["name"]
@@ -185,6 +185,7 @@ jobs:
 
       - name: Verify repaired final receipt and fail-closed disposition
         env:
+          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PYTHONPATH: src
         run: |
           python - <<'PY'
@@ -256,9 +257,6 @@ jobs:
               "receipt_sha256": receipt_sha,
           }, sort_keys=True))
           PY
-        env:
-          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PYTHONPATH: src
 
       - name: Upload sealed repaired cross receipt
         uses: actions/upload-artifact@v4
