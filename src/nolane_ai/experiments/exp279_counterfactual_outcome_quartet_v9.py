@@ -534,7 +534,7 @@ def classify_quartet_cross_budget(train60: dict[str, Any], train120: dict[str, A
         if not isinstance(roots, list):
             raise ValueError("V9 cross-budget receipt is missing root sufficient statistics")
         recomputed[budget] = classify_quartet_budget(roots)
-    classes = {budget: recomputed[budget]["classification"] for budget in TRAIN_BUDGETS}
+    classes = {str(budget): recomputed[budget]["classification"] for budget in TRAIN_BUDGETS}
     passed = all(value == "QUARTET_POLICY_RECURRENTLY_ECONOMIC" for value in classes.values())
     partial = not passed and any(value == "QUARTET_POLICY_PARTIAL" for value in classes.values())
     return {
@@ -547,7 +547,7 @@ def classify_quartet_cross_budget(train60: dict[str, Any], train120: dict[str, A
             else "QUARTET_MECHANISM_COURT_FAILED"
         ),
         "train_budget_classifications": classes,
-        "recomputed_budgets": recomputed,
+        "recomputed_budgets": {str(budget): recomputed[budget] for budget in TRAIN_BUDGETS},
         "authorization_scope": "IMPLEMENT_QUARTET_SUCCESSOR_DEVELOPMENT_ONLY" if passed else "NONE",
         "successor_design_authorized": passed,
         "mechanism_successor_authorized": passed,
