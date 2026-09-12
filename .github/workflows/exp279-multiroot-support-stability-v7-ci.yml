@@ -42,3 +42,338 @@ jobs:
             tests/test_exp279_multiroot_support_stability_v7_cross_cell.py
       - name: Compile V7 analysis surfaces
         run: python -m compileall -q src scripts
+
+  scientific-shard:
+    needs: contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [60, 120]
+        canonical_index: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run frozen V7 DEVELOPMENT shard
+        run: |
+          WORK=/tmp/exp279-v7-${{ matrix.train_replicates }}-${{ matrix.canonical_index }}
+          mkdir -p "$WORK"
+          python scripts/run_exp279_multiroot_support_stability_v7_dev.py \
+            --train-replicates ${{ matrix.train_replicates }} \
+            --canonical-index ${{ matrix.canonical_index }} \
+            --d-model 64 \
+            --hidden-size 48 \
+            --target-parameters 500000 \
+            --route-threshold 0.5 \
+            --probe-replicates 198 \
+            --batch-size 8 \
+            --timesteps 4 \
+            --variables 6 \
+            --constraints 3 \
+            --noise-std 0.05 \
+            --lr 0.002 \
+            --weight-decay 0.0 \
+            --output "$WORK/receipt.json"
+          (cd "$WORK" && sha256sum receipt.json > receipt.json.sha256)
+      - name: Assert shard scientific boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          n = ${{ matrix.train_replicates }}
+          c = ${{ matrix.canonical_index }}
+          path = Path(f'/tmp/exp279-v7-{n}-{c}/receipt.json')
+          r = json.loads(path.read_text())
+          assert r['schema'] == 'NLM-EXP-279-MULTIROOT-SUPPORT-SHARD-V7'
+          assert r['evidence_level'] == 'EV-E2'
+          assert r['decision'] == 'UNVERIFIED'
+          assert r['scientific_evidence_eligible'] is False
+          assert r['train_replicates'] == n
+          assert r['canonical_index'] == c
+          assert r['training_rng_stream'] == 'augmentation'
+          assert r['probe_rng_stream'] == 'augmentation'
+          assert r['evaluation_rng_stream_used'] is False
+          assert r['evaluation_targets_used'] is False
+          assert r['raw_examples_exported'] is False
+          assert r['raw_model_outputs_exported'] is False
+          assert r['selector_trained'] is False
+          assert r['cdd_distiller_trained'] is False
+          assert r['branch_preview_selector_trained'] is False
+          assert r['threshold_tuned'] is False
+          assert r['probe_config'] == {'replicates': 198, 'folds': 3, 'probe_roots': 4}
+          assert len(r['probe_receipts']) == 4
+          assert sum(len(p['folds']) for p in r['probe_receipts']) == 12
+          assert r['canonical_support']['canonical_total_episodes'] == 6336
+          assert r['fresh_evaluation_lineage_may_be_reserved'] is False
+          assert r['fresh_evaluation_lineage_consumed'] is False
+          assert r['confirmatory_data_consumed'] is False
+          assert r['challenge_materialized'] is False
+          assert r['promotion_claimed'] is False
+          print(json.dumps({
+              'train_replicates': n,
+              'canonical_index': c,
+              'canonical_total_rescues': r['canonical_support']['canonical_total_rescues'],
+              'pooled_wilson_lower_bound': r['canonical_support']['pooled_wilson_lower_bound'],
+              'artifact_digest': r['artifact_digest'],
+          }, sort_keys=True))
+          PY
+      - name: Upload frozen V7 shard receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v7-shard-${{ matrix.train_replicates }}-${{ matrix.canonical_index }}-${{ github.sha }}
+          path: /tmp/exp279-v7-${{ matrix.train_replicates }}-${{ matrix.canonical_index }}
+          if-no-files-found: error
+          retention-days: 90
+
+  budget-60:
+    needs: scientific-shard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install reducer environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: exp279-v7-shard-60-*-${{ github.sha }}
+          path: /tmp/exp279-v7-shards-60
+      - name: Verify shard hashes and aggregate train60
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root = Path('/tmp/exp279-v7-shards-60')
+          receipts = sorted(root.glob('*/receipt.json'))
+          assert len(receipts) == 4, receipts
+          indices = set()
+          for receipt in receipts:
+              sidecar = receipt.with_name('receipt.json.sha256')
+              expected = sidecar.read_text().split()[0]
+              actual = hashlib.sha256(receipt.read_bytes()).hexdigest()
+              assert actual == expected
+              data = json.loads(receipt.read_text())
+              assert data['train_replicates'] == 60
+              indices.add(data['canonical_index'])
+          assert indices == {0, 1, 2, 3}
+          Path('/tmp/exp279-v7-shards-60/paths.txt').write_text('\n'.join(str(p) for p in receipts) + '\n')
+          PY
+          mapfile -t SHARDS < /tmp/exp279-v7-shards-60/paths.txt
+          WORK=/tmp/exp279-v7-budget-60
+          mkdir -p "$WORK"
+          python scripts/aggregate_exp279_multiroot_support_stability_v7_dev.py \
+            --shard "${SHARDS[0]}" \
+            --shard "${SHARDS[1]}" \
+            --shard "${SHARDS[2]}" \
+            --shard "${SHARDS[3]}" \
+            --output "$WORK/receipt.json"
+          (cd "$WORK" && sha256sum receipt.json > receipt.json.sha256)
+      - name: Assert train60 budget receipt
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path('/tmp/exp279-v7-budget-60/receipt.json').read_text())
+          assert r['train_replicates'] == 60
+          assert len(r['pair_records']) == 16
+          assert len(r['fold_records']) == 48
+          assert r['total_episodes'] == 25344
+          assert r['train_cell_classification'] in {
+              'MODEL_ROOT_SUPPORT_COLLAPSE',
+              'PROBE_SUPPORT_INTERMITTENT',
+              'SUPPORT_RECURRENT',
+          }
+          assert r['fresh_evaluation_lineage_may_be_reserved'] is False
+          assert r['fresh_evaluation_lineage_consumed'] is False
+          assert r['confirmatory_data_consumed'] is False
+          assert r['challenge_materialized'] is False
+          assert r['promotion_claimed'] is False
+          print(json.dumps({
+              'train_replicates': 60,
+              'classification': r['train_cell_classification'],
+              'canonical_prevalence_floor': r['canonical_prevalence_floor'],
+              'artifact_digest': r['artifact_digest'],
+          }, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v7-budget-60-${{ github.sha }}
+          path: /tmp/exp279-v7-budget-60
+          if-no-files-found: error
+          retention-days: 90
+
+  budget-120:
+    needs: scientific-shard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install reducer environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: exp279-v7-shard-120-*-${{ github.sha }}
+          path: /tmp/exp279-v7-shards-120
+      - name: Verify shard hashes and aggregate train120
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root = Path('/tmp/exp279-v7-shards-120')
+          receipts = sorted(root.glob('*/receipt.json'))
+          assert len(receipts) == 4, receipts
+          indices = set()
+          for receipt in receipts:
+              sidecar = receipt.with_name('receipt.json.sha256')
+              expected = sidecar.read_text().split()[0]
+              actual = hashlib.sha256(receipt.read_bytes()).hexdigest()
+              assert actual == expected
+              data = json.loads(receipt.read_text())
+              assert data['train_replicates'] == 120
+              indices.add(data['canonical_index'])
+          assert indices == {0, 1, 2, 3}
+          Path('/tmp/exp279-v7-shards-120/paths.txt').write_text('\n'.join(str(p) for p in receipts) + '\n')
+          PY
+          mapfile -t SHARDS < /tmp/exp279-v7-shards-120/paths.txt
+          WORK=/tmp/exp279-v7-budget-120
+          mkdir -p "$WORK"
+          python scripts/aggregate_exp279_multiroot_support_stability_v7_dev.py \
+            --shard "${SHARDS[0]}" \
+            --shard "${SHARDS[1]}" \
+            --shard "${SHARDS[2]}" \
+            --shard "${SHARDS[3]}" \
+            --output "$WORK/receipt.json"
+          (cd "$WORK" && sha256sum receipt.json > receipt.json.sha256)
+      - name: Assert train120 budget receipt
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path('/tmp/exp279-v7-budget-120/receipt.json').read_text())
+          assert r['train_replicates'] == 120
+          assert len(r['pair_records']) == 16
+          assert len(r['fold_records']) == 48
+          assert r['total_episodes'] == 25344
+          assert r['train_cell_classification'] in {
+              'MODEL_ROOT_SUPPORT_COLLAPSE',
+              'PROBE_SUPPORT_INTERMITTENT',
+              'SUPPORT_RECURRENT',
+          }
+          assert r['fresh_evaluation_lineage_may_be_reserved'] is False
+          assert r['fresh_evaluation_lineage_consumed'] is False
+          assert r['confirmatory_data_consumed'] is False
+          assert r['challenge_materialized'] is False
+          assert r['promotion_claimed'] is False
+          print(json.dumps({
+              'train_replicates': 120,
+              'classification': r['train_cell_classification'],
+              'canonical_prevalence_floor': r['canonical_prevalence_floor'],
+              'artifact_digest': r['artifact_digest'],
+          }, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v7-budget-120-${{ github.sha }}
+          path: /tmp/exp279-v7-budget-120
+          if-no-files-found: error
+          retention-days: 90
+
+  cross-cell-decision:
+    needs: [budget-60, budget-120]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install reducer environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp279-v7-budget-60-${{ github.sha }}
+          path: /tmp/exp279-v7-budget-60
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp279-v7-budget-120-${{ github.sha }}
+          path: /tmp/exp279-v7-budget-120
+      - name: Verify budget hashes and classify cross-cell
+        run: |
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          for n in (60, 120):
+              receipt = Path(f'/tmp/exp279-v7-budget-{n}/receipt.json')
+              sidecar = receipt.with_name('receipt.json.sha256')
+              expected = sidecar.read_text().split()[0]
+              actual = hashlib.sha256(receipt.read_bytes()).hexdigest()
+              assert actual == expected
+          PY
+          WORK=/tmp/exp279-v7-cross-cell
+          mkdir -p "$WORK"
+          python scripts/classify_exp279_multiroot_support_stability_v7_dev.py \
+            --train60 /tmp/exp279-v7-budget-60/receipt.json \
+            --train120 /tmp/exp279-v7-budget-120/receipt.json \
+            --output "$WORK/receipt.json"
+          (cd "$WORK" && sha256sum receipt.json > receipt.json.sha256)
+      - name: Assert cross-cell DEVELOPMENT disposition boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path('/tmp/exp279-v7-cross-cell/receipt.json').read_text())
+          assert r['schema'] == 'NLM-EXP-279-MULTIROOT-SUPPORT-CROSS-CELL-V7'
+          assert r['evidence_level'] == 'EV-E2'
+          assert r['scientific_evidence_eligible'] is False
+          assert r['decision'] in {
+              'MODEL_ROOT_SUPPORT_COLLAPSE',
+              'PROBE_SUPPORT_INTERMITTENT',
+              'SUPPORT_RECURRENT',
+          }
+          assert r['mechanism_successor_authorized'] is False
+          assert r['fresh_evaluation_lineage_may_be_reserved'] is False
+          assert r['fresh_evaluation_lineage_consumed'] is False
+          assert r['confirmatory_data_consumed'] is False
+          assert r['challenge_materialized'] is False
+          assert r['promotion_claimed'] is False
+          if r['decision'] == 'SUPPORT_RECURRENT':
+              assert r['successor_design_authorized'] is True
+              assert r['authorization_scope'] == 'DESIGN_NEW_MECHANISM_COURT_ONLY'
+          else:
+              assert r['successor_design_authorized'] is False
+          print(json.dumps({
+              'decision': r['decision'],
+              'train_cell_classifications': r['train_cell_classifications'],
+              'canonical_prevalence_floors': r['canonical_prevalence_floors'],
+              'future_probe_episodes_per_canonical_root': r['future_probe_episodes_per_canonical_root'],
+              'authorization_scope': r['authorization_scope'],
+              'artifact_digest': r['artifact_digest'],
+          }, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v7-cross-cell-${{ github.sha }}
+          path: /tmp/exp279-v7-cross-cell
+          if-no-files-found: error
+          retention-days: 90
