@@ -40,7 +40,7 @@ def _root_metrics() -> dict[str, object]:
         "selected_harms": 2,
         "stop_solutions": 1000,
         "branch_solutions": 900,
-        "policy_solutions": 1020,
+        "policy_solutions": 1100,
         "stop_total_accounted_flops": 2_300_000_000,
         "branch_total_accounted_flops": 4_700_000_000,
         "policy_total_accounted_flops": 2_400_000_000,
@@ -49,7 +49,7 @@ def _root_metrics() -> dict[str, object]:
         "selected_rescue_prevalence": 0.2,
         "stop_baseline_utility": 1000 / 2_300_000_000,
         "branch_baseline_utility": 900 / 4_700_000_000,
-        "policy_utility": 1020 / 2_400_000_000,
+        "policy_utility": 1100 / 2_400_000_000,
         "evidence_boundary_closed": True,
     }
 
