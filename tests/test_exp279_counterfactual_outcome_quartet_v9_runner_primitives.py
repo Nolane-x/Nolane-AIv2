@@ -7,9 +7,11 @@ torch = pytest.importorskip("torch")
 from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9 import (
     CONTROL_FAMILY,
     STUDENT_OPTIMIZER,
+    heldout_policy_metrics,
+)
+from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9_runner_primitives import (
     combine_decision_root_metrics,
     fit_rescue_control,
-    heldout_policy_metrics,
 )
 
 
