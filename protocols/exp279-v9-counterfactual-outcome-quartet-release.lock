@@ -1,0 +1,13 @@
+EXP279_V9_COUNTERFACTUAL_OUTCOME_QUARTET_RELEASE_V1
+train_budgets=60,120
+canonical_indices=0,1,2,3
+fit_roots_per_canonical=2
+decision_roots_per_canonical=2
+fit_replicates_per_root=1332
+decision_replicates_per_root=1332
+student_family=OUTCOME_QUARTET_MLP
+student_hidden=64
+student_steps=200
+student_lr=0.001
+policy_route_rule=score_gt_0
+protocol_digest=c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440
