@@ -11,6 +11,11 @@ from nolane_ai.experiments.exp279_counterfactual_delta_distill_v6_cross_cell imp
 )
 
 
+FROZEN_PROTOCOL_DIGEST = "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440"
+FROZEN_ROOT = "20260912-exp279-counterfactual-delta-distill-v6-dev"
+FROZEN_PROBE_ROOT = FROZEN_ROOT + "::independent-augmentation-cdd-v6"
+
+
 def _cell(
     train_replicates: int,
     *,
@@ -26,14 +31,14 @@ def _cell(
         "scientific_evidence_eligible": False,
         "experiment_id": "EXP-279",
         "protocol_id": "NLM-REASONING-STAGE-A-CONFIRMATORY-V1",
-        "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+        "protocol_digest": FROZEN_PROTOCOL_DIGEST,
         "code_digest": "same-code-digest",
-        "root_seed": "20260912-exp279-counterfactual-delta-distill-v6-dev",
+        "root_seed": FROZEN_ROOT,
         "canonical_model_frozen_for_cdd": True,
         "data_boundary": {
             "training_rng_stream": "augmentation",
             "probe_rng_stream": "augmentation",
-            "probe_root_seed": "20260912-exp279-counterfactual-delta-distill-v6-dev::independent-augmentation-cdd-v6",
+            "probe_root_seed": FROZEN_PROBE_ROOT,
             "probe_root_independent_from_training_root": True,
             "evaluation_rng_stream_used": False,
             "evaluation_targets_used": False,
@@ -41,6 +46,16 @@ def _cell(
             "confirmatory_examples_used": False,
             "external_examples_used": False,
         },
+        "world_geometry": {
+            "batch_size": 8,
+            "timesteps": 4,
+            "variables": 6,
+            "constraints": 3,
+            "d_model": 64,
+            "noise_std": 0.05,
+        },
+        "arm_geometry": {"hidden_size": 48, "target_parameters": 500000},
+        "route_config": {"canonical_threshold": 0.5, "threshold_tuned": False},
         "canonical_training": {
             "replicates": train_replicates,
             "rng_stream": "augmentation",
@@ -51,9 +66,15 @@ def _cell(
             "heldout_teacher_delta_materialized_for_features": False,
         },
         "probe_config": {
+            "replicates": 198,
+            "folds": 3,
             "primary_family": "CDD_DELTA_LINEAR",
             "descriptive_control_family": "RAW_CHEAP_LINEAR",
             "control_can_authorize_successor": False,
+            "distill_steps": 200,
+            "distill_lr": 0.002,
+            "selector_steps": 200,
+            "selector_lr": 0.01,
             "raw_scores_compared_across_folds": False,
             "raw_scores_exported": False,
         },
@@ -178,6 +199,34 @@ def test_cross_cell_rejects_schema_evidence_and_provenance_mismatch() -> None:
             classify_exp279_counterfactual_delta_distill_v6_cross_cell(
                 {60: cell60, 120: cell120}
             )
+
+
+def test_cross_cell_rejects_shared_but_wrong_frozen_identity_or_geometry() -> None:
+    mutations = [
+        (("protocol_id",), "WRONG-PROTOCOL"),
+        (("protocol_digest",), "wrong-digest"),
+        (("root_seed",), "wrong-root"),
+        (("data_boundary", "probe_root_seed"), "wrong-probe-root"),
+        (("route_config", "canonical_threshold"), 0.6),
+        (("route_config", "threshold_tuned"), True),
+        (("world_geometry", "batch_size"), 7),
+        (("arm_geometry", "hidden_size"), 47),
+        (("probe_config", "replicates"), 197),
+        (("probe_config", "folds"), 4),
+        (("probe_config", "distill_steps"), 199),
+        (("probe_config", "distill_lr"), 0.003),
+        (("probe_config", "selector_steps"), 199),
+        (("probe_config", "selector_lr"), 0.02),
+    ]
+    for path, value in mutations:
+        cells = {60: _cell(60), 120: _cell(120)}
+        for cell in cells.values():
+            cursor = cell
+            for key in path[:-1]:
+                cursor = cursor[key]
+            cursor[path[-1]] = value
+        with pytest.raises(ValueError, match="frozen configuration mismatch"):
+            classify_exp279_counterfactual_delta_distill_v6_cross_cell(cells)
 
 
 def test_cross_cell_rejects_evaluation_confirmatory_or_fresh_lineage_violation() -> None:
