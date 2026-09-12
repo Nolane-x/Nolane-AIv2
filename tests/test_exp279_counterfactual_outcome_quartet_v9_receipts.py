@@ -8,8 +8,6 @@ import pytest
 from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9 import (
     FROZEN_PROTOCOL_DIGEST,
     PRIMARY_FAMILY,
-    SCHEMA_BUDGET,
-    SCHEMA_CROSS,
     SCHEMA_SHARD,
     STUDENT_GEOMETRY,
     STUDENT_OPTIMIZER,
@@ -88,27 +86,7 @@ def _shard(*, train: int = 60, canonical: int = 0) -> dict[str, object]:
 
 
 def _budget(train: int = 60) -> dict[str, object]:
-    shards = [_shard(train=train, canonical=index) for index in range(4)]
-    return {
-        "schema": SCHEMA_BUDGET,
-        "evidence_level": "EV-E2",
-        "decision": "UNVERIFIED",
-        "scientific_evidence_eligible": False,
-        "protocol_digest": FROZEN_PROTOCOL_DIGEST,
-        "code_digest": CODE,
-        "scientific_branch_head": HEAD,
-        "executed_commit": EXECUTED,
-        "train_replicates": train,
-        "source_shard_digests": [receipt_sha256(shard) for shard in shards],
-        "root_receipts": shards,
-        "root_metrics": [copy.deepcopy(shard["root_metrics"]) for shard in shards],
-        "classification": "QUARTET_POLICY_RECURRENTLY_ECONOMIC",
-        "fresh_evaluation_lineage_may_be_reserved": False,
-        "fresh_evaluation_lineage_consumed": False,
-        "confirmatory_data_consumed": False,
-        "challenge_materialized": False,
-        "promotion_claimed": False,
-    }
+    return build_budget_receipt([_shard(train=train, canonical=index) for index in range(4)])
 
 
 def test_v9_receipt_bytes_and_sha256_are_deterministic() -> None:
@@ -144,17 +122,17 @@ def test_v9_budget_validator_rejects_consistent_but_wrong_or_duplicate_shards() 
     good = _budget(60)
     assert validate_budget_receipt(good) == []
 
-    duplicate = _budget(60)
+    duplicate = copy.deepcopy(good)
     duplicate["root_receipts"][3] = copy.deepcopy(duplicate["root_receipts"][0])
     assert validate_budget_receipt(duplicate)
 
-    wrong_absolute_protocol = _budget(60)
+    wrong_absolute_protocol = copy.deepcopy(good)
     wrong_absolute_protocol["protocol_digest"] = "d" * 64
     for shard in wrong_absolute_protocol["root_receipts"]:
         shard["protocol_digest"] = "d" * 64
     assert validate_budget_receipt(wrong_absolute_protocol)
 
-    mixed_head = _budget(60)
+    mixed_head = copy.deepcopy(good)
     mixed_head["root_receipts"][2]["scientific_branch_head"] = "e" * 40
     assert validate_budget_receipt(mixed_head)
 
@@ -175,26 +153,7 @@ def test_v9_budget_builder_derives_identity_digests_and_classification() -> None
 def test_v9_cross_validator_requires_exact_60_120_pair_and_closed_boundaries() -> None:
     train60 = _budget(60)
     train120 = _budget(120)
-    cross = {
-        "schema": SCHEMA_CROSS,
-        "evidence_level": "EV-E2",
-        "decision": "QUARTET_MECHANISM_COURT_PASSED",
-        "authorization_scope": "IMPLEMENT_QUARTET_SUCCESSOR_DEVELOPMENT_ONLY",
-        "successor_design_authorized": True,
-        "mechanism_successor_authorized": True,
-        "scientific_evidence_eligible": False,
-        "protocol_digest": FROZEN_PROTOCOL_DIGEST,
-        "code_digest": CODE,
-        "scientific_branch_head": HEAD,
-        "executed_commit": EXECUTED,
-        "source_budget_digests": {"60": receipt_sha256(train60), "120": receipt_sha256(train120)},
-        "budget_receipts": {"60": train60, "120": train120},
-        "fresh_evaluation_lineage_may_be_reserved": False,
-        "fresh_evaluation_lineage_consumed": False,
-        "confirmatory_data_consumed": False,
-        "challenge_materialized": False,
-        "promotion_claimed": False,
-    }
+    cross = build_cross_receipt(train60, train120)
     assert validate_cross_receipt(cross) == []
 
     duplicated_budget = copy.deepcopy(cross)
