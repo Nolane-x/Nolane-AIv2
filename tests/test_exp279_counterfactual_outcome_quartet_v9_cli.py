@@ -6,6 +6,10 @@ from pathlib import Path
 import subprocess
 import sys
 
+import pytest
+
+pytest.importorskip("torch")
+
 from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9_receipts import canonical_receipt_bytes
 
 ROOT = Path(__file__).resolve().parents[1]
