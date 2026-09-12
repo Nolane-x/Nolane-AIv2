@@ -190,7 +190,7 @@ def _model_state_digest(model: nn.Module) -> str:
         digest.update(b"\0")
         digest.update(_canonical_bytes(list(value.shape)))
         digest.update(b"\0")
-        digest.update(bytes(value.view(torch.uint8).reshape(-1).tolist()))
+        digest.update(bytes(value.reshape(-1).view(torch.uint8).tolist()))
         digest.update(b"\0")
     return digest.hexdigest()
 
