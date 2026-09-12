@@ -111,11 +111,14 @@ def test_v9_cross_seal_repair_is_marker_only_and_immutable_source_only() -> None
     assert 'assert data["authorization_scope"] == "NONE"' in text
     assert 'assert data["successor_design_authorized"] is False' in text
     assert 'assert data["mechanism_successor_authorized"] is False' in text
+    assert 'assert data["confirmatory_data_consumed"] is False' in text
+    assert 'assert data["challenge_materialized"] is False' in text
     assert "validate_cross_receipt" in text
     assert "canonical_receipt_bytes" in text
     assert "receipt.json.sha256" in text
     assert "retention-days: 90" in text
     assert "60000" not in text
-    assert "confirmatory" not in lower
-    assert "challenge" not in lower
+    assert "run_exp279_confirmatory" not in lower
+    assert "prepare_exp279_confirmatory" not in lower
+    assert "materialize" not in lower or "challenge_materialized" in lower
     assert "secrets." not in lower
