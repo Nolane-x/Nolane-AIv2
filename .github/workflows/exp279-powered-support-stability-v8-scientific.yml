@@ -1,0 +1,250 @@
+name: exp279-powered-support-stability-v8-scientific
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - protocols/exp279-v8-powered-support-release.lock
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require release marker to be the current branch-head change
+        run: |
+          MARKER=protocols/exp279-v8-powered-support-release.lock
+          LAST_TOUCH=$(git log -1 --format=%H -- "$MARKER")
+          test "$LAST_TOUCH" = "${{ github.event.pull_request.head.sha }}"
+          python - <<'PY'
+          from pathlib import Path
+          expected = """EXP279_V8_POWERED_SUPPORT_RELEASE_V1
+          p_floor=0.0025814897747382503
+          global_folds=96
+          family_alpha=0.01
+          fold_episodes=3552
+          probe_replicates=1332
+          """
+          expected = "\n".join(line.strip() for line in expected.splitlines() if line.strip()) + "\n"
+          actual = Path("protocols/exp279-v8-powered-support-release.lock").read_text(encoding="utf-8")
+          if actual != expected:
+              raise SystemExit("V8 release marker content mismatch")
+          PY
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+
+  scientific-shard:
+    needs: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [60, 120]
+        canonical_index: [0, 1, 2, 3]
+    env:
+      V8_PROBE_REPLICATES: '1332'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run frozen V8 powered-support shard
+        run: |
+          test "$V8_PROBE_REPLICATES" = "1332"
+          WORK=/tmp/exp279-v8-${{ matrix.train_replicates }}-${{ matrix.canonical_index }}
+          mkdir -p "$WORK"
+          python scripts/run_exp279_powered_support_stability_v8_dev.py \
+            --train-replicates ${{ matrix.train_replicates }} \
+            --canonical-index ${{ matrix.canonical_index }} \
+            --scientific-branch-head ${{ github.event.pull_request.head.sha }} \
+            --executed-commit ${{ github.sha }} \
+            --output "$WORK/receipt.json"
+      - name: Verify shard byte receipt
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          n = ${{ matrix.train_replicates }}
+          c = ${{ matrix.canonical_index }}
+          receipt = Path(f'/tmp/exp279-v8-{n}-{c}/receipt.json')
+          sidecar = receipt.with_name('receipt.json.sha256')
+          assert sidecar.read_text(encoding='utf-8').strip() == hashlib.sha256(receipt.read_bytes()).hexdigest()
+          data = json.loads(receipt.read_text(encoding='utf-8'))
+          assert data['train_replicates'] == n
+          assert data['canonical_index'] == c
+          assert data['probe_config']['replicates'] == 1332
+          assert data['evaluation_rng_stream_used'] is False
+          assert data['evaluation_targets_used'] is False
+          assert data['fresh_evaluation_lineage_consumed'] is False
+          assert data['promotion_claimed'] is False
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v8-shard-${{ matrix.train_replicates }}-${{ matrix.canonical_index }}-${{ github.sha }}
+          path: /tmp/exp279-v8-${{ matrix.train_replicates }}-${{ matrix.canonical_index }}
+          if-no-files-found: error
+          retention-days: 90
+
+  budget:
+    needs: scientific-shard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [60, 120]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only reducer environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: exp279-v8-shard-${{ matrix.train_replicates }}-*-${{ github.sha }}
+          path: /tmp/exp279-v8-shards-${{ matrix.train_replicates }}
+      - name: Verify shard sidecars and aggregate budget
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          n = ${{ matrix.train_replicates }}
+          root = Path(f'/tmp/exp279-v8-shards-{n}')
+          receipts = sorted(root.glob('*/receipt.json'))
+          assert len(receipts) == 4, receipts
+          indices = set()
+          for receipt in receipts:
+              sidecar = receipt.with_name('receipt.json.sha256')
+              assert sidecar.read_text(encoding='utf-8').strip() == hashlib.sha256(receipt.read_bytes()).hexdigest()
+              data = json.loads(receipt.read_text(encoding='utf-8'))
+              assert data['train_replicates'] == n
+              indices.add(data['canonical_index'])
+          assert indices == {0, 1, 2, 3}
+          Path(f'/tmp/exp279-v8-shards-{n}/paths.txt').write_text(
+              '\n'.join(str(path) for path in receipts) + '\n', encoding='utf-8'
+          )
+          PY
+          mapfile -t SHARDS < /tmp/exp279-v8-shards-${{ matrix.train_replicates }}/paths.txt
+          WORK=/tmp/exp279-v8-budget-${{ matrix.train_replicates }}
+          mkdir -p "$WORK"
+          python scripts/aggregate_exp279_powered_support_stability_v8_dev.py \
+            --shard "${SHARDS[0]}" \
+            --shard "${SHARDS[1]}" \
+            --shard "${SHARDS[2]}" \
+            --shard "${SHARDS[3]}" \
+            --output "$WORK/receipt.json"
+      - name: Verify budget byte receipt
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          n = ${{ matrix.train_replicates }}
+          receipt = Path(f'/tmp/exp279-v8-budget-{n}/receipt.json')
+          sidecar = receipt.with_name('receipt.json.sha256')
+          assert sidecar.read_text(encoding='utf-8').strip() == hashlib.sha256(receipt.read_bytes()).hexdigest()
+          data = json.loads(receipt.read_text(encoding='utf-8'))
+          assert data['train_replicates'] == n
+          assert len(data['pair_records']) == 16
+          assert len(data['fold_records']) == 48
+          assert data['total_episodes'] == 170496
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v8-budget-${{ matrix.train_replicates }}-${{ github.sha }}
+          path: /tmp/exp279-v8-budget-${{ matrix.train_replicates }}
+          if-no-files-found: error
+          retention-days: 90
+
+  cross-cell:
+    needs: budget
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only reducer environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp279-v8-budget-60-${{ github.sha }}
+          path: /tmp/exp279-v8-cross/train60
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp279-v8-budget-120-${{ github.sha }}
+          path: /tmp/exp279-v8-cross/train120
+      - name: Verify budget sidecars and classify cross-cell
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          for label in ('train60', 'train120'):
+              receipt = Path(f'/tmp/exp279-v8-cross/{label}/receipt.json')
+              sidecar = receipt.with_name('receipt.json.sha256')
+              assert sidecar.read_text(encoding='utf-8').strip() == hashlib.sha256(receipt.read_bytes()).hexdigest()
+          left = json.loads(Path('/tmp/exp279-v8-cross/train60/receipt.json').read_text(encoding='utf-8'))
+          right = json.loads(Path('/tmp/exp279-v8-cross/train120/receipt.json').read_text(encoding='utf-8'))
+          assert left['scientific_branch_head'] == right['scientific_branch_head']
+          assert left['executed_commit'] == right['executed_commit']
+          assert left['code_digest'] == right['code_digest']
+          PY
+          CODE_DIGEST=$(python -c "import json; print(json.load(open('/tmp/exp279-v8-cross/train60/receipt.json'))['code_digest'])")
+          WORK=/tmp/exp279-v8-cross/final
+          mkdir -p "$WORK"
+          python scripts/classify_exp279_powered_support_stability_v8_dev.py \
+            --train60 /tmp/exp279-v8-cross/train60/receipt.json \
+            --train120 /tmp/exp279-v8-cross/train120/receipt.json \
+            --expected-scientific-branch-head ${{ github.event.pull_request.head.sha }} \
+            --expected-executed-commit ${{ github.sha }} \
+            --expected-code-digest "$CODE_DIGEST" \
+            --output "$WORK/receipt.json"
+      - name: Verify final byte receipt
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          receipt = Path('/tmp/exp279-v8-cross/final/receipt.json')
+          sidecar = receipt.with_name('receipt.json.sha256')
+          assert sidecar.read_text(encoding='utf-8').strip() == hashlib.sha256(receipt.read_bytes()).hexdigest()
+          data = json.loads(receipt.read_text(encoding='utf-8'))
+          assert data['decision'] in {'MODEL_ROOT_SUPPORT_COLLAPSE', 'PROBE_SUPPORT_INTERMITTENT', 'SUPPORT_RECURRENT'}
+          assert data['fresh_evaluation_lineage_consumed'] is False
+          assert data['promotion_claimed'] is False
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v8-cross-cell-${{ github.sha }}
+          path: /tmp/exp279-v8-cross/final
+          if-no-files-found: error
+          retention-days: 90
