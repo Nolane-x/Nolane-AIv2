@@ -1,0 +1,43 @@
+name: exp279-counterfactual-outcome-quartet-v9-ci
+
+on:
+  push:
+    branches:
+      - exp279-counterfactual-outcome-quartet-v9
+    paths:
+      - 'src/nolane_ai/experiments/exp279_counterfactual_outcome_quartet_v9*.py'
+      - 'tests/test_exp279_counterfactual_outcome_quartet_v9*.py'
+      - 'scripts/*exp279_counterfactual_outcome_quartet_v9*.py'
+      - '.github/workflows/exp279-counterfactual-outcome-quartet-v9-ci.yml'
+  pull_request:
+    paths:
+      - 'src/nolane_ai/experiments/exp279_counterfactual_outcome_quartet_v9*.py'
+      - 'tests/test_exp279_counterfactual_outcome_quartet_v9*.py'
+      - 'scripts/*exp279_counterfactual_outcome_quartet_v9*.py'
+      - '.github/workflows/exp279-counterfactual-outcome-quartet-v9-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU torch and test deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+          python -m pip install pytest
+      - name: Verify frozen protocol
+        run: python scripts/verify_protocol.py
+      - name: Run V9 contract
+        env:
+          PYTHONPATH: src
+        run: pytest -q tests/test_exp279_counterfactual_outcome_quartet_v9.py
+      - name: Compile
+        run: python -m compileall -q src scripts
