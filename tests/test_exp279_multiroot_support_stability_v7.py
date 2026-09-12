@@ -158,7 +158,7 @@ def test_v7_tiny_shard_uses_augmentation_only_and_exports_sufficient_statistics(
         hidden_size=6,
         target_parameters=5_000,
         route_threshold=0.5,
-        probe_replicates=6,
+        probe_replicates=9,
         batch_size=2,
         timesteps=3,
         variables=4,
@@ -193,7 +193,7 @@ def test_v7_tiny_shard_uses_augmentation_only_and_exports_sufficient_statistics(
     assert receipt["promotion_claimed"] is False
     assert len(receipt["probe_receipts"]) == 4
     assert sum(len(item["folds"]) for item in receipt["probe_receipts"]) == 12
-    assert receipt["canonical_support"]["canonical_total_episodes"] == 4 * 6 * 2
+    assert receipt["canonical_support"]["canonical_total_episodes"] == 4 * 9 * 2
     assert len(receipt["final_canonical_digest"]) == 64
     encoded = repr(receipt).lower()
     for forbidden in ("stop_logits", "branch_logits", "targets", "predictions", "route_scores"):
