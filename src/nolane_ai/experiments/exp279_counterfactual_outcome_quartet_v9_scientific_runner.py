@@ -21,6 +21,7 @@ from .exp279_counterfactual_outcome_quartet_v9 import (
     STUDENT_GEOMETRY,
     STUDENT_OPTIMIZER,
     TRAIN_BUDGETS,
+    _model_state_digest,
     apply_quartet_policy,
     canonical_root,
     cheap_prebranch_features,
@@ -40,7 +41,6 @@ from .exp279_counterfactual_outcome_quartet_v9_runner_primitives import (
 )
 from .exp279_paired_runner import (
     _build_seeded_triplet,
-    _functional_state_digest,
     _hybrid_forced_branch_decision_logits,
     _hybrid_stop_decision_logits,
     _train_step,
@@ -76,6 +76,10 @@ def _require_digest(value: str, *, label: str) -> str:
     if _HEX64.fullmatch(text) is None:
         raise ValueError(f"V9 {label} must be an exact lowercase 64-hex digest")
     return text
+
+
+def _canonical_freeze_digest(model: torch.nn.Module) -> str:
+    return _model_state_digest(model)
 
 
 def exact_outcome_tensors(
@@ -153,7 +157,7 @@ def _train_canonical_hybrid(*, train_replicates: int, canonical_index: int) -> t
             targets=batch.targets,
         )
 
-    final_digest = _functional_state_digest(hybrid)
+    final_digest = _canonical_freeze_digest(hybrid)
     hybrid.eval()
     for parameter in hybrid.parameters():
         parameter.requires_grad_(False)
@@ -317,7 +321,7 @@ def run_exp279_counterfactual_outcome_quartet_v9_shard(
         _collect_counterfactual_root(hybrid, root=root, replicates=FIT_REPLICATES)
         for root in fit_roots
     ]
-    if _functional_state_digest(hybrid) != frozen_digest:
+    if _canonical_freeze_digest(hybrid) != frozen_digest:
         raise RuntimeError("V9 canonical model changed while collecting fit roots")
     fit_features = torch.cat([item["features"] for item in fit_sets], dim=0)
     fit_labels = torch.cat([item["labels"] for item in fit_sets], dim=0)
@@ -337,7 +341,7 @@ def run_exp279_counterfactual_outcome_quartet_v9_shard(
         canonical_index=canonical,
         fit_roots=fit_roots,
     )
-    if _functional_state_digest(hybrid) != frozen_digest:
+    if _canonical_freeze_digest(hybrid) != frozen_digest:
         raise RuntimeError("V9 canonical model changed while fitting students")
 
     fit_stop_metrics = fit_stop_utility(
@@ -353,7 +357,7 @@ def run_exp279_counterfactual_outcome_quartet_v9_shard(
         _collect_counterfactual_root(hybrid, root=root, replicates=DECISION_REPLICATES)
         for root in decision_roots
     ]
-    if _functional_state_digest(hybrid) != frozen_digest:
+    if _canonical_freeze_digest(hybrid) != frozen_digest:
         raise RuntimeError("V9 canonical model changed while collecting decision roots")
 
     decision_receipts: list[dict[str, Any]] = []
@@ -385,7 +389,7 @@ def run_exp279_counterfactual_outcome_quartet_v9_shard(
 
     root_metrics = combine_decision_root_metrics([item["metrics"] for item in decision_receipts])
     root_classification = classify_quartet_root(root_metrics)
-    if _functional_state_digest(hybrid) != frozen_digest:
+    if _canonical_freeze_digest(hybrid) != frozen_digest:
         raise RuntimeError("V9 canonical model changed after decision evaluation")
 
     receipt: dict[str, Any] = {
@@ -461,6 +465,7 @@ __all__ = [
     "FROZEN_ARM_GEOMETRY",
     "FROZEN_CANONICAL_OPTIMIZER",
     "FROZEN_ROUTE_THRESHOLD",
+    "_canonical_freeze_digest",
     "exact_outcome_tensors",
     "run_exp279_counterfactual_outcome_quartet_v9_shard",
 ]
