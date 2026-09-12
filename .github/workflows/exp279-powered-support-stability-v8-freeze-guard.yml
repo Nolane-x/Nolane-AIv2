@@ -1,0 +1,71 @@
+name: exp279-powered-support-stability-v8-freeze-guard
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  freeze-guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      V8_SCIENTIFIC_WORKFLOW_NAME: exp279-powered-support-stability-v8-scientific
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Preserve first authoritative V8 scientific run and cancel later active reruns
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          pr_number = int(os.environ['PR_NUMBER'])
+          workflow_name = os.environ['V8_SCIENTIFIC_WORKFLOW_NAME']
+          payload = subprocess.check_output(
+              ['gh', 'api', f'repos/{repo}/actions/runs?event=pull_request&per_page=100'],
+              text=True,
+          )
+          candidates = []
+          for run in json.loads(payload)['workflow_runs']:
+              if run.get('name') != workflow_name:
+                  continue
+              prs = run.get('pull_requests') or []
+              if not any(int(pr.get('number', -1)) == pr_number for pr in prs):
+                  continue
+              candidates.append(run)
+
+          candidates.sort(key=lambda run: (run.get('created_at', ''), int(run['id'])))
+          authoritative = int(candidates[0]['id']) if candidates else None
+          active = {'queued', 'in_progress', 'pending', 'requested', 'waiting'}
+          cancelled = []
+          for run in candidates[1:]:
+              run_id = int(run['id'])
+              if run.get('status') not in active:
+                  continue
+              completed = subprocess.run(
+                  [
+                      'gh', 'api', '--method', 'POST',
+                      f'repos/{repo}/actions/runs/{run_id}/cancel',
+                  ],
+                  text=True,
+                  capture_output=True,
+              )
+              if completed.returncode != 0:
+                  raise SystemExit(
+                      f'failed to cancel V8 duplicate run {run_id}: {completed.stderr.strip()}'
+                  )
+              cancelled.append(run_id)
+
+          print(json.dumps({
+              'schema': 'NLM-EXP-279-V8-FREEZE-GUARD-V1',
+              'authoritative_scientific_run_id': authoritative,
+              'cancelled_duplicate_run_ids': sorted(cancelled),
+              'observed_scientific_run_ids': [int(run['id']) for run in candidates],
+          }, sort_keys=True))
+          PY
