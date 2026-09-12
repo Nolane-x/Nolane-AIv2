@@ -53,23 +53,25 @@ Total model/probe combinations per train budget: `4 × 4 = 16`.
 
 Total probe episodes per model/probe combination: `198 × 8 = 1584`.
 
+Across both decision budgets, V7 therefore uses 8 independently named canonical roots and 32 independently named probe roots. No RNG root is shared between train60 and train120.
+
 V7 may not expand roots, replicates, folds, or budgets after data visibility on this lineage.
 
 ## Frozen root naming
 
 Canonical root family:
 
-`20260912-exp279-multiroot-support-v7-dev::canonical::{C}`
+`20260912-exp279-multiroot-support-v7-dev::train::{N}::canonical::{C}`
 
-where `C ∈ {0,1,2,3}`.
+where `N ∈ {60,120}` and `C ∈ {0,1,2,3}`.
 
 Probe root family:
 
-`20260912-exp279-multiroot-support-v7-dev::probe::{C}::{P}`
+`20260912-exp279-multiroot-support-v7-dev::train::{N}::probe::{C}::{P}`
 
-where `C ∈ {0,1,2,3}` identifies the frozen canonical model and `P ∈ {0,1,2,3}` identifies an independent probe root.
+where `N ∈ {60,120}`, `C ∈ {0,1,2,3}` identifies the frozen canonical model, and `P ∈ {0,1,2,3}` identifies an independent probe root.
 
-Probe roots must be independent from canonical roots and from one another. They use only `rng_stream="augmentation"`.
+The inclusion of `C` in a probe root is namespace/provenance only. The full probe seed is distinct from every canonical seed and every other probe seed. Probe data use only `rng_stream="augmentation"`; no examples are reused across train budgets or root pairs.
 
 ## Canonical model boundary
 
@@ -147,13 +149,17 @@ A probe root is `fold_support_closed` only if all three folds have both rescue a
 For each canonical model root:
 
 - `canonical_total_rescues` is the sum of rescue counts across its four independent probe roots;
+- `canonical_total_episodes = 4 × 1584 = 6336`;
 - `canonical_has_any_rescue = canonical_total_rescues > 0`;
 - `canonical_all_probe_roots_supported = all four probe roots have rescue and non-rescue support`;
 - `canonical_all_folds_supported = all twelve diagnostic folds have rescue and non-rescue support`.
 
 ## Conservative prevalence estimate
 
-V7 reports a one-sided 95% Wilson lower confidence bound for rescue prevalence for each `(canonical_root, probe_root)` pair.
+V7 reports a one-sided 95% Wilson lower confidence bound for rescue prevalence at two levels:
+
+1. each `(canonical_root, probe_root)` pair, using `n = 1584`;
+2. each canonical root pooled across its four independent probe roots, using `n = 6336`.
 
 For `x` rescues among `n` episodes, with `z = 1.6448536269514722`, define the standard one-sided Wilson lower bound:
 
@@ -165,11 +171,13 @@ For `x` rescues among `n` episodes, with `z = 1.6448536269514722`, define the st
 
 where `p = x/n`.
 
-The train-budget conservative prevalence floor is:
+The train-budget conservative prevalence floor is defined **only at canonical-root level**:
 
-`min_wilson_lower = min(wilson_lower over all 16 canonical×probe pairs)`.
+`canonical_prevalence_floor = min(pooled canonical-root Wilson lower bound over the 4 canonical roots)`.
 
-This is deliberately conservative. It is descriptive unless the cross-cell disposition is `SUPPORT_RECURRENT`.
+A canonical root with zero rescues has Wilson lower bound `0` and therefore forces the floor to `0`. Zero-count probe roots are never silently dropped from the pooled canonical count.
+
+Per-pair Wilson bounds are descriptive diagnostics; the canonical-root pooled floor is the only prevalence quantity permitted for prospective sample-size planning.
 
 ## Preregistered train-cell classifications
 
@@ -203,7 +211,7 @@ Emit this classification only if:
 - all 16 canonical×probe pairs have both rescue and non-rescue support;
 - all 48 diagnostic folds have both rescue and non-rescue support.
 
-No prevalence threshold beyond positive support is introduced in V7. The one-sided Wilson lower bounds are reported to size a possible future court, not to redefine V7 success post hoc.
+No prevalence threshold beyond positive support is introduced in V7. Wilson lower bounds are reported to size a possible future court, not to redefine V7 success post hoc.
 
 ## Cross-cell disposition
 
@@ -219,6 +227,7 @@ Consequence:
 
 - no router/selector/representation successor is authorized;
 - do not increase probe sample size merely to hide model-root collapse;
+- no finite prospective sample-size recommendation is emitted for EXP-279 mechanism court design from V7;
 - next research must revisit canonical training stability, branch semantics, or the definition of branch complementarity under a separately preregistered seam.
 
 ### `PROBE_SUPPORT_INTERMITTENT`
@@ -228,7 +237,7 @@ If neither cell has model-root collapse, but either cell is `PROBE_SUPPORT_INTER
 Consequence:
 
 - no mechanism successor is authorized;
-- V7 may compute a prospective augmentation-only sample-size recommendation for a future support-adequate court;
+- V7 may compute a prospective augmentation-only sample-size recommendation using the canonical-root prevalence floor;
 - the future court must use entirely new roots and remain DEVELOPMENT-only;
 - `60000..60032` remains locked.
 
@@ -239,24 +248,26 @@ Only if both train60 and train120 are `SUPPORT_RECURRENT`.
 Consequence:
 
 - V7 still does not authorize a selector or representation mechanism;
-- V7 may authorize only the **design** of a new mechanism court whose probe sample size is preregistered from V7's conservative prevalence estimate using entirely new roots;
+- V7 may authorize only the **design** of a new mechanism court whose probe sample size is preregistered from V7's canonical-root prevalence floor using entirely new roots;
 - no fresh evaluation lineage is reserved or consumed.
 
 ## Prospective sample-size recommendation
 
 This calculation is emitted only when the cross-cell result is `PROBE_SUPPORT_INTERMITTENT` or `SUPPORT_RECURRENT`. It is planning metadata for a separately preregistered future DEVELOPMENT court, not a V7 endpoint.
 
-For each train budget, let:
+For each train budget:
 
-`p_floor = min positive one-sided 95% Wilson lower bound among canonical×probe pairs that contain at least one rescue`.
+`p_floor = canonical_prevalence_floor`.
 
-If no positive pair exists, no sample-size recommendation is emitted.
+If `p_floor <= 0`, emit `sample_size_recommendation = null`.
 
-Choose a preregistered future support target of at least one rescue with probability `0.99` under `p_floor`:
+Otherwise choose a preregistered future support target of at least one rescue with probability `0.99` under the conservative floor:
 
 `n_min = ceil(log(1 - 0.99) / log(1 - p_floor))`.
 
-If `p_floor <= 0`, emit `sample_size_recommendation = null`.
+Cross-cell planning uses the more conservative of the train60 and train120 recommendations:
+
+`future_probe_episodes_per_canonical_root = max(n_min_60, n_min_120)`.
 
 This formula does not authorize data collection on V7 and does not change the V7 matrix.
 
@@ -266,6 +277,9 @@ V7 must assert all of the following:
 
 - training RNG stream is augmentation only;
 - probe RNG stream is augmentation only;
+- all 8 canonical roots are distinct;
+- all 32 probe roots are distinct;
+- train60 and train120 share no RNG roots;
 - evaluation RNG stream is unused;
 - evaluation targets are unused;
 - confirmatory examples are unused;
@@ -296,6 +310,8 @@ For each train budget, emit one aggregate receipt containing:
 - all sixteen canonical×probe sufficient-statistics records;
 - all 48 fold sufficient-statistics records;
 - per-pair one-sided 95% Wilson lower bounds;
+- per-canonical pooled one-sided 95% Wilson lower bounds;
+- canonical prevalence floor;
 - per-canonical support predicates;
 - train-cell classification;
 - digest of canonical/probe root map;
