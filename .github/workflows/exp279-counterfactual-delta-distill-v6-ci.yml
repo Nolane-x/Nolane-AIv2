@@ -44,3 +44,225 @@ jobs:
             tests/test_exp279_counterfactual_delta_distill_v6_cross_cell.py
       - name: Compile analysis surface
         run: python -m compileall -q src scripts
+
+  development-court:
+    needs: contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [15, 60, 120]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run frozen augmentation-only V6 CDD court
+        run: |
+          WORK=/tmp/exp279-cdd-v6-${{ matrix.train_replicates }}
+          mkdir -p "$WORK"
+          python scripts/run_exp279_counterfactual_delta_distill_v6_dev.py \
+            --root-seed 20260912-exp279-counterfactual-delta-distill-v6-dev \
+            --d-model 64 \
+            --hidden-size 48 \
+            --target-parameters 500000 \
+            --route-threshold 0.5 \
+            --train-replicates ${{ matrix.train_replicates }} \
+            --probe-replicates 198 \
+            --probe-folds 3 \
+            --batch-size 8 \
+            --timesteps 4 \
+            --variables 6 \
+            --constraints 3 \
+            --noise-std 0.05 \
+            --lr 0.002 \
+            --weight-decay 0.0 \
+            --distill-steps 200 \
+            --distill-lr 0.002 \
+            --selector-steps 200 \
+            --selector-lr 0.01 \
+            --output "$WORK/receipt.json"
+          sha256sum "$WORK/receipt.json" > "$WORK/receipt.json.sha256"
+      - name: Assert DEVELOPMENT evidence boundary and emit compact receipt
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          n = ${{ matrix.train_replicates }}
+          path = Path(f'/tmp/exp279-cdd-v6-{n}/receipt.json')
+          r = json.loads(path.read_text())
+          assert r['schema'] == 'NLM-EXP-279-COUNTERFACTUAL-DELTA-DISTILL-COURT-V6'
+          assert r['evidence_level'] == 'EV-E2'
+          assert r['decision'] == 'UNVERIFIED'
+          assert r['scientific_evidence_eligible'] is False
+          assert r['protocol_id'] == 'NLM-REASONING-STAGE-A-CONFIRMATORY-V1'
+          assert r['protocol_digest'] == 'c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440'
+          assert r['root_seed'] == '20260912-exp279-counterfactual-delta-distill-v6-dev'
+          assert r['canonical_training']['replicates'] == n
+          assert r['canonical_model_frozen_for_cdd'] is True
+          assert r['canonical_training']['canonical_parameters_frozen_before_cdd'] is True
+          assert r['data_boundary']['training_rng_stream'] == 'augmentation'
+          assert r['data_boundary']['probe_rng_stream'] == 'augmentation'
+          assert r['data_boundary']['probe_root_seed'] == '20260912-exp279-counterfactual-delta-distill-v6-dev::independent-augmentation-cdd-v6'
+          assert r['data_boundary']['probe_root_independent_from_training_root'] is True
+          assert r['data_boundary']['evaluation_rng_stream_used'] is False
+          assert r['data_boundary']['evaluation_targets_used'] is False
+          assert r['data_boundary']['heldout_branch_hidden_used_for_features'] is False
+          assert r['data_boundary']['confirmatory_examples_used'] is False
+          assert r['data_boundary']['external_examples_used'] is False
+          assert r['teacher_rule']['teacher_uses_fit_partition_only'] is True
+          assert r['teacher_rule']['heldout_teacher_delta_materialized_for_features'] is False
+          assert r['route_config']['canonical_threshold'] == 0.5
+          assert r['route_config']['threshold_tuned'] is False
+          assert r['world_geometry'] == {
+              'batch_size': 8,
+              'constraints': 3,
+              'd_model': 64,
+              'noise_std': 0.05,
+              'timesteps': 4,
+              'variables': 6,
+          }
+          assert r['arm_geometry'] == {'hidden_size': 48, 'target_parameters': 500000}
+          assert r['probe_config']['replicates'] == 198
+          assert r['probe_config']['folds'] == 3
+          assert r['probe_config']['primary_family'] == 'CDD_DELTA_LINEAR'
+          assert r['probe_config']['descriptive_control_family'] == 'RAW_CHEAP_LINEAR'
+          assert r['probe_config']['control_can_authorize_successor'] is False
+          assert r['probe_config']['distill_steps'] == 200
+          assert r['probe_config']['distill_lr'] == 0.002
+          assert r['probe_config']['selector_steps'] == 200
+          assert r['probe_config']['selector_lr'] == 0.01
+          assert r['probe_config']['raw_scores_compared_across_folds'] is False
+          assert r['probe_config']['raw_scores_exported'] is False
+          assert r['cdd_cost_rule']['cdd_inference_flops_charged_to_primary_utility'] is True
+          assert r['cdd_cost_rule']['cdd_cost_charged_on_stop_and_branch_paths'] is True
+          assert r['cdd_cost_rule']['false_positive_harms_counted_directly'] is True
+          assert r['fresh_evaluation_lineage_may_be_reserved'] is False
+          assert r['fresh_evaluation_lineage_consumed'] is False
+          assert r['confirmatory_data_consumed'] is False
+          assert r['challenge_materialized'] is False
+          assert r['promotion_claimed'] is False
+
+          primary = r['probes']['CDD_DELTA_LINEAR']
+          control = r['probes']['RAW_CHEAP_LINEAR']
+          assert all(fold['distiller_frozen_before_selector'] is True for fold in primary['folds'])
+          assert primary['raw_scores_compared_across_folds'] is False
+          assert control['raw_scores_compared_across_folds'] is False
+          assert control['authorizes_successor'] is False
+          assert all(fold['raw_scores_exported'] is False for fold in primary['folds'])
+          assert all(fold['raw_scores_exported'] is False for fold in control['folds'])
+
+          def compact(probe):
+              a = probe['aggregate']
+              return {
+                  'fit_support_closed': all(bool(f['fit_supported']) for f in probe['folds']),
+                  'heldout_support_closed': bool(a['support_closed']),
+                  'rescue_count': a['rescue_count'],
+                  'route_k_total': a['route_k_total'],
+                  'selected_rescues': a['selected_rescues'],
+                  'selected_harms': a['selected_harms'],
+                  'selected_neutral': a['selected_neutral'],
+                  'stop_solution_count': a['stop_solution_count'],
+                  'routed_solution_count': a['routed_solution_count'],
+                  'stop_total_accounted_flops': a['stop_total_accounted_flops'],
+                  'routed_total_accounted_flops': a['cdd_routed_total_accounted_flops'],
+                  'stop_verified_utility': a['stop_verified_utility'],
+                  'routed_verified_utility': a['cdd_routed_verified_utility'],
+                  'relative_verified_utility_gain': a['relative_verified_utility_gain'],
+                  'direct_utility_improved': a['direct_utility_improved'],
+                  'cross_fitted_roc_auc': a['cross_fitted_roc_auc'],
+                  'cross_fitted_average_precision': a['cross_fitted_average_precision'],
+              }
+
+          print(json.dumps({
+              'train_replicates': n,
+              'artifact_digest': r['artifact_digest'],
+              'court_classification': r['court_classification'],
+              'cdd_cost_per_episode': r['compute_economics']['primary_cdd_costs']['total_cdd_inference_flops'],
+              'primary': compact(primary),
+              'control_descriptive_only': compact(control),
+          }, sort_keys=True))
+          PY
+      - name: Upload V6 cell receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-cdd-v6-${{ matrix.train_replicates }}-${{ github.sha }}
+          path: /tmp/exp279-cdd-v6-${{ matrix.train_replicates }}
+          if-no-files-found: error
+          retention-days: 90
+
+  cross-cell-decision:
+    needs: development-court
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Download train60 decision cell
+        uses: actions/download-artifact@v4
+        with:
+          name: exp279-cdd-v6-60-${{ github.sha }}
+          path: /tmp/exp279-cdd-v6-inputs/60
+      - name: Download train120 decision cell
+        uses: actions/download-artifact@v4
+        with:
+          name: exp279-cdd-v6-120-${{ github.sha }}
+          path: /tmp/exp279-cdd-v6-inputs/120
+      - name: Classify preregistered train60/train120 decision cells
+        run: |
+          mkdir -p /tmp/exp279-cdd-v6-cross-cell
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          from nolane_ai.experiments.exp279_counterfactual_delta_distill_v6_cross_cell import (
+              classify_exp279_counterfactual_delta_distill_v6_cross_cell,
+          )
+
+          cells = {
+              60: json.loads(Path('/tmp/exp279-cdd-v6-inputs/60/receipt.json').read_text()),
+              120: json.loads(Path('/tmp/exp279-cdd-v6-inputs/120/receipt.json').read_text()),
+          }
+          result = classify_exp279_counterfactual_delta_distill_v6_cross_cell(cells)
+          assert result['evidence_level'] == 'EV-E2'
+          assert result['scientific_evidence_eligible'] is False
+          assert result['decision_train_replicates'] == [60, 120]
+          assert result['control_can_authorize_successor'] is False
+          assert result['fresh_evaluation_lineage_may_be_reserved'] is False
+          assert result['fresh_evaluation_lineage_consumed'] is False
+          assert result['confirmatory_data_consumed'] is False
+          assert result['challenge_materialized'] is False
+          assert result['promotion_claimed'] is False
+
+          out = Path('/tmp/exp279-cdd-v6-cross-cell/decision.json')
+          encoded = json.dumps(result, sort_keys=True, indent=2) + '\n'
+          out.write_text(encoded)
+          digest = hashlib.sha256(encoded.encode()).hexdigest()
+          Path(str(out) + '.sha256').write_text(digest + '  decision.json\n')
+          print(json.dumps(result, sort_keys=True))
+          PY
+      - name: Upload V6 cross-cell decision
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-cdd-v6-cross-cell-${{ github.sha }}
+          path: /tmp/exp279-cdd-v6-cross-cell
+          if-no-files-found: error
+          retention-days: 90
