@@ -9,6 +9,8 @@ import sys
 
 import pytest
 
+pytest.importorskip("torch")
+
 from nolane_ai.experiments.exp279_multiroot_support_stability_v7 import (
     FROZEN_ARM_GEOMETRY,
     FROZEN_OPTIMIZER,
