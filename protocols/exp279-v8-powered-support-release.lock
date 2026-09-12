@@ -1,0 +1,6 @@
+EXP279_V8_POWERED_SUPPORT_RELEASE_V1
+p_floor=0.0025814897747382503
+global_folds=96
+family_alpha=0.01
+fold_episodes=3552
+probe_replicates=1332
