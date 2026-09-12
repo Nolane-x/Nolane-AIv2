@@ -66,7 +66,7 @@ with formula `(replicate // len(STRATA)) % 3`.
   - otherwise any probe/fold missing rescue or non-rescue -> `PROBE_SUPPORT_INTERMITTENT`;
   - otherwise -> `SUPPORT_RECURRENT`.
 - [ ] Freeze root-map identity: exact 4 canonical roots and 16 probe roots for a budget, deterministic canonical SHA256, no duplicates.
-- [ ] Add tiny shard execution (`train_replicates=3`, `probe_replicates=6`, tiny geometry) proving:
+- [ ] Add tiny shard execution (`train_replicates=60`, `probe_replicates=9`, tiny geometry) proving:
   - canonical training uses augmentation only;
   - every probe batch uses augmentation only under independent probe root;
   - no raw logits/examples are present in receipt;
