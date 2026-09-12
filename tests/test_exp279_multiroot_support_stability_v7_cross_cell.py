@@ -26,6 +26,7 @@ from nolane_ai.experiments.exp279_multiroot_support_stability_v7 import (
 from nolane_ai.experiments.exp279_multiroot_support_stability_v7_cross_cell import (
     SCHEMA_CROSS_CELL,
     classify_exp279_multiroot_support_stability_v7_cross_cell,
+    prospective_probe_episodes,
 )
 from nolane_ai.protocol.evidence import canonical_sha256
 
@@ -39,7 +40,7 @@ def _digest(receipt: dict) -> str:
     return canonical_sha256({key: value for key, value in receipt.items() if key != "artifact_digest"})
 
 
-def _budget(train: int, classification: str, *, floor: float = 0.01) -> dict:
+def _budget(train: int, classification: str) -> dict:
     root_map = expected_root_map(train)
     canonical_records = []
     pair_records = []
@@ -146,6 +147,7 @@ def _budget(train: int, classification: str, *, floor: float = 0.01) -> dict:
             }
         )
 
+    floor = min(float(item["pooled_wilson_lower_bound"]) for item in canonical_records)
     receipt = {
         "schema": SCHEMA_BUDGET,
         "evidence_level": "EV-E2",
@@ -201,29 +203,42 @@ def _mutated_pair(mutator) -> dict[int, dict]:
     return cells
 
 
+def _expected_cross_cell_sample_size(cells: dict[int, dict]) -> int | None:
+    values = [prospective_probe_episodes(float(cells[train]["canonical_prevalence_floor"])) for train in (60, 120)]
+    if any(value is None for value in values):
+        return None
+    return max(int(value) for value in values if value is not None)
+
+
 def test_v7_cross_cell_disposition_priority_and_authorization_scope() -> None:
-    collapse = classify_exp279_multiroot_support_stability_v7_cross_cell(
-        {60: _budget(60, "MODEL_ROOT_SUPPORT_COLLAPSE"), 120: _budget(120, "SUPPORT_RECURRENT")}
-    )
+    collapse_cells = {
+        60: _budget(60, "MODEL_ROOT_SUPPORT_COLLAPSE"),
+        120: _budget(120, "SUPPORT_RECURRENT"),
+    }
+    collapse = classify_exp279_multiroot_support_stability_v7_cross_cell(collapse_cells)
     assert collapse["schema"] == SCHEMA_CROSS_CELL
     assert collapse["decision"] == "MODEL_ROOT_SUPPORT_COLLAPSE"
     assert collapse["successor_design_authorized"] is False
     assert collapse["future_probe_episodes_per_canonical_root"] is None
 
-    intermittent = classify_exp279_multiroot_support_stability_v7_cross_cell(
-        {60: _budget(60, "SUPPORT_RECURRENT", floor=0.02), 120: _budget(120, "PROBE_SUPPORT_INTERMITTENT", floor=0.01)}
-    )
+    intermittent_cells = {
+        60: _budget(60, "SUPPORT_RECURRENT"),
+        120: _budget(120, "PROBE_SUPPORT_INTERMITTENT"),
+    }
+    intermittent = classify_exp279_multiroot_support_stability_v7_cross_cell(intermittent_cells)
     assert intermittent["decision"] == "PROBE_SUPPORT_INTERMITTENT"
     assert intermittent["successor_design_authorized"] is False
-    assert intermittent["future_probe_episodes_per_canonical_root"] == 459
+    assert intermittent["future_probe_episodes_per_canonical_root"] == _expected_cross_cell_sample_size(intermittent_cells)
 
-    recurrent = classify_exp279_multiroot_support_stability_v7_cross_cell(
-        {60: _budget(60, "SUPPORT_RECURRENT", floor=0.02), 120: _budget(120, "SUPPORT_RECURRENT", floor=0.01)}
-    )
+    recurrent_cells = {
+        60: _budget(60, "SUPPORT_RECURRENT"),
+        120: _budget(120, "SUPPORT_RECURRENT"),
+    }
+    recurrent = classify_exp279_multiroot_support_stability_v7_cross_cell(recurrent_cells)
     assert recurrent["decision"] == "SUPPORT_RECURRENT"
     assert recurrent["successor_design_authorized"] is True
     assert recurrent["authorization_scope"] == "DESIGN_NEW_MECHANISM_COURT_ONLY"
-    assert recurrent["future_probe_episodes_per_canonical_root"] == 459
+    assert recurrent["future_probe_episodes_per_canonical_root"] == _expected_cross_cell_sample_size(recurrent_cells)
     assert recurrent["fresh_evaluation_lineage_may_be_reserved"] is False
     assert recurrent["fresh_evaluation_lineage_consumed"] is False
     assert recurrent["confirmatory_data_consumed"] is False
@@ -231,11 +246,12 @@ def test_v7_cross_cell_disposition_priority_and_authorization_scope() -> None:
     assert recurrent["promotion_claimed"] is False
 
 
-def test_v7_cross_cell_recomputes_cell_classification_from_sufficient_statistics() -> None:
+def test_v7_cross_cell_recomputes_floor_and_cell_classification_from_sufficient_statistics() -> None:
     wrong = _budget(60, "PROBE_SUPPORT_INTERMITTENT")
     wrong["train_cell_classification"] = "SUPPORT_RECURRENT"
+    wrong["canonical_prevalence_floor"] = 0.25
     wrong["artifact_digest"] = _digest(wrong)
-    with pytest.raises(ValueError, match="classification"):
+    with pytest.raises(ValueError, match="classification|prevalence floor"):
         classify_exp279_multiroot_support_stability_v7_cross_cell(
             {60: wrong, 120: _budget(120, "SUPPORT_RECURRENT")}
         )
@@ -275,21 +291,16 @@ def test_v7_cross_cell_requires_exact_train60_train120_and_disjoint_roots() -> N
 def test_v7_cross_cell_rejects_mutually_consistent_wrong_frozen_identity(mutator) -> None:
     cells = _mutated_pair(mutator)
     for receipt in cells.values():
-        if "root_map" in receipt:
-            receipt["root_map_digest"] = canonical_sha256(receipt["root_map"])
-            receipt["artifact_digest"] = _digest(receipt)
+        receipt["root_map_digest"] = canonical_sha256(receipt["root_map"])
+        receipt["artifact_digest"] = _digest(receipt)
     with pytest.raises(ValueError):
         classify_exp279_multiroot_support_stability_v7_cross_cell(cells)
 
 
-def test_v7_cross_cell_sample_size_formula_is_frozen() -> None:
-    assert math.ceil(math.log(0.01) / math.log(1.0 - 0.01)) == 459
-    zero_floor = _budget(60, "PROBE_SUPPORT_INTERMITTENT", floor=0.0)
-    result = classify_exp279_multiroot_support_stability_v7_cross_cell(
-        {60: zero_floor, 120: _budget(120, "SUPPORT_RECURRENT", floor=0.01)}
-    )
-    assert result["decision"] == "PROBE_SUPPORT_INTERMITTENT"
-    assert result["future_probe_episodes_per_canonical_root"] is None
+def test_v7_cross_cell_sample_size_formula_is_frozen_and_zero_floor_fails_closed() -> None:
+    assert prospective_probe_episodes(0.01) == math.ceil(math.log(0.01) / math.log(1.0 - 0.01)) == 459
+    assert prospective_probe_episodes(0.0) is None
+    assert prospective_probe_episodes(-0.1) is None
 
 
 def test_v7_cross_cell_cli_refuses_existing_output_before_loading_cells(tmp_path: Path) -> None:
