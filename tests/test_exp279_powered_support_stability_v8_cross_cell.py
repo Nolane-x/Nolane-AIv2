@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -377,7 +378,10 @@ def test_v8_cross_cell_cli_writes_deterministic_decision_receipt(tmp_path: Path)
         text=True,
         capture_output=True,
     )
-    receipt = json.loads(output.read_text(encoding="utf-8"))
+    raw_output = output.read_bytes()
+    receipt = json.loads(raw_output.decode("utf-8"))
+    sidecar = output.with_name(output.name + ".sha256")
+    assert sidecar.read_text(encoding="utf-8") == hashlib.sha256(raw_output).hexdigest() + "\n"
     stdout = json.loads(completed.stdout.strip())
     assert receipt["decision"] == "SUPPORT_RECURRENT"
     assert receipt["mechanism_successor_authorized"] is False
