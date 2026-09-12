@@ -1,0 +1,46 @@
+name: exp279-counterfactual-delta-distill-v6-ci
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/exp279-counterfactual-delta-distill-v6-ci.yml
+      - src/nolane_ai/experiments/exp279_counterfactual_delta_distill_v6.py
+      - src/nolane_ai/experiments/exp279_counterfactual_delta_distill_v6_court.py
+      - src/nolane_ai/experiments/exp279_counterfactual_delta_distill_v6_fit.py
+      - src/nolane_ai/experiments/exp279_counterfactual_delta_distill_v6_primitives.py
+      - src/nolane_ai/experiments/exp279_counterfactual_delta_distill_v6_utility.py
+      - src/nolane_ai/experiments/exp279_counterfactual_delta_distill_v6_validation.py
+      - src/nolane_ai/experiments/exp279_counterfactual_delta_distill_v6_cross_cell.py
+      - scripts/run_exp279_counterfactual_delta_distill_v6_dev.py
+      - tests/test_exp279_counterfactual_delta_distill_v6.py
+      - tests/test_exp279_counterfactual_delta_distill_v6_cli.py
+      - tests/test_exp279_counterfactual_delta_distill_v6_cross_cell.py
+      - docs/superpowers/specs/2026-09-12-exp279-counterfactual-delta-distill-v6-design.md
+      - docs/superpowers/plans/2026-09-12-exp279-counterfactual-delta-distill-v6.md
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify canonical frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run V6 focused contract
+        run: |
+          pytest -q \
+            tests/test_exp279_counterfactual_delta_distill_v6.py \
+            tests/test_exp279_counterfactual_delta_distill_v6_cli.py \
+            tests/test_exp279_counterfactual_delta_distill_v6_cross_cell.py
+      - name: Compile analysis surface
+        run: python -m compileall -q src scripts
