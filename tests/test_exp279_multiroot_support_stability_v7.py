@@ -196,7 +196,13 @@ def test_v7_tiny_shard_uses_augmentation_only_and_exports_sufficient_statistics(
     assert receipt["canonical_support"]["canonical_total_episodes"] == 4 * 9 * 2
     assert len(receipt["final_canonical_digest"]) == 64
     encoded = repr(receipt).lower()
-    for forbidden in ("stop_logits", "branch_logits", "targets", "predictions", "route_scores"):
+    for forbidden in (
+        "stop_logits",
+        "branch_logits",
+        "raw_targets",
+        "predictions",
+        "route_scores",
+    ):
         assert forbidden not in encoded
 
 
