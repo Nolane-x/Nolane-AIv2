@@ -1,0 +1,50 @@
+name: exp279-powered-support-stability-v8-ci
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/exp279-powered-support-stability-v8-ci.yml
+      - .github/workflows/exp279-powered-support-stability-v8-scientific.yml
+      - .github/workflows/exp279-powered-support-stability-v8-freeze-guard.yml
+      - src/nolane_ai/experiments/exp279_powered_support_stability_v8.py
+      - src/nolane_ai/experiments/exp279_powered_support_stability_v8_cross_cell.py
+      - scripts/run_exp279_powered_support_stability_v8_dev.py
+      - scripts/aggregate_exp279_powered_support_stability_v8_dev.py
+      - scripts/classify_exp279_powered_support_stability_v8_dev.py
+      - tests/test_exp279_powered_support_stability_v8.py
+      - tests/test_exp279_powered_support_stability_v8_cli.py
+      - tests/test_exp279_powered_support_stability_v8_cross_cell.py
+      - tests/test_exp279_powered_support_stability_v8_receipt_sidecars.py
+      - tests/test_exp279_powered_support_stability_v8_workflow.py
+      - docs/superpowers/specs/2026-09-12-exp279-powered-support-stability-v8-design.md
+      - docs/superpowers/plans/2026-09-12-exp279-powered-support-stability-v8-implementation.md
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run V8 pre-data contracts
+        run: |
+          pytest -q \
+            tests/test_exp279_powered_support_stability_v8.py \
+            tests/test_exp279_powered_support_stability_v8_cli.py \
+            tests/test_exp279_powered_support_stability_v8_cross_cell.py \
+            tests/test_exp279_powered_support_stability_v8_receipt_sidecars.py \
+            tests/test_exp279_powered_support_stability_v8_workflow.py
+      - name: Compile V8 surfaces
+        run: python -m compileall -q src scripts
