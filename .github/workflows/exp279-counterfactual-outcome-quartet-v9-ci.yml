@@ -38,6 +38,6 @@ jobs:
       - name: Run V9 contract
         env:
           PYTHONPATH: src
-        run: pytest -q tests/test_exp279_counterfactual_outcome_quartet_v9.py
+        run: pytest -q tests/test_exp279_counterfactual_outcome_quartet_v9*.py
       - name: Compile
         run: python -m compileall -q src scripts
