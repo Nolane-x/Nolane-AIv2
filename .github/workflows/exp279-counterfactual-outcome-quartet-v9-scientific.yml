@@ -1,0 +1,284 @@
+name: exp279-counterfactual-outcome-quartet-v9-scientific
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - protocols/exp279-v9-counterfactual-outcome-quartet-release.lock
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require frozen V9 release marker at current branch head
+        run: |
+          MARKER=protocols/exp279-v9-counterfactual-outcome-quartet-release.lock
+          LAST_TOUCH=$(git log -1 --format=%H -- "$MARKER")
+          test "$LAST_TOUCH" = "${{ github.event.pull_request.head.sha }}"
+          python - <<'PY'
+          from pathlib import Path
+
+          expected = """EXP279_V9_COUNTERFACTUAL_OUTCOME_QUARTET_RELEASE_V1
+          train_budgets=60,120
+          canonical_indices=0,1,2,3
+          fit_roots_per_canonical=2
+          decision_roots_per_canonical=2
+          fit_replicates_per_root=1332
+          decision_replicates_per_root=1332
+          student_family=OUTCOME_QUARTET_MLP
+          student_hidden=64
+          student_steps=200
+          student_lr=0.001
+          policy_route_rule=score_gt_0
+          protocol_digest=c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440
+          """
+          expected = "\n".join(line.strip() for line in expected.splitlines() if line.strip()) + "\n"
+          marker = Path("protocols/exp279-v9-counterfactual-outcome-quartet-release.lock")
+          actual = marker.read_text(encoding="utf-8")
+          if actual != expected:
+              raise SystemExit("V9 release marker content mismatch")
+          PY
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+
+  scientific-shard:
+    needs: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [60, 120]
+        canonical_index: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run frozen V9 quartet shard
+        run: |
+          WORK=/tmp/exp279-v9-${{ matrix.train_replicates }}-${{ matrix.canonical_index }}
+          mkdir -p "$WORK"
+          python scripts/run_exp279_counterfactual_outcome_quartet_v9_dev.py \
+            --train-replicates ${{ matrix.train_replicates }} \
+            --canonical-index ${{ matrix.canonical_index }} \
+            --scientific-branch-head ${{ github.event.pull_request.head.sha }} \
+            --executed-commit ${{ github.sha }} \
+            --output "$WORK/receipt.json"
+      - name: Verify shard receipt and byte sidecar
+        run: |
+          PYTHONPATH=src python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9_receipts import (
+              canonical_receipt_bytes,
+              validate_shard_receipt,
+          )
+
+          n = ${{ matrix.train_replicates }}
+          c = ${{ matrix.canonical_index }}
+          receipt = Path(f"/tmp/exp279-v9-{n}-{c}/receipt.json")
+          sidecar = receipt.with_name("receipt.json.sha256")
+          payload = receipt.read_bytes()
+          assert sidecar.read_text(encoding="utf-8").strip() == hashlib.sha256(payload).hexdigest()
+          data = json.loads(payload.decode("utf-8"))
+          assert payload == canonical_receipt_bytes(data)
+          assert data["train_replicates"] == n
+          assert data["canonical_index"] == c
+          assert data["scientific_branch_head"] == "${{ github.event.pull_request.head.sha }}"
+          assert data["executed_commit"] == "${{ github.sha }}"
+          errors = validate_shard_receipt(data)
+          assert not errors, errors
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v9-shard-${{ matrix.train_replicates }}-${{ matrix.canonical_index }}-${{ github.sha }}
+          path: /tmp/exp279-v9-${{ matrix.train_replicates }}-${{ matrix.canonical_index }}
+          if-no-files-found: error
+          retention-days: 90
+
+  budget:
+    needs: scientific-shard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [60, 120]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only reducer environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+          python -m pip install -e '.[dev]'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: exp279-v9-shard-${{ matrix.train_replicates }}-*-${{ github.sha }}
+          path: /tmp/exp279-v9-shards-${{ matrix.train_replicates }}
+      - name: Verify four shards and aggregate budget
+        run: |
+          PYTHONPATH=src python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9_receipts import (
+              canonical_receipt_bytes,
+              validate_shard_receipt,
+          )
+
+          n = ${{ matrix.train_replicates }}
+          root = Path(f"/tmp/exp279-v9-shards-{n}")
+          receipts = sorted(root.glob("*/receipt.json"))
+          assert len(receipts) == 4, receipts
+          indices = set()
+          for receipt in receipts:
+              payload = receipt.read_bytes()
+              sidecar = receipt.with_name("receipt.json.sha256")
+              assert sidecar.read_text(encoding="utf-8").strip() == hashlib.sha256(payload).hexdigest()
+              data = json.loads(payload.decode("utf-8"))
+              assert payload == canonical_receipt_bytes(data)
+              assert data["train_replicates"] == n
+              indices.add(data["canonical_index"])
+              errors = validate_shard_receipt(data)
+              assert not errors, errors
+          assert indices == {0, 1, 2, 3}
+          Path(f"/tmp/exp279-v9-shards-{n}/paths.txt").write_text(
+              "\n".join(str(path) for path in receipts) + "\n", encoding="utf-8"
+          )
+          PY
+          mapfile -t SHARDS < /tmp/exp279-v9-shards-${{ matrix.train_replicates }}/paths.txt
+          WORK=/tmp/exp279-v9-budget-${{ matrix.train_replicates }}
+          mkdir -p "$WORK"
+          python scripts/aggregate_exp279_counterfactual_outcome_quartet_v9_dev.py \
+            --shard "${SHARDS[0]}" \
+            --shard "${SHARDS[1]}" \
+            --shard "${SHARDS[2]}" \
+            --shard "${SHARDS[3]}" \
+            --output "$WORK/receipt.json"
+      - name: Verify budget receipt and byte sidecar
+        run: |
+          PYTHONPATH=src python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9_receipts import (
+              canonical_receipt_bytes,
+              validate_budget_receipt,
+          )
+
+          n = ${{ matrix.train_replicates }}
+          receipt = Path(f"/tmp/exp279-v9-budget-{n}/receipt.json")
+          payload = receipt.read_bytes()
+          sidecar = receipt.with_name("receipt.json.sha256")
+          assert sidecar.read_text(encoding="utf-8").strip() == hashlib.sha256(payload).hexdigest()
+          data = json.loads(payload.decode("utf-8"))
+          assert payload == canonical_receipt_bytes(data)
+          assert data["train_replicates"] == n
+          errors = validate_budget_receipt(data)
+          assert not errors, errors
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v9-budget-${{ matrix.train_replicates }}-${{ github.sha }}
+          path: /tmp/exp279-v9-budget-${{ matrix.train_replicates }}
+          if-no-files-found: error
+          retention-days: 90
+
+  cross-cell:
+    needs: budget
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only reducer environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+          python -m pip install -e '.[dev]'
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp279-v9-budget-60-${{ github.sha }}
+          path: /tmp/exp279-v9-cross/train60
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp279-v9-budget-120-${{ github.sha }}
+          path: /tmp/exp279-v9-cross/train120
+      - name: Verify budgets and classify cross-cell
+        run: |
+          PYTHONPATH=src python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9_receipts import (
+              canonical_receipt_bytes,
+              validate_budget_receipt,
+          )
+
+          for label in ("train60", "train120"):
+              receipt = Path(f"/tmp/exp279-v9-cross/{label}/receipt.json")
+              payload = receipt.read_bytes()
+              sidecar = receipt.with_name("receipt.json.sha256")
+              assert sidecar.read_text(encoding="utf-8").strip() == hashlib.sha256(payload).hexdigest()
+              data = json.loads(payload.decode("utf-8"))
+              assert payload == canonical_receipt_bytes(data)
+              errors = validate_budget_receipt(data)
+              assert not errors, errors
+          PY
+          WORK=/tmp/exp279-v9-cross/final
+          mkdir -p "$WORK"
+          python scripts/classify_exp279_counterfactual_outcome_quartet_v9_dev.py \
+            --train60 /tmp/exp279-v9-cross/train60/receipt.json \
+            --train120 /tmp/exp279-v9-cross/train120/receipt.json \
+            --output "$WORK/receipt.json"
+      - name: Verify final receipt and byte sidecar
+        run: |
+          PYTHONPATH=src python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+          from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9_receipts import (
+              canonical_receipt_bytes,
+              validate_cross_receipt,
+          )
+
+          receipt = Path("/tmp/exp279-v9-cross/final/receipt.json")
+          payload = receipt.read_bytes()
+          sidecar = receipt.with_name("receipt.json.sha256")
+          assert sidecar.read_text(encoding="utf-8").strip() == hashlib.sha256(payload).hexdigest()
+          data = json.loads(payload.decode("utf-8"))
+          assert payload == canonical_receipt_bytes(data)
+          errors = validate_cross_receipt(data)
+          assert not errors, errors
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v9-cross-cell-${{ github.sha }}
+          path: /tmp/exp279-v9-cross/final
+          if-no-files-found: error
+          retention-days: 90
