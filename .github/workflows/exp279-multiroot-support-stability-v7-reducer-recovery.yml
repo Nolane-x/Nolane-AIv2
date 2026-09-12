@@ -1,0 +1,390 @@
+name: exp279-multiroot-support-stability-v7-reducer-recovery
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/exp279-multiroot-support-stability-v7-reducer-recovery.yml
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SCIENTIFIC_HEAD: 5de6a8d5f76afccd3b6c89496c3cd258241c90dc
+  SOURCE_RUN_ID: '34673221095'
+  SOURCE_PR_MERGE_SHA: 457d252762e41adf81e63393baeb654970983bc4
+
+jobs:
+  source-provenance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SCIENTIFIC_HEAD }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install frozen reducer environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen scientific source and protocol
+        run: |
+          test "$(git rev-parse HEAD)" = "$SCIENTIFIC_HEAD"
+          python scripts/verify_protocol.py
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from nolane_ai.protocol.identity import source_tree_digest
+
+          root = Path.cwd()
+          out = Path('/tmp/exp279-v7-recovery-source')
+          out.mkdir(parents=True, exist_ok=True)
+          manifest = {
+              'schema': 'NLM-EXP-279-V7-RECOVERY-SOURCE-PROVENANCE-V1',
+              'scientific_head_commit': os.environ['SCIENTIFIC_HEAD'],
+              'source_run_id': int(os.environ['SOURCE_RUN_ID']),
+              'source_pr_merge_sha': os.environ['SOURCE_PR_MERGE_SHA'],
+              'source_tree_digest': source_tree_digest(root),
+              'scientific_code_mutated_after_visibility': False,
+              'scientific_roots_replaced': False,
+              'scientific_roots_added': False,
+              'scientific_shards_rerun_by_recovery': False,
+          }
+          (out / 'source.json').write_text(json.dumps(manifest, sort_keys=True, indent=2) + '\n')
+          PY
+      - name: Bind exact source-run artifact identities
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}/artifacts?per_page=100" > /tmp/source-artifacts.json
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          source = json.loads(Path('/tmp/source-artifacts.json').read_text())
+          artifacts = source['artifacts']
+          expected = {
+              f"exp279-v7-shard-{n}-{c}-{os.environ['SOURCE_PR_MERGE_SHA']}"
+              for n in (60, 120)
+              for c in range(4)
+          }
+          actual = {item['name'] for item in artifacts}
+          assert actual == expected, (actual, expected)
+          assert len(artifacts) == 8
+          for item in artifacts:
+              assert item['expired'] is False
+              assert item['workflow_run']['id'] == int(os.environ['SOURCE_RUN_ID'])
+              assert item['workflow_run']['head_sha'] == os.environ['SCIENTIFIC_HEAD']
+              assert item['digest'].startswith('sha256:')
+
+          path = Path('/tmp/exp279-v7-recovery-source/source.json')
+          manifest = json.loads(path.read_text())
+          manifest['source_artifacts'] = [
+              {
+                  'id': item['id'],
+                  'name': item['name'],
+                  'zip_sha256': item['digest'].split(':', 1)[1],
+                  'size_in_bytes': item['size_in_bytes'],
+              }
+              for item in sorted(artifacts, key=lambda item: item['name'])
+          ]
+          path.write_text(json.dumps(manifest, sort_keys=True, indent=2) + '\n')
+          PY
+          (cd /tmp/exp279-v7-recovery-source && sha256sum source.json > source.json.sha256)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v7-recovery-source-provenance-${{ github.run_id }}
+          path: /tmp/exp279-v7-recovery-source
+          if-no-files-found: error
+          retention-days: 90
+
+  budget-recovery:
+    needs: source-provenance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        train_replicates: [60, 120]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SCIENTIFIC_HEAD }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install frozen reducer environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen checkout
+        run: |
+          test "$(git rev-parse HEAD)" = "$SCIENTIFIC_HEAD"
+          python scripts/verify_protocol.py
+      - name: Download immutable source shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: exp279-v7-shard-${{ matrix.train_replicates }}-*-${{ env.SOURCE_PR_MERGE_SHA }}
+          path: /tmp/exp279-v7-source-${{ matrix.train_replicates }}
+          merge-multiple: false
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+      - name: Verify shard receipts and aggregate frozen budget
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from nolane_ai.protocol.identity import source_tree_digest
+
+          n = ${{ matrix.train_replicates }}
+          root = Path(f'/tmp/exp279-v7-source-{n}')
+          receipts = sorted(root.glob('*/receipt.json'))
+          assert len(receipts) == 4, receipts
+          indices = set()
+          code_digests = set()
+          for receipt in receipts:
+              sidecar = receipt.with_name('receipt.json.sha256')
+              expected = sidecar.read_text().split()[0]
+              actual = hashlib.sha256(receipt.read_bytes()).hexdigest()
+              assert actual == expected
+              data = json.loads(receipt.read_text())
+              assert data['train_replicates'] == n
+              assert data['fresh_evaluation_lineage_may_be_reserved'] is False
+              assert data['fresh_evaluation_lineage_consumed'] is False
+              assert data['confirmatory_data_consumed'] is False
+              assert data['challenge_materialized'] is False
+              assert data['promotion_claimed'] is False
+              indices.add(data['canonical_index'])
+              code_digests.add(data['code_digest'])
+          assert indices == {0, 1, 2, 3}
+          assert len(code_digests) == 1
+          frozen_digest = source_tree_digest(Path.cwd())
+          assert code_digests == {frozen_digest}, (code_digests, frozen_digest)
+          Path(f'/tmp/exp279-v7-source-{n}/paths.txt').write_text(
+              '\n'.join(str(p) for p in receipts) + '\n'
+          )
+          PY
+          mapfile -t SHARDS < /tmp/exp279-v7-source-${{ matrix.train_replicates }}/paths.txt
+          WORK=/tmp/exp279-v7-recovery-budget-${{ matrix.train_replicates }}
+          mkdir -p "$WORK"
+          python scripts/aggregate_exp279_multiroot_support_stability_v7_dev.py \
+            --shard "${SHARDS[0]}" \
+            --shard "${SHARDS[1]}" \
+            --shard "${SHARDS[2]}" \
+            --shard "${SHARDS[3]}" \
+            --output "$WORK/receipt.json"
+          (cd "$WORK" && sha256sum receipt.json > receipt.json.sha256)
+      - name: Assert recovered budget boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          n = ${{ matrix.train_replicates }}
+          r = json.loads(Path(f'/tmp/exp279-v7-recovery-budget-{n}/receipt.json').read_text())
+          assert r['train_replicates'] == n
+          assert len(r['canonical_records']) == 4
+          assert len(r['pair_records']) == 16
+          assert len(r['fold_records']) == 48
+          assert r['total_episodes'] == 25344
+          assert r['train_cell_classification'] in {
+              'MODEL_ROOT_SUPPORT_COLLAPSE',
+              'PROBE_SUPPORT_INTERMITTENT',
+              'SUPPORT_RECURRENT',
+          }
+          assert r['fresh_evaluation_lineage_may_be_reserved'] is False
+          assert r['fresh_evaluation_lineage_consumed'] is False
+          assert r['confirmatory_data_consumed'] is False
+          assert r['challenge_materialized'] is False
+          assert r['promotion_claimed'] is False
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v7-recovery-budget-${{ matrix.train_replicates }}-${{ github.run_id }}
+          path: /tmp/exp279-v7-recovery-budget-${{ matrix.train_replicates }}
+          if-no-files-found: error
+          retention-days: 90
+
+  cross-cell-recovery:
+    needs: budget-recovery
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SCIENTIFIC_HEAD }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install frozen reducer environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen checkout
+        run: |
+          test "$(git rev-parse HEAD)" = "$SCIENTIFIC_HEAD"
+          python scripts/verify_protocol.py
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp279-v7-recovery-budget-60-${{ github.run_id }}
+          path: /tmp/exp279-v7-recovery-budget-60
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp279-v7-recovery-budget-120-${{ github.run_id }}
+          path: /tmp/exp279-v7-recovery-budget-120
+      - name: Verify budget hashes and classify frozen cross-cell
+        run: |
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          for n in (60, 120):
+              receipt = Path(f'/tmp/exp279-v7-recovery-budget-{n}/receipt.json')
+              expected = receipt.with_name('receipt.json.sha256').read_text().split()[0]
+              actual = hashlib.sha256(receipt.read_bytes()).hexdigest()
+              assert actual == expected
+          PY
+          WORK=/tmp/exp279-v7-recovery-cross-cell
+          mkdir -p "$WORK"
+          python scripts/classify_exp279_multiroot_support_stability_v7_dev.py \
+            --train60 /tmp/exp279-v7-recovery-budget-60/receipt.json \
+            --train120 /tmp/exp279-v7-recovery-budget-120/receipt.json \
+            --output "$WORK/receipt.json"
+          (cd "$WORK" && sha256sum receipt.json > receipt.json.sha256)
+      - name: Assert recovered cross-cell boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r = json.loads(Path('/tmp/exp279-v7-recovery-cross-cell/receipt.json').read_text())
+          assert r['schema'] == 'NLM-EXP-279-MULTIROOT-SUPPORT-CROSS-CELL-V7'
+          assert r['evidence_level'] == 'EV-E2'
+          assert r['scientific_evidence_eligible'] is False
+          assert r['decision'] in {
+              'MODEL_ROOT_SUPPORT_COLLAPSE',
+              'PROBE_SUPPORT_INTERMITTENT',
+              'SUPPORT_RECURRENT',
+          }
+          assert r['mechanism_successor_authorized'] is False
+          assert r['fresh_evaluation_lineage_may_be_reserved'] is False
+          assert r['fresh_evaluation_lineage_consumed'] is False
+          assert r['confirmatory_data_consumed'] is False
+          assert r['challenge_materialized'] is False
+          assert r['promotion_claimed'] is False
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v7-recovery-cross-cell-${{ github.run_id }}
+          path: /tmp/exp279-v7-recovery-cross-cell
+          if-no-files-found: error
+          retention-days: 90
+
+  final-provenance:
+    needs: cross-cell-recovery
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp279-v7-recovery-source-provenance-${{ github.run_id }}
+          path: /tmp/source-provenance
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp279-v7-recovery-budget-60-${{ github.run_id }}
+          path: /tmp/budget-60
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp279-v7-recovery-budget-120-${{ github.run_id }}
+          path: /tmp/budget-120
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp279-v7-recovery-cross-cell-${{ github.run_id }}
+          path: /tmp/cross-cell
+      - name: Build immutable V7 provenance envelope
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100" > /tmp/recovery-artifacts.json
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          source_path = Path('/tmp/source-provenance/source.json')
+          source_expected = source_path.with_name('source.json.sha256').read_text().split()[0]
+          assert hashlib.sha256(source_path.read_bytes()).hexdigest() == source_expected
+          source = json.loads(source_path.read_text())
+
+          receipts = {}
+          for label, path in {
+              'train60': Path('/tmp/budget-60/receipt.json'),
+              'train120': Path('/tmp/budget-120/receipt.json'),
+              'cross_cell': Path('/tmp/cross-cell/receipt.json'),
+          }.items():
+              expected = path.with_name('receipt.json.sha256').read_text().split()[0]
+              file_digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              assert file_digest == expected
+              data = json.loads(path.read_text())
+              receipts[label] = {
+                  'receipt_file_sha256': file_digest,
+                  'artifact_digest': data['artifact_digest'],
+              }
+
+          current = json.loads(Path('/tmp/recovery-artifacts.json').read_text())['artifacts']
+          expected_names = {
+              f"exp279-v7-recovery-source-provenance-{os.environ['GITHUB_RUN_ID']}",
+              f"exp279-v7-recovery-budget-60-{os.environ['GITHUB_RUN_ID']}",
+              f"exp279-v7-recovery-budget-120-{os.environ['GITHUB_RUN_ID']}",
+              f"exp279-v7-recovery-cross-cell-{os.environ['GITHUB_RUN_ID']}",
+          }
+          by_name = {item['name']: item for item in current if item['name'] in expected_names}
+          assert set(by_name) == expected_names, (set(by_name), expected_names)
+
+          manifest = {
+              'schema': 'NLM-EXP-279-V7-RECOVERY-PROVENANCE-V1',
+              'evidence_level': 'EV-E2',
+              'decision': 'UNVERIFIED',
+              'scientific_head_commit': source['scientific_head_commit'],
+              'scientific_source_tree_digest': source['source_tree_digest'],
+              'source_run_id': source['source_run_id'],
+              'source_pr_merge_sha': source['source_pr_merge_sha'],
+              'recovery_run_id': int(os.environ['GITHUB_RUN_ID']),
+              'scientific_code_mutated_after_visibility': False,
+              'scientific_shards_rerun_by_recovery': False,
+              'source_artifacts': source['source_artifacts'],
+              'recovery_artifacts': [
+                  {
+                      'id': by_name[name]['id'],
+                      'name': name,
+                      'zip_sha256': by_name[name]['digest'].split(':', 1)[1],
+                  }
+                  for name in sorted(by_name)
+              ],
+              'receipts': receipts,
+              'inline_exact_code_commit_deviation': True,
+              'deviation_note': (
+                  'Frozen V7 aggregate receipts carry source_tree_digest via code_digest but do not '
+                  'carry the exact Git commit field required by the design prose. After scientific '
+                  'visibility the receipt schema was not mutated; this immutable envelope binds the '
+                  'receipts and source artifacts to the exact scientific head commit instead.'
+              ),
+              'fresh_evaluation_lineage_may_be_reserved': False,
+              'fresh_evaluation_lineage_consumed': False,
+              'confirmatory_data_consumed': False,
+              'challenge_materialized': False,
+              'promotion_claimed': False,
+          }
+          out = Path('/tmp/exp279-v7-final-provenance')
+          out.mkdir(parents=True, exist_ok=True)
+          (out / 'provenance.json').write_text(json.dumps(manifest, sort_keys=True, indent=2) + '\n')
+          PY
+          (cd /tmp/exp279-v7-final-provenance && sha256sum provenance.json > provenance.json.sha256)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v7-recovery-final-provenance-${{ github.run_id }}
+          path: /tmp/exp279-v7-final-provenance
+          if-no-files-found: error
+          retention-days: 90
