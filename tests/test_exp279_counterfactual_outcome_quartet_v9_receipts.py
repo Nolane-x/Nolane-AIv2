@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import json
 
 import pytest
 
@@ -98,6 +99,13 @@ def test_v9_receipt_bytes_and_sha256_are_deterministic() -> None:
     assert first == second
     assert first.endswith(b"\n")
     assert receipt_sha256(receipt) == hashlib.sha256(first).hexdigest()
+
+
+def test_v9_cross_receipt_is_canonical_after_json_round_trip() -> None:
+    built = build_cross_receipt(_budget(60), _budget(120))
+    payload = canonical_receipt_bytes(built)
+    reparsed = json.loads(payload.decode("utf-8"))
+    assert payload == canonical_receipt_bytes(reparsed)
 
 
 def test_v9_shard_validator_requires_absolute_frozen_identity_and_boundaries() -> None:
