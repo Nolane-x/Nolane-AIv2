@@ -361,3 +361,91 @@ def direct_utility(
         "total_accounted_flops": int(total_flops) if float(total_flops).is_integer() else total_flops,
         "utility": solutions / total_flops if total_flops > 0.0 else 0.0,
     }
+
+
+def heldout_policy_metrics(
+    chosen_branch: torch.Tensor,
+    stop_exact: torch.Tensor,
+    branch_exact: torch.Tensor,
+    *,
+    stop_accounted_flops: int | float,
+    branch_accounted_flops: int | float,
+    student_accounted_flops: int | float,
+) -> dict[str, Any]:
+    policy = direct_utility(
+        chosen_branch,
+        stop_exact,
+        branch_exact,
+        stop_accounted_flops=stop_accounted_flops,
+        branch_accounted_flops=branch_accounted_flops,
+        student_accounted_flops=student_accounted_flops,
+    )
+    route = chosen_branch.to(torch.bool)
+    stop = stop_exact.to(torch.bool)
+    branch = branch_exact.to(torch.bool)
+    episodes = int(route.numel())
+    if episodes == 0:
+        raise ValueError("V9 heldout decision set must not be empty")
+    stop_cost = float(stop_accounted_flops)
+    branch_cost = float(branch_accounted_flops)
+    if stop_cost <= 0.0 or branch_cost <= 0.0:
+        raise ValueError("V9 heldout baseline costs are invalid")
+
+    rescue = (~stop) & branch
+    harm = stop & (~branch)
+    routed = int(route.sum().item())
+    raw_rescues = int(rescue.sum().item())
+    raw_harms = int(harm.sum().item())
+    selected_rescues = int((route & rescue).sum().item())
+    selected_harms = int((route & harm).sum().item())
+    stop_solutions = int(stop.sum().item())
+    branch_solutions = int(branch.sum().item())
+    stop_total_flops = episodes * stop_cost
+    branch_total_flops = episodes * branch_cost
+
+    return {
+        "episodes": episodes,
+        "routed_episodes": routed,
+        "route_fraction": routed / episodes,
+        "raw_rescues": raw_rescues,
+        "raw_harms": raw_harms,
+        "raw_rescue_prevalence": raw_rescues / episodes,
+        "selected_rescues": selected_rescues,
+        "selected_harms": selected_harms,
+        "selected_rescue_prevalence": selected_rescues / routed if routed else 0.0,
+        "stop_solutions": stop_solutions,
+        "branch_solutions": branch_solutions,
+        "policy_solutions": int(policy["solutions"]),
+        "stop_total_accounted_flops": int(stop_total_flops) if stop_total_flops.is_integer() else stop_total_flops,
+        "branch_total_accounted_flops": int(branch_total_flops) if branch_total_flops.is_integer() else branch_total_flops,
+        "policy_total_accounted_flops": policy["total_accounted_flops"],
+        "stop_baseline_utility": stop_solutions / stop_total_flops,
+        "branch_baseline_utility": branch_solutions / branch_total_flops,
+        "policy_utility": policy["utility"],
+        "evidence_boundary_closed": True,
+    }
+
+
+def classify_quartet_root(metrics: dict[str, Any]) -> str:
+    required = (
+        "route_fraction",
+        "selected_rescues",
+        "selected_harms",
+        "raw_rescue_prevalence",
+        "selected_rescue_prevalence",
+        "stop_baseline_utility",
+        "branch_baseline_utility",
+        "policy_utility",
+        "evidence_boundary_closed",
+    )
+    if any(key not in metrics for key in required):
+        raise ValueError("V9 root metrics are incomplete")
+    economic = (
+        metrics["evidence_boundary_closed"] is True
+        and 0.0 < float(metrics["route_fraction"]) < 1.0
+        and float(metrics["policy_utility"]) > float(metrics["stop_baseline_utility"])
+        and float(metrics["policy_utility"]) > float(metrics["branch_baseline_utility"])
+        and int(metrics["selected_rescues"]) > int(metrics["selected_harms"])
+        and float(metrics["selected_rescue_prevalence"]) > float(metrics["raw_rescue_prevalence"])
+    )
+    return "QUARTET_ROOT_ECONOMIC" if economic else "QUARTET_ROOT_NOT_ECONOMIC"
