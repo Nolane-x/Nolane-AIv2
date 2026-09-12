@@ -5,6 +5,8 @@ import hashlib
 
 import pytest
 
+pytest.importorskip("torch")
+
 from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9 import (
     FROZEN_PROTOCOL_DIGEST,
     PRIMARY_FAMILY,
