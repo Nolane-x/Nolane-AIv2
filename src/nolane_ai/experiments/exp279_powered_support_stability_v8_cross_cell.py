@@ -304,7 +304,26 @@ def _validate_budget_receipt(receipt: Mapping[str, Any], *, expected_train: int)
 
 def classify_exp279_powered_support_stability_v8_cross_cell(
     cells: Mapping[int, Mapping[str, Any]],
+    *,
+    expected_scientific_branch_head: str,
+    expected_executed_commit: str,
+    expected_code_digest: str,
 ) -> dict[str, Any]:
+    expected_branch_head = _require_hex(
+        expected_scientific_branch_head,
+        bits=160,
+        label="expected scientific branch head",
+    )
+    expected_executed = _require_hex(
+        expected_executed_commit,
+        bits=160,
+        label="expected executed commit",
+    )
+    expected_code = _require_hex(
+        expected_code_digest,
+        bits=256,
+        label="expected code digest",
+    )
     if set(cells.keys()) != set(_DECISION_BUDGETS):
         raise ValueError("V8 cross-cell decision budgets must be exactly train60 and train120")
     validated = {
@@ -312,7 +331,16 @@ def classify_exp279_powered_support_stability_v8_cross_cell(
         for train in _DECISION_BUDGETS
     }
 
-    for field in ("scientific_branch_head", "executed_commit", "code_digest"):
+    expected_provenance = {
+        "scientific_branch_head": expected_branch_head,
+        "executed_commit": expected_executed,
+        "code_digest": expected_code,
+    }
+    for train in _DECISION_BUDGETS:
+        for field, expected in expected_provenance.items():
+            if validated[train][field] != expected:
+                raise ValueError(f"V8 cross-cell provenance trust-anchor mismatch: {field}")
+    for field in expected_provenance:
         if validated[60][field] != validated[120][field]:
             raise ValueError(f"V8 cross-cell provenance mismatch: {field}")
     if validated[60]["roots"] & validated[120]["roots"]:
