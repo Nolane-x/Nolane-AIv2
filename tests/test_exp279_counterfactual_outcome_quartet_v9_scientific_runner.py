@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import inspect
 
-import torch
+import pytest
+
+torch = pytest.importorskip("torch")
 
 from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9_scientific_runner import (
     FROZEN_ARM_GEOMETRY,
