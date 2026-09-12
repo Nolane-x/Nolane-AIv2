@@ -11,6 +11,7 @@ from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9_scientific_r
     FROZEN_CANONICAL_OPTIMIZER,
     FROZEN_ROUTE_THRESHOLD,
     FROZEN_WORLD_GEOMETRY,
+    _canonical_freeze_digest,
     exact_outcome_tensors,
     run_exp279_counterfactual_outcome_quartet_v9_shard,
 )
@@ -37,6 +38,20 @@ def test_v9_scientific_runner_exposes_no_tuning_knobs() -> None:
     assert FROZEN_ARM_GEOMETRY == {"hidden_size": 48, "target_parameters": 500_000}
     assert FROZEN_CANONICAL_OPTIMIZER == {"lr": 0.002, "weight_decay": 0.0}
     assert FROZEN_ROUTE_THRESHOLD == 0.5
+
+
+def test_v9_canonical_freeze_digest_ignores_grad_flag_but_detects_tensor_mutation() -> None:
+    model = torch.nn.Sequential(torch.nn.Linear(3, 4), torch.nn.SiLU(), torch.nn.Linear(4, 2))
+    before = _canonical_freeze_digest(model)
+
+    for parameter in model.parameters():
+        parameter.requires_grad_(False)
+    assert _canonical_freeze_digest(model) == before
+
+    first = next(model.parameters())
+    with torch.no_grad():
+        first.view(-1)[0].add_(1.0)
+    assert _canonical_freeze_digest(model) != before
 
 
 def test_v9_exact_outcome_tensors_match_the_four_counterfactual_classes() -> None:
