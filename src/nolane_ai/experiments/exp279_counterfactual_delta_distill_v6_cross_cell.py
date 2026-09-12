@@ -203,8 +203,9 @@ def classify_exp279_counterfactual_delta_distill_v6_cross_cell(
     decision_cells = {replicate: cells[replicate] for replicate in DECISION_TRAIN_REPLICATES}
     for replicate, cell in decision_cells.items():
         _validate_cell_boundary(replicate, cell)
-        _validate_frozen_configuration(replicate, cell)
     _validate_shared_provenance(decision_cells)
+    for replicate, cell in decision_cells.items():
+        _validate_frozen_configuration(replicate, cell)
 
     receipts: dict[str, dict[str, Any]] = {}
     support_closed: dict[str, bool] = {}
