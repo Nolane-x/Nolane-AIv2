@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -24,6 +25,15 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _write_receipt(output: Path, receipt: dict) -> None:
+    payload = (json.dumps(receipt, sort_keys=True, indent=2) + "\n").encode("utf-8")
+    output.write_bytes(payload)
+    output.with_name(output.name + ".sha256").write_text(
+        hashlib.sha256(payload).hexdigest() + "\n",
+        encoding="utf-8",
+    )
+
+
 def main() -> int:
     args = parse_args()
     if args.output.exists():
@@ -34,7 +44,7 @@ def main() -> int:
     shards = [json.loads(path.read_text(encoding="utf-8")) for path in args.shard]
     receipt = aggregate_exp279_powered_support_stability_v8_budget(shards)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    _write_receipt(args.output, receipt)
     print(
         json.dumps(
             {
