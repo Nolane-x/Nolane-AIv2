@@ -1,0 +1,269 @@
+name: exp279-v9-cross-seal-repair
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - protocols/exp279-v9-cross-seal-repair.lock
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_RUN_ID: 34695665034
+  SOURCE_SCIENTIFIC_BRANCH_HEAD: 411d01eca4cc71109886819d652ae7ca0b8c2e0c
+  SOURCE_EXECUTED_COMMIT: e7d08b0540dea1e7e7dff68667f7ad65108c4221
+  SOURCE_60_ARTIFACT_ID: 10299085674
+  SOURCE_60_ARTIFACT_NAME: exp279-v9-budget-60-e7d08b0540dea1e7e7dff68667f7ad65108c4221
+  SOURCE_60_ZIP_SHA256: 8cc00c607315b1f34f97656f14edcc5d8fdcc6a92bf26240c90b3fdf0e9f1fed
+  SOURCE_60_RECEIPT_SHA256: c4be74d32c263fae0f792a7e652d2dc55a1498457c4e6c2cae7b5834b014cabf
+  SOURCE_120_ARTIFACT_ID: 10299080761
+  SOURCE_120_ARTIFACT_NAME: exp279-v9-budget-120-e7d08b0540dea1e7e7dff68667f7ad65108c4221
+  SOURCE_120_ZIP_SHA256: 0ac9b76ee78c97c68eec8f90208490162c67dc880d0f13bf166531e32ee553e4
+  SOURCE_120_RECEIPT_SHA256: 2e28e19d2e0def8710cf687b8a56fd78718e784c2384b26601f4e4afbb0dddd8
+  OBSERVED_UNSEALED_CROSS_DIGEST: 00e877ec45ea0efa7b5eeeba953885354a61cd16b2d813a6cc25b12f7c7881a7
+
+jobs:
+  seal-repair:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Require dedicated repair marker at current branch head
+        shell: bash
+        run: |
+          set -euo pipefail
+          MARKER=protocols/exp279-v9-cross-seal-repair.lock
+          test -f "$MARKER"
+          LAST_TOUCH=$(git log -1 --format=%H -- "$MARKER")
+          test "$LAST_TOUCH" = "${{ github.event.pull_request.head.sha }}"
+          python - <<'PY'
+          from pathlib import Path
+          expected = """EXP279_V9_CROSS_SEAL_REPAIR_V1
+          source_run_id=34695665034
+          source_scientific_branch_head=411d01eca4cc71109886819d652ae7ca0b8c2e0c
+          source_executed_commit=e7d08b0540dea1e7e7dff68667f7ad65108c4221
+          source_60_artifact_id=10299085674
+          source_60_zip_sha256=8cc00c607315b1f34f97656f14edcc5d8fdcc6a92bf26240c90b3fdf0e9f1fed
+          source_60_receipt_sha256=c4be74d32c263fae0f792a7e652d2dc55a1498457c4e6c2cae7b5834b014cabf
+          source_120_artifact_id=10299080761
+          source_120_zip_sha256=0ac9b76ee78c97c68eec8f90208490162c67dc880d0f13bf166531e32ee553e4
+          source_120_receipt_sha256=2e28e19d2e0def8710cf687b8a56fd78718e784c2384b26601f4e4afbb0dddd8
+          observed_unsealed_cross_digest=00e877ec45ea0efa7b5eeeba953885354a61cd16b2d813a6cc25b12f7c7881a7
+          expected_decision=QUARTET_MECHANISM_COURT_FAILED
+          expected_authorization_scope=NONE
+          protocol_digest=c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440
+          """
+          actual = Path("protocols/exp279-v9-cross-seal-repair.lock").read_text(encoding="utf-8")
+          if actual != expected:
+              raise SystemExit("repair marker bytes do not match frozen repair contract")
+          PY
+
+      - name: Install CPU-only receipt environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+          python -m pip install -e '.[dev]'
+
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+
+      - name: Verify immutable source artifact metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${SOURCE_60_ARTIFACT_ID}" > /tmp/source60-meta.json
+          gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${SOURCE_120_ARTIFACT_ID}" > /tmp/source120-meta.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          expected = {
+              "60": {
+                  "path": "/tmp/source60-meta.json",
+                  "id": int(os.environ["SOURCE_60_ARTIFACT_ID"]),
+                  "name": os.environ["SOURCE_60_ARTIFACT_NAME"],
+                  "digest": "sha256:" + os.environ["SOURCE_60_ZIP_SHA256"],
+              },
+              "120": {
+                  "path": "/tmp/source120-meta.json",
+                  "id": int(os.environ["SOURCE_120_ARTIFACT_ID"]),
+                  "name": os.environ["SOURCE_120_ARTIFACT_NAME"],
+                  "digest": "sha256:" + os.environ["SOURCE_120_ZIP_SHA256"],
+              },
+          }
+          for label, item in expected.items():
+              data = json.loads(Path(item["path"]).read_text(encoding="utf-8"))
+              assert data["id"] == item["id"]
+              assert data["name"] == item["name"]
+              assert data["digest"] == item["digest"]
+              assert data["expired"] is False
+              assert int(data["workflow_run"]["id"]) == int(os.environ["SOURCE_RUN_ID"])
+          PY
+
+      - name: Download immutable train60 budget artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: exp279-v9-budget-60-e7d08b0540dea1e7e7dff68667f7ad65108c4221
+          path: /tmp/exp279-v9-seal/train60
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Download immutable train120 budget artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: exp279-v9-budget-120-e7d08b0540dea1e7e7dff68667f7ad65108c4221
+          path: /tmp/exp279-v9-seal/train120
+          repository: ${{ github.repository }}
+          run-id: ${{ env.SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Verify immutable budget receipts
+        env:
+          PYTHONPATH: src
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9_receipts import (
+              canonical_receipt_bytes,
+              validate_budget_receipt,
+          )
+
+          expected = {
+              60: (Path("/tmp/exp279-v9-seal/train60/receipt.json"), os.environ["SOURCE_60_RECEIPT_SHA256"]),
+              120: (Path("/tmp/exp279-v9-seal/train120/receipt.json"), os.environ["SOURCE_120_RECEIPT_SHA256"]),
+          }
+          code_digest = None
+          for train, (receipt, expected_sha) in expected.items():
+              payload = receipt.read_bytes()
+              actual_sha = hashlib.sha256(payload).hexdigest()
+              assert actual_sha == expected_sha
+              assert receipt.with_name("receipt.json.sha256").read_text(encoding="utf-8").strip() == actual_sha
+              data = json.loads(payload.decode("utf-8"))
+              assert payload == canonical_receipt_bytes(data)
+              assert validate_budget_receipt(data) == []
+              assert int(data["train_replicates"]) == train
+              assert data["scientific_branch_head"] == os.environ["SOURCE_SCIENTIFIC_BRANCH_HEAD"]
+              assert data["executed_commit"] == os.environ["SOURCE_EXECUTED_COMMIT"]
+              assert data["classification"] == "QUARTET_POLICY_NOT_ECONOMIC"
+              assert data["root_classifications"] == ["QUARTET_ROOT_NOT_ECONOMIC"] * 4
+              assert data["scientific_evidence_eligible"] is False
+              assert data["fresh_evaluation_lineage_may_be_reserved"] is False
+              assert data["fresh_evaluation_lineage_consumed"] is False
+              assert data["confirmatory_data_consumed"] is False
+              assert data["challenge_materialized"] is False
+              assert data["promotion_claimed"] is False
+              if code_digest is None:
+                  code_digest = data["code_digest"]
+              else:
+                  assert data["code_digest"] == code_digest
+          PY
+
+      - name: Rebuild cross receipt from immutable budgets only
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/exp279-v9-seal/final
+          python scripts/classify_exp279_counterfactual_outcome_quartet_v9_dev.py \
+            --train60 /tmp/exp279-v9-seal/train60/receipt.json \
+            --train120 /tmp/exp279-v9-seal/train120/receipt.json \
+            --output /tmp/exp279-v9-seal/final/receipt.json
+
+      - name: Verify repaired final receipt and fail-closed disposition
+        env:
+          PYTHONPATH: src
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9_receipts import (
+              canonical_receipt_bytes,
+              validate_cross_receipt,
+          )
+
+          receipt = Path("/tmp/exp279-v9-seal/final/receipt.json")
+          payload = receipt.read_bytes()
+          receipt_sha = hashlib.sha256(payload).hexdigest()
+          sidecar = receipt.with_name("receipt.json.sha256")
+          assert sidecar.read_text(encoding="utf-8").strip() == receipt_sha
+          data = json.loads(payload.decode("utf-8"))
+          assert payload == canonical_receipt_bytes(data)
+          assert validate_cross_receipt(data) == []
+          assert data["decision"] == "QUARTET_MECHANISM_COURT_FAILED"
+          assert data["authorization_scope"] == "NONE"
+          assert data["successor_design_authorized"] is False
+          assert data["mechanism_successor_authorized"] is False
+          assert data["scientific_evidence_eligible"] is False
+          assert data["fresh_evaluation_lineage_may_be_reserved"] is False
+          assert data["fresh_evaluation_lineage_consumed"] is False
+          assert data["confirmatory_data_consumed"] is False
+          assert data["challenge_materialized"] is False
+          assert data["promotion_claimed"] is False
+          assert data["scientific_branch_head"] == os.environ["SOURCE_SCIENTIFIC_BRANCH_HEAD"]
+          assert data["executed_commit"] == os.environ["SOURCE_EXECUTED_COMMIT"]
+          assert data["train_budget_classifications"] == {
+              "60": "QUARTET_POLICY_NOT_ECONOMIC",
+              "120": "QUARTET_POLICY_NOT_ECONOMIC",
+          }
+          assert data["source_budget_digests"] == {
+              "60": os.environ["SOURCE_60_RECEIPT_SHA256"],
+              "120": os.environ["SOURCE_120_RECEIPT_SHA256"],
+          }
+
+          provenance = {
+              "schema": "NLM-EXP-279-V9-CROSS-SEAL-REPAIR-V1",
+              "source_run_id": int(os.environ["SOURCE_RUN_ID"]),
+              "source_scientific_branch_head": os.environ["SOURCE_SCIENTIFIC_BRANCH_HEAD"],
+              "source_executed_commit": os.environ["SOURCE_EXECUTED_COMMIT"],
+              "source_60_artifact_id": int(os.environ["SOURCE_60_ARTIFACT_ID"]),
+              "source_60_zip_sha256": os.environ["SOURCE_60_ZIP_SHA256"],
+              "source_60_receipt_sha256": os.environ["SOURCE_60_RECEIPT_SHA256"],
+              "source_120_artifact_id": int(os.environ["SOURCE_120_ARTIFACT_ID"]),
+              "source_120_zip_sha256": os.environ["SOURCE_120_ZIP_SHA256"],
+              "source_120_receipt_sha256": os.environ["SOURCE_120_RECEIPT_SHA256"],
+              "observed_unsealed_cross_digest": os.environ["OBSERVED_UNSEALED_CROSS_DIGEST"],
+              "repaired_receipt_sha256": receipt_sha,
+              "repaired_artifact_digest": data["artifact_digest"],
+              "repair_branch_head": os.environ["GITHUB_HEAD_SHA"],
+              "decision": data["decision"],
+              "authorization_scope": data["authorization_scope"],
+          }
+          provenance_bytes = (json.dumps(provenance, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+          provenance_path = Path("/tmp/exp279-v9-seal/final/repair-provenance.json")
+          provenance_path.write_bytes(provenance_bytes)
+          provenance_path.with_name("repair-provenance.json.sha256").write_text(
+              hashlib.sha256(provenance_bytes).hexdigest() + "\n", encoding="utf-8"
+          )
+          print(json.dumps({
+              "artifact_digest": data["artifact_digest"],
+              "decision": data["decision"],
+              "receipt_sha256": receipt_sha,
+          }, sort_keys=True))
+          PY
+        env:
+          GITHUB_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PYTHONPATH: src
+
+      - name: Upload sealed repaired cross receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp279-v9-cross-seal-repair-${{ github.event.pull_request.head.sha }}
+          path: /tmp/exp279-v9-seal/final
+          if-no-files-found: error
+          retention-days: 90
