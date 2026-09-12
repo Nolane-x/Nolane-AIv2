@@ -13,6 +13,7 @@ from .matched_routing_arms import HybridRoutingArm
 
 SCHEMA_SHARD = "NLM-EXP-279-COUNTERFACTUAL-OUTCOME-QUARTET-SHARD-V9"
 SCHEMA_BUDGET = "NLM-EXP-279-COUNTERFACTUAL-OUTCOME-QUARTET-BUDGET-V9"
+SCHEMA_CROSS = "NLM-EXP-279-COUNTERFACTUAL-OUTCOME-QUARTET-CROSS-BUDGET-V9"
 ROOT_PREFIX = "20260912-exp279-counterfactual-outcome-quartet-v9-dev"
 PRIMARY_FAMILY = "OUTCOME_QUARTET_MLP"
 CONTROL_FAMILY = "RESCUE_ONLY_MLP_CONTROL"
@@ -449,3 +450,111 @@ def classify_quartet_root(metrics: dict[str, Any]) -> str:
         and float(metrics["selected_rescue_prevalence"]) > float(metrics["raw_rescue_prevalence"])
     )
     return "QUARTET_ROOT_ECONOMIC" if economic else "QUARTET_ROOT_NOT_ECONOMIC"
+
+
+def _pooled_root_metrics(root_metrics: list[dict[str, Any]]) -> dict[str, Any]:
+    if len(root_metrics) != len(CANONICAL_INDICES):
+        raise ValueError("V9 budget reducer requires exactly four canonical roots")
+    sum_keys = (
+        "episodes",
+        "routed_episodes",
+        "raw_rescues",
+        "raw_harms",
+        "selected_rescues",
+        "selected_harms",
+        "stop_solutions",
+        "branch_solutions",
+        "policy_solutions",
+        "stop_total_accounted_flops",
+        "branch_total_accounted_flops",
+        "policy_total_accounted_flops",
+    )
+    pooled = {key: sum(float(root[key]) for root in root_metrics) for key in sum_keys}
+    for key in (
+        "episodes",
+        "routed_episodes",
+        "raw_rescues",
+        "raw_harms",
+        "selected_rescues",
+        "selected_harms",
+        "stop_solutions",
+        "branch_solutions",
+        "policy_solutions",
+    ):
+        pooled[key] = int(pooled[key])
+    episodes = int(pooled["episodes"])
+    routed = int(pooled["routed_episodes"])
+    if episodes <= 0:
+        raise ValueError("V9 pooled budget must contain episodes")
+    pooled.update(
+        {
+            "route_fraction": routed / episodes,
+            "raw_rescue_prevalence": int(pooled["raw_rescues"]) / episodes,
+            "selected_rescue_prevalence": int(pooled["selected_rescues"]) / routed if routed else 0.0,
+            "pooled_stop_baseline_utility": float(pooled["stop_solutions"]) / float(pooled["stop_total_accounted_flops"]),
+            "pooled_branch_baseline_utility": float(pooled["branch_solutions"]) / float(pooled["branch_total_accounted_flops"]),
+            "pooled_policy_utility": float(pooled["policy_solutions"]) / float(pooled["policy_total_accounted_flops"]),
+            "evidence_boundary_closed": all(root.get("evidence_boundary_closed") is True for root in root_metrics),
+        }
+    )
+    return pooled
+
+
+def classify_quartet_budget(root_metrics: list[dict[str, Any]]) -> dict[str, Any]:
+    pooled = _pooled_root_metrics(root_metrics)
+    root_classes = [classify_quartet_root(root) for root in root_metrics]
+    pooled_economic = (
+        pooled["evidence_boundary_closed"] is True
+        and 0.0 < float(pooled["route_fraction"]) < 1.0
+        and float(pooled["pooled_policy_utility"]) > float(pooled["pooled_stop_baseline_utility"])
+        and float(pooled["pooled_policy_utility"]) > float(pooled["pooled_branch_baseline_utility"])
+        and int(pooled["selected_rescues"]) > int(pooled["selected_harms"])
+        and float(pooled["selected_rescue_prevalence"]) > float(pooled["raw_rescue_prevalence"])
+    )
+    if pooled_economic and all(value == "QUARTET_ROOT_ECONOMIC" for value in root_classes):
+        classification = "QUARTET_POLICY_RECURRENTLY_ECONOMIC"
+    elif pooled_economic:
+        classification = "QUARTET_POLICY_PARTIAL"
+    else:
+        classification = "QUARTET_POLICY_NOT_ECONOMIC"
+    return {
+        **pooled,
+        "root_classifications": root_classes,
+        "classification": classification,
+    }
+
+
+def classify_quartet_cross_budget(train60: dict[str, Any], train120: dict[str, Any]) -> dict[str, Any]:
+    supplied = {int(train60.get("train_replicates", -1)): train60, int(train120.get("train_replicates", -1)): train120}
+    if set(supplied) != set(TRAIN_BUDGETS):
+        raise ValueError("V9 cross-budget reducer requires exactly train60 and train120")
+    recomputed: dict[int, dict[str, Any]] = {}
+    for budget in TRAIN_BUDGETS:
+        roots = supplied[budget].get("root_metrics")
+        if not isinstance(roots, list):
+            raise ValueError("V9 cross-budget receipt is missing root sufficient statistics")
+        recomputed[budget] = classify_quartet_budget(roots)
+    classes = {budget: recomputed[budget]["classification"] for budget in TRAIN_BUDGETS}
+    passed = all(value == "QUARTET_POLICY_RECURRENTLY_ECONOMIC" for value in classes.values())
+    partial = not passed and any(value == "QUARTET_POLICY_PARTIAL" for value in classes.values())
+    return {
+        "schema": SCHEMA_CROSS,
+        "decision": (
+            "QUARTET_MECHANISM_COURT_PASSED"
+            if passed
+            else "QUARTET_MECHANISM_COURT_PARTIAL"
+            if partial
+            else "QUARTET_MECHANISM_COURT_FAILED"
+        ),
+        "train_budget_classifications": classes,
+        "recomputed_budgets": recomputed,
+        "authorization_scope": "IMPLEMENT_QUARTET_SUCCESSOR_DEVELOPMENT_ONLY" if passed else "NONE",
+        "successor_design_authorized": passed,
+        "mechanism_successor_authorized": passed,
+        "scientific_evidence_eligible": False,
+        "fresh_evaluation_lineage_may_be_reserved": False,
+        "fresh_evaluation_lineage_consumed": False,
+        "confirmatory_data_consumed": False,
+        "challenge_materialized": False,
+        "promotion_claimed": False,
+    }
