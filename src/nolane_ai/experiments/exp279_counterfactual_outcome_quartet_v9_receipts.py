@@ -5,6 +5,8 @@ import json
 import re
 from typing import Any, Mapping
 
+from nolane_ai.protocol.evidence import canonical_sha256
+
 from .exp279_counterfactual_outcome_quartet_v9 import (
     CANONICAL_INDICES,
     DECISION_REPLICATES,
@@ -43,6 +45,10 @@ def canonical_receipt_bytes(receipt: Mapping[str, Any]) -> bytes:
 
 def receipt_sha256(receipt: Mapping[str, Any]) -> str:
     return hashlib.sha256(canonical_receipt_bytes(receipt)).hexdigest()
+
+
+def _artifact_digest(receipt: Mapping[str, Any]) -> str:
+    return canonical_sha256({key: value for key, value in receipt.items() if key != "artifact_digest"})
 
 
 def _append(errors: list[str], condition: bool, message: str) -> None:
@@ -120,6 +126,9 @@ def validate_shard_receipt(receipt: Mapping[str, Any]) -> list[str]:
     _append(errors, isinstance(metrics, Mapping), "V9 shard root metrics missing")
     if isinstance(metrics, Mapping):
         _append(errors, metrics.get("evidence_boundary_closed") is True, "V9 shard root evidence boundary must be closed")
+    artifact = receipt.get("artifact_digest")
+    if artifact is not None:
+        _append(errors, artifact == _artifact_digest(receipt), "V9 shard artifact digest mismatch")
     return errors
 
 
@@ -156,7 +165,7 @@ def validate_budget_receipt(receipt: Mapping[str, Any]) -> list[str]:
         for key in ("protocol_digest", "code_digest", "scientific_branch_head", "executed_commit"):
             _append(errors, shard.get(key) == receipt.get(key), f"V9 budget shard {index} {key} mismatch")
 
-    _append(errors, sorted(canonical_indices) == list(CANONICAL_INDICES), "V9 budget canonical roots must be exactly 0..3")
+    _append(errors, canonical_indices == list(CANONICAL_INDICES), "V9 budget canonical roots must be ordered exactly 0..3")
 
     expected_digests = [receipt_sha256(shard) for shard in shards if isinstance(shard, Mapping)]
     _append(errors, receipt.get("source_shard_digests") == expected_digests, "V9 budget source shard digests mismatch")
@@ -171,6 +180,11 @@ def validate_budget_receipt(receipt: Mapping[str, Any]) -> list[str]:
             errors.append(f"V9 budget metrics could not be recomputed: {exc}")
         else:
             _append(errors, receipt.get("classification") == recomputed.get("classification"), "V9 budget classification mismatch")
+            _append(errors, receipt.get("root_classifications") == recomputed.get("root_classifications"), "V9 budget root classifications mismatch")
+            _append(errors, receipt.get("budget_summary") == {key: value for key, value in recomputed.items() if key not in {"classification", "root_classifications"}}, "V9 budget summary mismatch")
+    artifact = receipt.get("artifact_digest")
+    if artifact is not None:
+        _append(errors, artifact == _artifact_digest(receipt), "V9 budget artifact digest mismatch")
     return errors
 
 
@@ -220,10 +234,103 @@ def validate_cross_receipt(receipt: Mapping[str, Any]) -> list[str]:
             "promotion_claimed",
         ):
             _append(errors, receipt.get(key) == recomputed.get(key), f"V9 cross {key} mismatch")
+        _append(errors, receipt.get("train_budget_classifications") == recomputed.get("train_budget_classifications"), "V9 cross budget classifications mismatch")
+        _append(errors, receipt.get("recomputed_budgets") == recomputed.get("recomputed_budgets"), "V9 cross recomputed budget summary mismatch")
+    artifact = receipt.get("artifact_digest")
+    if artifact is not None:
+        _append(errors, artifact == _artifact_digest(receipt), "V9 cross artifact digest mismatch")
     return errors
 
 
+def _raise_validation(prefix: str, errors: list[str]) -> None:
+    if errors:
+        raise ValueError(prefix + ": " + "; ".join(errors))
+
+
+def build_budget_receipt(shards: list[Mapping[str, Any]]) -> dict[str, Any]:
+    if len(shards) != len(CANONICAL_INDICES):
+        raise ValueError("V9 budget reducer requires exactly four shard receipts")
+    checked = [dict(shard) for shard in shards]
+    for index, shard in enumerate(checked):
+        _raise_validation(f"V9 source shard {index} invalid", validate_shard_receipt(shard))
+    try:
+        checked.sort(key=lambda shard: int(shard["canonical_index"]))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("V9 source shard canonical identity is invalid") from exc
+    if [int(shard["canonical_index"]) for shard in checked] != list(CANONICAL_INDICES):
+        raise ValueError("V9 budget reducer requires unique canonical roots 0..3")
+
+    first = checked[0]
+    train = int(first["train_replicates"])
+    if train not in TRAIN_BUDGETS:
+        raise ValueError("V9 budget reducer source train budget is not frozen")
+    for shard in checked:
+        if int(shard["train_replicates"]) != train:
+            raise ValueError("V9 budget reducer cannot mix train budgets")
+        for key in ("protocol_digest", "code_digest", "scientific_branch_head", "executed_commit"):
+            if shard.get(key) != first.get(key):
+                raise ValueError(f"V9 budget reducer source {key} mismatch")
+
+    metrics = [dict(shard["root_metrics"]) for shard in checked]
+    reduced = classify_quartet_budget(metrics)
+    receipt: dict[str, Any] = {
+        "schema": SCHEMA_BUDGET,
+        "evidence_level": "EV-E2",
+        "decision": "UNVERIFIED",
+        "scientific_evidence_eligible": False,
+        "protocol_digest": first["protocol_digest"],
+        "code_digest": first["code_digest"],
+        "scientific_branch_head": first["scientific_branch_head"],
+        "executed_commit": first["executed_commit"],
+        "train_replicates": train,
+        "source_shard_digests": [receipt_sha256(shard) for shard in checked],
+        "root_receipts": checked,
+        "root_metrics": metrics,
+        "root_classifications": reduced["root_classifications"],
+        "budget_summary": {key: value for key, value in reduced.items() if key not in {"classification", "root_classifications"}},
+        "classification": reduced["classification"],
+        "fresh_evaluation_lineage_may_be_reserved": False,
+        "fresh_evaluation_lineage_consumed": False,
+        "confirmatory_data_consumed": False,
+        "challenge_materialized": False,
+        "promotion_claimed": False,
+    }
+    receipt["artifact_digest"] = _artifact_digest(receipt)
+    _raise_validation("V9 built budget receipt invalid", validate_budget_receipt(receipt))
+    return receipt
+
+
+def build_cross_receipt(train60: Mapping[str, Any], train120: Mapping[str, Any]) -> dict[str, Any]:
+    left = dict(train60)
+    right = dict(train120)
+    _raise_validation("V9 train60 budget invalid", validate_budget_receipt(left))
+    _raise_validation("V9 train120 budget invalid", validate_budget_receipt(right))
+    if int(left.get("train_replicates", -1)) != 60 or int(right.get("train_replicates", -1)) != 120:
+        raise ValueError("V9 cross reducer requires train60 then train120 receipts")
+    for key in ("protocol_digest", "code_digest", "scientific_branch_head", "executed_commit"):
+        if left.get(key) != right.get(key):
+            raise ValueError(f"V9 cross reducer budget {key} mismatch")
+
+    reduced = classify_quartet_cross_budget(left, right)
+    receipt: dict[str, Any] = {
+        "schema": SCHEMA_CROSS,
+        "evidence_level": "EV-E2",
+        "protocol_digest": left["protocol_digest"],
+        "code_digest": left["code_digest"],
+        "scientific_branch_head": left["scientific_branch_head"],
+        "executed_commit": left["executed_commit"],
+        "source_budget_digests": {"60": receipt_sha256(left), "120": receipt_sha256(right)},
+        "budget_receipts": {"60": left, "120": right},
+        **reduced,
+    }
+    receipt["artifact_digest"] = _artifact_digest(receipt)
+    _raise_validation("V9 built cross receipt invalid", validate_cross_receipt(receipt))
+    return receipt
+
+
 __all__ = [
+    "build_budget_receipt",
+    "build_cross_receipt",
     "canonical_receipt_bytes",
     "receipt_sha256",
     "validate_shard_receipt",
