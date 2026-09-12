@@ -30,7 +30,7 @@ from nolane_ai.experiments.exp279_powered_support_stability_v8 import (
 )
 from nolane_ai.experiments.exp279_powered_support_stability_v8_cross_cell import (
     SCHEMA_CROSS_CELL,
-    classify_exp279_powered_support_stability_v8_cross_cell,
+    classify_exp279_powered_support_stability_v8_cross_cell as _classify_impl,
 )
 from nolane_ai.protocol.evidence import canonical_sha256
 
@@ -43,6 +43,15 @@ TOTAL_EPISODES = CANONICAL_EPISODES * 4
 BRANCH_HEAD = "a" * 40
 EXECUTED_COMMIT = "b" * 40
 CODE_DIGEST = "c" * 64
+
+
+def classify_exp279_powered_support_stability_v8_cross_cell(cells):
+    return _classify_impl(
+        cells,
+        expected_scientific_branch_head=BRANCH_HEAD,
+        expected_executed_commit=EXECUTED_COMMIT,
+        expected_code_digest=CODE_DIGEST,
+    )
 
 
 def _digest(receipt: dict) -> str:
@@ -331,6 +340,9 @@ def test_v8_cross_cell_cli_refuses_existing_output_before_loading_cells(tmp_path
             str(SCRIPT),
             "--train60", str(missing),
             "--train120", str(missing),
+            "--expected-scientific-branch-head", BRANCH_HEAD,
+            "--expected-executed-commit", EXECUTED_COMMIT,
+            "--expected-code-digest", CODE_DIGEST,
             "--output", str(output),
         ],
         cwd=ROOT,
@@ -355,6 +367,9 @@ def test_v8_cross_cell_cli_writes_deterministic_decision_receipt(tmp_path: Path)
             str(SCRIPT),
             "--train60", str(train60),
             "--train120", str(train120),
+            "--expected-scientific-branch-head", BRANCH_HEAD,
+            "--expected-executed-commit", EXECUTED_COMMIT,
+            "--expected-code-digest", CODE_DIGEST,
             "--output", str(output),
         ],
         cwd=ROOT,
