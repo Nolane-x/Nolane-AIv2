@@ -19,6 +19,7 @@ from nolane_ai.experiments.exp279_counterfactual_outcome_quartet_v9 import (
     STUDENT_OPTIMIZER,
     TRAIN_BUDGETS,
     QuartetClass,
+    _model_state_digest,
     apply_quartet_policy,
     canonical_root,
     cheap_prebranch_features,
@@ -109,6 +110,22 @@ def test_v9_quartet_labels_reject_misaligned_inputs() -> None:
         quartet_labels(torch.tensor([True]), torch.tensor([True, False]))
     with pytest.raises(ValueError):
         quartet_labels(torch.ones(2, 1, dtype=torch.bool), torch.ones(2, 1, dtype=torch.bool))
+
+
+def test_v9_model_state_digest_supports_scalar_buffers_and_detects_mutation() -> None:
+    class ScalarState(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.weight = torch.nn.Parameter(torch.tensor([1.0, 2.0]))
+            self.register_buffer("scalar", torch.tensor(3.0))
+
+    model = ScalarState()
+    before = _model_state_digest(model)
+    assert _model_state_digest(model) == before
+
+    with torch.no_grad():
+        model.scalar.add_(1.0)
+    assert _model_state_digest(model) != before
 
 
 def test_v9_marginal_route_score_uses_rescue_minus_harm_and_incremental_cost() -> None:
