@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from enum import IntEnum
 from typing import Any
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 from .matched_routing_arms import HybridRoutingArm
 
@@ -144,6 +147,144 @@ class RescueOnlyMLPControl(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x).squeeze(-1)
+
+
+def _canonical_bytes(payload: Any) -> bytes:
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def deterministic_student_seed(
+    family: str,
+    train_replicates: int,
+    canonical_index: int,
+    fit_roots: list[str] | tuple[str, ...],
+) -> int:
+    if family not in {PRIMARY_FAMILY, CONTROL_FAMILY}:
+        raise ValueError("V9 student family is not frozen")
+    budget = _require_budget(train_replicates)
+    canonical = _require_index(canonical_index, CANONICAL_INDICES, label="canonical index")
+    roots = sorted(str(root) for root in fit_roots)
+    if not roots or any(not root for root in roots) or len(roots) != len(set(roots)):
+        raise ValueError("V9 fit roots must be a non-empty unique set")
+    digest = hashlib.sha256(
+        _canonical_bytes(
+            {
+                "family": family,
+                "train_replicates": budget,
+                "canonical_index": canonical,
+                "fit_roots": roots,
+            }
+        )
+    ).digest()
+    return int.from_bytes(digest[:8], "big") % (2**63)
+
+
+def _model_state_digest(model: nn.Module) -> str:
+    digest = hashlib.sha256()
+    for name, tensor in sorted(model.state_dict().items()):
+        value = tensor.detach().cpu().contiguous()
+        digest.update(name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(str(value.dtype).encode("ascii"))
+        digest.update(b"\0")
+        digest.update(_canonical_bytes(list(value.shape)))
+        digest.update(b"\0")
+        digest.update(value.numpy().tobytes(order="C"))
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _cyclic_batch_indices(order: torch.Tensor, *, step: int, batch_size: int) -> torch.Tensor:
+    total = int(order.numel())
+    if total <= 0:
+        raise ValueError("V9 fit set must not be empty")
+    start = (step * batch_size) % total
+    end = start + batch_size
+    if end <= total:
+        return order[start:end]
+    return torch.cat((order[start:], order[: end - total]))
+
+
+def _validate_fit_features(features: torch.Tensor, labels: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    if features.ndim != 2 or features.shape[1] != STUDENT_GEOMETRY["input_size"]:
+        raise ValueError("V9 fit features must be [episodes,144]")
+    if labels.ndim != 1 or labels.shape[0] != features.shape[0] or labels.numel() == 0:
+        raise ValueError("V9 fit labels must align with a non-empty feature set")
+    checked_labels = labels.to(dtype=torch.long, device=features.device)
+    if int(checked_labels.min().item()) < 0 or int(checked_labels.max().item()) >= STUDENT_GEOMETRY["classes"]:
+        raise ValueError("V9 quartet labels must be in [0,3]")
+    return features, checked_labels
+
+
+def fit_quartet_student(
+    features: torch.Tensor,
+    labels: torch.Tensor,
+    *,
+    train_replicates: int,
+    canonical_index: int,
+    fit_roots: list[str] | tuple[str, ...],
+) -> dict[str, Any]:
+    x, y = _validate_fit_features(features, labels)
+    seed = deterministic_student_seed(PRIMARY_FAMILY, train_replicates, canonical_index, fit_roots)
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(seed)
+        model = OutcomeQuartetMLP().to(device=x.device, dtype=x.dtype)
+    initial_digest = _model_state_digest(model)
+    generator = torch.Generator(device="cpu")
+    generator.manual_seed(seed)
+    order = torch.randperm(int(x.shape[0]), generator=generator).to(device=x.device)
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=STUDENT_OPTIMIZER["lr"],
+        weight_decay=STUDENT_OPTIMIZER["weight_decay"],
+    )
+    model.train()
+    loss = torch.zeros((), dtype=x.dtype, device=x.device)
+    for step in range(STUDENT_OPTIMIZER["steps"]):
+        indices = _cyclic_batch_indices(order, step=step, batch_size=STUDENT_OPTIMIZER["batch_size"])
+        optimizer.zero_grad(set_to_none=True)
+        loss = F.cross_entropy(model(x[indices]), y[indices])
+        loss.backward()
+        optimizer.step()
+    class_counts = {
+        QuartetClass(index).name: int((y == index).sum().item())
+        for index in range(STUDENT_GEOMETRY["classes"])
+    }
+    return {
+        "model": model,
+        "family": PRIMARY_FAMILY,
+        "seed": seed,
+        "optimizer": dict(STUDENT_OPTIMIZER),
+        "steps": STUDENT_OPTIMIZER["steps"],
+        "batch_size": STUDENT_OPTIMIZER["batch_size"],
+        "class_counts": class_counts,
+        "initial_digest": initial_digest,
+        "final_digest": _model_state_digest(model),
+        "loss": float(loss.detach().cpu().item()),
+    }
+
+
+def fit_stop_utility(
+    stop_exact: torch.Tensor,
+    *,
+    stop_accounted_flops: int | float,
+    student_accounted_flops: int | float,
+) -> dict[str, Any]:
+    if stop_exact.ndim != 1:
+        raise ValueError("V9 fit stop outcomes must be rank-1")
+    stop_cost = float(stop_accounted_flops)
+    student_cost = float(student_accounted_flops)
+    if stop_cost <= 0.0 or student_cost < 0.0:
+        raise ValueError("V9 fit stop costs are invalid")
+    episodes = int(stop_exact.numel())
+    solutions = int(stop_exact.to(torch.bool).sum().item())
+    total_flops = episodes * (stop_cost + student_cost)
+    return {
+        "episodes": episodes,
+        "solutions": solutions,
+        "total_accounted_flops": int(total_flops) if total_flops.is_integer() else total_flops,
+        "utility": solutions / total_flops if total_flops > 0.0 else 0.0,
+    }
 
 
 def student_inference_flops(*, hidden_size: int, variables: int, timesteps: int) -> int:
