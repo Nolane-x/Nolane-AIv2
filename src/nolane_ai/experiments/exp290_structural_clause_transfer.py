@@ -705,6 +705,8 @@ def run_exp290_root(
             "rng_stream": "evaluation",
             "start_replicate": int(geometry["eval_start_replicate"]),
             "replicates": int(geometry["eval_replicates"]),
+            "evaluation_episode_count": evaluation_episodes,
+            "heldout_nonidentity_episode_count": int(nonidentity_count),
             "pair_digests": pair_digests,
             "common_source_phases": source_receipts,
             "modes": modes,
