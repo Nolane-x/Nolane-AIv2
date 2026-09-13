@@ -26,13 +26,35 @@ def test_frozen_trial_plan_is_exactly_three_arms_times_two_lrs() -> None:
     assert len({item.model_init_seed for item in plan}) == 6
 
 
-def test_real_scientific_arms_are_exact_10m_and_accept_frozen_efforts() -> None:
+def test_real_scientific_arms_are_exact_10m() -> None:
+    # Meta construction is used only for resident-parameter identity. Real
+    # scientific execution runs on an actual compute device.
     for arm_id in ("A_FIXED", "B_LOOP_SIMPLE", "C_NRS_CORE"):
         compiled = build_scientific_arm(arm_id, device="meta")
         assert sum(p.numel() for p in compiled.model.parameters() if p.requires_grad) == 10_000_000
-        tokens = torch.zeros((1, 3), dtype=torch.long, device="meta")
-        logits = forward_scientific_arm(compiled, tokens, effort=4)
-        assert logits.shape == (1, 3, 4_608)
+
+
+def test_forward_dispatch_uses_restarts_only_for_fixed_arm_and_loops_for_recurrent() -> None:
+    calls: list[tuple[str, int]] = []
+
+    class FixedModel:
+        def __call__(self, tokens: torch.Tensor, *, restarts: int) -> torch.Tensor:
+            calls.append(("restarts", restarts))
+            return torch.zeros((*tokens.shape, 4_608))
+
+    class RecurrentModel:
+        def __call__(self, tokens: torch.Tensor, *, loops: int) -> torch.Tensor:
+            calls.append(("loops", loops))
+            return torch.zeros((*tokens.shape, 4_608))
+
+    def compiled(arm: str, model: object):
+        return type("Compiled", (), {"arm_id": type("Arm", (), {"value": arm})(), "model": model})()
+
+    tokens = torch.zeros((1, 3), dtype=torch.long)
+    assert forward_scientific_arm(compiled("A_FIXED", FixedModel()), tokens, effort=4).shape == (1, 3, 4_608)
+    assert forward_scientific_arm(compiled("B_LOOP_SIMPLE", RecurrentModel()), tokens, effort=4).shape == (1, 3, 4_608)
+    assert forward_scientific_arm(compiled("C_NRS_CORE", RecurrentModel()), tokens, effort=4).shape == (1, 3, 4_608)
+    assert calls == [("restarts", 4), ("loops", 4), ("loops", 4)]
 
 
 def _trial(*, lr: float, score: float, per_family: tuple[tuple[str, float], ...]) -> ScientificTrialResult:
@@ -72,7 +94,6 @@ def test_greedy_generation_never_requires_canonical_answer() -> None:
         class Model(torch.nn.Module):
             def forward(self, tokens: torch.Tensor, *, loops: int) -> torch.Tensor:
                 logits = torch.full((*tokens.shape, 4_608), -1000.0, device=tokens.device)
-                # Emit ASCII '7' and then EOS once it is in the context.
                 next_id = 3 if int(tokens[0, -1]) == 4 + ord("7") else 4 + ord("7")
                 logits[:, -1, next_id] = 1000.0
                 return logits
