@@ -35,9 +35,7 @@ def _favorable_metrics() -> dict[str, object]:
 
 
 def test_exp290_root_classifier_requires_all_frozen_predicates() -> None:
-    from nolane_ai.experiments.exp290_learned_clause_transfer import (
-        classify_exp290_root,
-    )
+    from nolane_ai.experiments.exp290_learned_clause_transfer import classify_exp290_root
 
     metrics = _favorable_metrics()
     assert classify_exp290_root(metrics) == "LEARNED_CLAUSE_TRANSFER_ESTABLISHED"
@@ -59,9 +57,7 @@ def test_exp290_root_classifier_requires_all_frozen_predicates() -> None:
 
 
 def test_exp290_root_classifier_distinguishes_missing_oracle_transfer_headroom() -> None:
-    from nolane_ai.experiments.exp290_learned_clause_transfer import (
-        classify_exp290_root,
-    )
+    from nolane_ai.experiments.exp290_learned_clause_transfer import classify_exp290_root
 
     metrics = _favorable_metrics()
     metrics["oracle_headroom"] = 0.0
@@ -73,9 +69,7 @@ def test_exp290_root_classifier_distinguishes_missing_oracle_transfer_headroom()
 
 
 def test_exp290_learned_clause_mapping_rejects_collisions_without_fallback() -> None:
-    from nolane_ai.experiments.exp290_learned_clause_transfer import (
-        map_source_clause_with_learned_indices,
-    )
+    from nolane_ai.experiments.exp290_learned_clause_transfer import map_source_clause_with_learned_indices
 
     source_names = ["s0", "s1", "s2"]
     target_names = ["t0", "t1", "t2"]
@@ -101,9 +95,7 @@ def test_exp290_learned_clause_mapping_rejects_collisions_without_fallback() -> 
 
 
 def test_exp290_source_clause_acquisition_requires_observed_two_literal_dead_end() -> None:
-    from nolane_ai.experiments.exp290_learned_clause_transfer import (
-        acquire_source_clauses,
-    )
+    from nolane_ai.experiments.exp290_learned_clause_transfer import acquire_source_clauses
     from nolane_ai.experiments.exp290_transfer_worlds import Exp290TransferGenerator
 
     batch = Exp290TransferGenerator(root_seed="20260913-exp290-runner-test").make_batch(
@@ -126,7 +118,7 @@ def test_exp290_source_clause_acquisition_requires_observed_two_literal_dead_end
     assert all(row["evaluator_truth_used_for_insertion"] is False for row in result["receipts"])
 
 
-def test_exp290_oracle_and_correct_learned_transfer_prevent_structural_reentries() -> None:
+def test_exp290_oracle_and_correct_learned_transfer_prevent_structural_reentries_and_reduce_search_work() -> None:
     from nolane_ai.experiments.exp290_learned_clause_transfer import (
         LEARNED_STRUCTURAL_TRANSFER,
         NULL_TRANSFER_CONTROL,
@@ -151,48 +143,26 @@ def test_exp290_oracle_and_correct_learned_transfer_prevent_structural_reentries
     )
     correct_mapping = pair["hidden_source_to_target_index"]
 
-    null = run_target_mode(
-        mode=NULL_TRANSFER_CONTROL,
-        pair=pair,
-        source_clauses=source["clauses"],
-        learned_source_to_target=correct_mapping,
-        restart_orders=batch.target_restart_orders[0],
-        restart_value_orders=batch.target_restart_value_orders[0],
-        max_search_steps=24,
-    )
-    raw = run_target_mode(
-        mode=RAW_SURFACE_TRANSFER_CONTROL,
-        pair=pair,
-        source_clauses=source["clauses"],
-        learned_source_to_target=correct_mapping,
-        restart_orders=batch.target_restart_orders[0],
-        restart_value_orders=batch.target_restart_value_orders[0],
-        max_search_steps=24,
-    )
-    learned = run_target_mode(
-        mode=LEARNED_STRUCTURAL_TRANSFER,
-        pair=pair,
-        source_clauses=source["clauses"],
-        learned_source_to_target=correct_mapping,
-        restart_orders=batch.target_restart_orders[0],
-        restart_value_orders=batch.target_restart_value_orders[0],
-        max_search_steps=24,
-    )
-    oracle = run_target_mode(
-        mode=ORACLE_STRUCTURAL_TRANSFER_UPPER_BOUND,
-        pair=pair,
-        source_clauses=source["clauses"],
-        learned_source_to_target=correct_mapping,
-        restart_orders=batch.target_restart_orders[0],
-        restart_value_orders=batch.target_restart_value_orders[0],
-        max_search_steps=24,
-    )
+    kwargs = {
+        "pair": pair,
+        "source_clauses": source["clauses"],
+        "learned_source_to_target": correct_mapping,
+        "restart_orders": batch.target_restart_orders[0],
+        "restart_value_orders": batch.target_restart_value_orders[0],
+        "max_search_steps": 24,
+    }
+    null = run_target_mode(mode=NULL_TRANSFER_CONTROL, **kwargs)
+    raw = run_target_mode(mode=RAW_SURFACE_TRANSFER_CONTROL, **kwargs)
+    learned = run_target_mode(mode=LEARNED_STRUCTURAL_TRANSFER, **kwargs)
+    oracle = run_target_mode(mode=ORACLE_STRUCTURAL_TRANSFER_UPPER_BOUND, **kwargs)
 
     assert null["structural_repeat_dead_end_reentries"] > 0
     assert raw["transferred_clause_hit_count"] == 0
     assert raw["structural_repeat_dead_end_reentries"] == null["structural_repeat_dead_end_reentries"]
     assert learned["structural_repeat_dead_end_reentries"] < null["structural_repeat_dead_end_reentries"]
     assert oracle["structural_repeat_dead_end_reentries"] < null["structural_repeat_dead_end_reentries"]
+    assert learned["search_accounted_operations"] < null["search_accounted_operations"]
+    assert oracle["search_accounted_operations"] < null["search_accounted_operations"]
     assert learned["target_local_clause_learning_enabled"] is False
     assert learned["oracle_correspondence_delivered"] is False
     assert oracle["oracle_correspondence_delivered"] is True
