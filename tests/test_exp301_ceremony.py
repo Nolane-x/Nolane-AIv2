@@ -7,7 +7,7 @@ from nolane_ai.experiments.exp301_ceremony import (
     derive_challenge_nonce,
     materialize_root_challenge,
 )
-from nolane_ai.experiments.exp301_scientific import ScientificTrialResult
+from nolane_ai.experiments.exp301_scientific_contract import ScientificTrialResult
 from nolane_ai.experiments.exp301_worlds import materialize_world_set
 
 
@@ -38,13 +38,14 @@ def test_arm_selection_receipt_binds_both_trials_and_selected_checkpoint() -> No
 
 
 def test_root_selection_manifest_requires_exactly_three_arms() -> None:
+    markers = (("c", "d"), ("e", "f"), ("a", "b"))
     receipts = []
-    for index, arm in enumerate(("A_FIXED", "B_LOOP_SIMPLE", "C_NRS_CORE")):
+    for arm, (low_marker, high_marker) in zip(("A_FIXED", "B_LOOP_SIMPLE", "C_NRS_CORE"), markers):
         receipts.append(
             build_arm_selection_receipt(
                 (
-                    _trial(arm, 0, 1e-4, 0.5, chr(ord("c") + index * 2)),
-                    _trial(arm, 0, 3e-4, 0.4, chr(ord("d") + index * 2)),
+                    _trial(arm, 0, 1e-4, 0.5, low_marker),
+                    _trial(arm, 0, 3e-4, 0.4, high_marker),
                 )
             )
         )
@@ -85,13 +86,14 @@ def test_root_challenge_is_512_and_disjoint_from_public_splits() -> None:
 
 
 def test_runtime_identity_binds_selection_beacon_and_materialization() -> None:
+    markers = (("c", "d"), ("e", "f"), ("a", "b"))
     arm_receipts = []
-    for index, arm in enumerate(("A_FIXED", "B_LOOP_SIMPLE", "C_NRS_CORE")):
+    for arm, (low_marker, high_marker) in zip(("A_FIXED", "B_LOOP_SIMPLE", "C_NRS_CORE"), markers):
         arm_receipts.append(
             build_arm_selection_receipt(
                 (
-                    _trial(arm, 3, 1e-4, 0.6, chr(ord("c") + index * 2)),
-                    _trial(arm, 3, 3e-4, 0.5, chr(ord("d") + index * 2)),
+                    _trial(arm, 3, 1e-4, 0.6, low_marker),
+                    _trial(arm, 3, 3e-4, 0.5, high_marker),
                 )
             )
         )
