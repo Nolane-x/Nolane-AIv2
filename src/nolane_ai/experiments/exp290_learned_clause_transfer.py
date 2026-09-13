@@ -39,12 +39,12 @@ def _public_contradiction(
         scope = [str(name) for name in constraint["scope"]]
         if not all(name in assignment for name in scope):
             continue
-        values = [int(assignment[name]) for name in scope]
+        values = tuple(int(assignment[name]) for name in scope)
         allowed = {
             tuple(int(value) for value in row)
             for row in constraint["allowed"]
         }
-        if tuple(values) not in allowed:
+        if values not in allowed:
             return True
     return False
 
@@ -54,10 +54,7 @@ def _assignment_is_complete_and_valid(
     assignment: dict[str, int],
 ) -> bool:
     names = [str(variable["name"]) for variable in problem["variables"]]
-    return (
-        set(assignment) == set(names)
-        and not _public_contradiction(problem, assignment)
-    )
+    return set(assignment) == set(names) and not _public_contradiction(problem, assignment)
 
 
 def _has_valid_completion(
@@ -184,19 +181,20 @@ def acquire_source_clauses(
 
     for restart_index in range(int(restart_orders.shape[0])):
         assignment: dict[str, int] = {}
+        restart_terminated = False
         for variable_tensor in restart_orders[restart_index]:
             variable_index = int(variable_tensor.item())
             variable_name = source_names[variable_index]
             accepted = False
             for value_tensor in restart_value_orders[restart_index, variable_index]:
                 if steps >= max_search_steps:
+                    restart_terminated = True
                     break
                 steps += 1
                 value = int(value_tensor.item())
                 candidate = dict(assignment)
                 candidate[variable_name] = value
-                contradiction = _public_contradiction(problem, candidate)
-                if contradiction:
+                if _public_contradiction(problem, candidate):
                     if len(candidate) == 2:
                         clause = _canonical_clause(
                             [[name, literal_value] for name, literal_value in candidate.items()]
@@ -217,11 +215,12 @@ def acquire_source_clauses(
                                 "oracle_conflict_core_used": False,
                             }
                         )
-                    continue
+                    restart_terminated = True
+                    break
                 assignment = candidate
                 accepted = True
                 break
-            if steps >= max_search_steps or not accepted:
+            if restart_terminated or steps >= max_search_steps or not accepted:
                 break
 
     return {
@@ -244,21 +243,26 @@ def _run_target_search(
 ) -> dict[str, Any]:
     steps = 0
     clause_comparisons = 0
+    candidate_evaluation_operations = 0
     transferred_clause_hits = 0
     observed_dead_ends: list[list[list[Any]]] = []
     prune_receipts: list[dict[str, Any]] = []
     completed_valid_restarts = 0
+    candidate_step_cost = len(problem["variables"]) + len(problem["constraints"])
 
     for restart_index in range(int(restart_orders.shape[0])):
         assignment: dict[str, int] = {}
+        restart_terminated = False
         for variable_tensor in restart_orders[restart_index]:
             variable_index = int(variable_tensor.item())
             variable_name = target_names[variable_index]
             accepted = False
             for value_tensor in restart_value_orders[restart_index, variable_index]:
                 if steps >= max_search_steps:
+                    restart_terminated = True
                     break
                 steps += 1
+                candidate_evaluation_operations += candidate_step_cost
                 value = int(value_tensor.item())
                 candidate = dict(assignment)
                 candidate[variable_name] = value
@@ -285,18 +289,23 @@ def _run_target_search(
                                 [[name, literal] for name, literal in candidate.items()]
                             )
                         )
-                    continue
+                    restart_terminated = True
+                    break
 
                 assignment = candidate
                 accepted = True
                 break
-            if steps >= max_search_steps or not accepted:
+            if restart_terminated or steps >= max_search_steps or not accepted:
                 break
+
         if _assignment_is_complete_and_valid(problem, assignment):
             completed_valid_restarts += 1
+            break
 
     return {
         "search_steps": int(steps),
+        "candidate_step_cost": int(candidate_step_cost),
+        "candidate_evaluation_operations": int(candidate_evaluation_operations),
         "clause_comparisons": int(clause_comparisons),
         "transferred_clause_hit_count": int(transferred_clause_hits),
         "observed_dead_ends": observed_dead_ends,
@@ -373,9 +382,7 @@ def run_target_mode(
         if _has_valid_completion(pair["target_problem"], partial):
             invalid_prunes += 1
     prune_count = len(search["prune_receipts"])
-    overprune_rate = (
-        float(invalid_prunes / prune_count) if prune_count else 0.0
-    )
+    overprune_rate = float(invalid_prunes / prune_count) if prune_count else 0.0
 
     return {
         "mode": mode,
@@ -388,9 +395,7 @@ def run_target_mode(
         "structural_repeat_dead_end_reentries": int(structural_reentries),
         "predeclared_transfer_opportunities": len(manifest_keys),
         "structural_repeat_dead_end_rate": (
-            float(structural_reentries / len(manifest_keys))
-            if manifest_keys
-            else None
+            float(structural_reentries / len(manifest_keys)) if manifest_keys else None
         ),
         "invalid_transferred_prune_count": int(invalid_prunes),
         "transferred_prune_event_count": int(prune_count),
@@ -398,9 +403,11 @@ def run_target_mode(
         "verified_solution": bool(search["verified_solution"]),
         "verified_solution_rate": 1.0 if search["verified_solution"] else 0.0,
         "search_steps": int(search["search_steps"]),
+        "candidate_step_cost": int(search["candidate_step_cost"]),
+        "candidate_evaluation_operations": int(search["candidate_evaluation_operations"]),
         "clause_comparisons": int(search["clause_comparisons"]),
         "search_accounted_operations": int(
-            search["search_steps"] + search["clause_comparisons"]
+            search["candidate_evaluation_operations"] + search["clause_comparisons"]
         ),
         "target_local_clause_learning_enabled": False,
         "oracle_correspondence_delivered": oracle_correspondence_delivered,
@@ -418,9 +425,7 @@ def run_target_mode(
 
 def classify_exp290_root(metrics: dict[str, object]) -> str:
     oracle_headroom = float(metrics["oracle_headroom"])
-    oracle_repeat_reduction = float(
-        metrics["oracle_structural_repeat_relative_reduction"]
-    )
+    oracle_repeat_reduction = float(metrics["oracle_structural_repeat_relative_reduction"])
     if oracle_headroom <= 0.0 or oracle_repeat_reduction < 0.25:
         return "ORACLE_TRANSFER_HEADROOM_NOT_REPLICATED"
 
