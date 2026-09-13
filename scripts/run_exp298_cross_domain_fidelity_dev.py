@@ -22,28 +22,9 @@ from nolane_ai.protocol.identity import (
 )
 
 STAGE_A_DIGEST = ROOT / "protocols" / "stage_a_v1.sha256"
-ROOT_SEED_PREFIX = "20260913-exp298-cross-domain-fidelity-v1-dev"
-FROZEN_GEOMETRY: dict[str, Any] = {
-    "experiment_id": "EXP-298",
-    "authority_scope": "DEVELOPMENT_EV_E2_ONLY",
-    "canonical_indices": [0, 1, 2, 3],
-    "domains": [
-        "code_invariant",
-        "causal_diagnosis",
-        "grounded_language_ambiguity",
-    ],
-    "eval_replicates": 32,
-    "eval_start_replicate": 50000,
-    "candidates_per_replicate": 16,
-    "d_model": 64,
-    "hidden_size": 64,
-    "target_parameters": 500000,
-    "max_exact_probes": 4096,
-    "balanced_accuracy_gain_mesi": 0.10,
-    "wrong_authority_ceiling": 0.05,
-    "faithful_rejection_ceiling": 0.10,
-    "root_seed_prefix": ROOT_SEED_PREFIX,
-}
+GEOMETRY_MANIFEST = ROOT / "protocols" / "exp298_cross_domain_fidelity_geometry_v1.json"
+GEOMETRY_DIGEST = ROOT / "protocols" / "exp298_cross_domain_fidelity_geometry_v1.sha256"
+GEOMETRY_SCHEMA = "NLM-EXP-298-CROSS-DOMAIN-FIDELITY-GEOMETRY-V1"
 
 
 def parse_args() -> argparse.Namespace:
@@ -74,6 +55,48 @@ def _repository_head() -> str:
         raise RuntimeError("repository HEAD is not a full git SHA")
     int(head, 16)
     return head
+
+
+def _load_frozen_geometry() -> tuple[dict[str, Any], str]:
+    payload = json.loads(GEOMETRY_MANIFEST.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("EXP-298 frozen geometry manifest must be an object")
+    observed_digest = canonical_sha256(payload)
+    declared_digest = GEOMETRY_DIGEST.read_text(encoding="ascii").strip()
+    if observed_digest != declared_digest:
+        raise ValueError("EXP-298 frozen geometry digest mismatch")
+
+    protocol_digest = STAGE_A_DIGEST.read_text(encoding="ascii").strip()
+    require_frozen_stage_a_v1_sha256(protocol_digest)
+    if payload.get("schema") != GEOMETRY_SCHEMA:
+        raise ValueError("EXP-298 frozen geometry schema mismatch")
+    if payload.get("experiment_id") != "EXP-298":
+        raise ValueError("EXP-298 frozen geometry experiment mismatch")
+    if payload.get("authority_scope") != "DEVELOPMENT_EV_E2_ONLY":
+        raise ValueError("EXP-298 frozen geometry authority scope mismatch")
+    if payload.get("canonical_indices") != [0, 1, 2, 3]:
+        raise ValueError("EXP-298 frozen geometry canonical roots mismatch")
+    if payload.get("protocol_digest") != protocol_digest:
+        raise ValueError("EXP-298 frozen geometry protocol digest mismatch")
+    if payload.get("domains") != [
+        "code_invariant",
+        "causal_diagnosis",
+        "grounded_language_ambiguity",
+    ]:
+        raise ValueError("EXP-298 frozen geometry domain identity mismatch")
+    for flag in (
+        "scientific_evidence_eligible",
+        "confirmatory_data_consumed",
+        "challenge_materialized",
+        "promotion_claimed",
+        "stage_a_protocol_modified",
+        "exp300_authorized",
+    ):
+        if payload.get(flag) is not False:
+            raise ValueError(f"EXP-298 forbidden frozen geometry flag enabled: {flag}")
+    if payload.get("successor_scope_if_recurrent") != "DESIGN_EXP299_SCAFFOLD_REMOVAL_COURT_ONLY":
+        raise ValueError("EXP-298 frozen successor scope mismatch")
+    return payload, declared_digest
 
 
 def _canonical_bytes(payload: dict[str, Any]) -> bytes:
@@ -129,12 +152,17 @@ def _write_canonical_atomic(output: Path, receipt: dict[str, Any]) -> None:
 def _load_root(path: Path) -> dict[str, Any]:
     from nolane_ai.experiments.exp298_paired_runner import validate_exp298_root
 
+    geometry, geometry_digest = _load_frozen_geometry()
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError(f"EXP-298 root receipt must be an object: {path}")
     errors = validate_exp298_root(payload)
     if errors:
         raise ValueError(f"invalid EXP-298 root receipt {path}: {'; '.join(errors)}")
+    if payload.get("geometry_digest") != geometry_digest:
+        raise ValueError(f"EXP-298 root geometry digest mismatch: {path}")
+    if payload.get("protocol_digest") != geometry["protocol_digest"]:
+        raise ValueError(f"EXP-298 root protocol digest mismatch: {path}")
     sidecar = path.with_name(path.name + ".sha256")
     if sidecar.exists():
         expected = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -147,18 +175,17 @@ def _load_root(path: Path) -> dict[str, Any]:
 def _run_root(canonical_index: int) -> dict[str, Any]:
     from nolane_ai.experiments.exp298_paired_runner import run_exp298_root
 
-    protocol_digest = STAGE_A_DIGEST.read_text(encoding="utf-8").strip()
-    require_frozen_stage_a_v1_sha256(protocol_digest)
-    geometry_digest = canonical_sha256(FROZEN_GEOMETRY)
+    geometry, geometry_digest = _load_frozen_geometry()
+    protocol_digest = str(geometry["protocol_digest"])
     return run_exp298_root(
-        root_seed=f"{ROOT_SEED_PREFIX}-root-{canonical_index}",
+        root_seed=f"{geometry['root_seed_prefix']}-root-{canonical_index}",
         canonical_index=canonical_index,
-        eval_replicates=int(FROZEN_GEOMETRY["eval_replicates"]),
-        eval_start_replicate=int(FROZEN_GEOMETRY["eval_start_replicate"]),
-        d_model=int(FROZEN_GEOMETRY["d_model"]),
-        hidden_size=int(FROZEN_GEOMETRY["hidden_size"]),
-        target_parameters=int(FROZEN_GEOMETRY["target_parameters"]),
-        max_exact_probes=int(FROZEN_GEOMETRY["max_exact_probes"]),
+        eval_replicates=int(geometry["eval_replicates"]),
+        eval_start_replicate=int(geometry["eval_start_replicate"]),
+        d_model=int(geometry["d_model"]),
+        hidden_size=int(geometry["hidden_size"]),
+        target_parameters=int(geometry["target_parameters"]),
+        max_exact_probes=int(geometry["max_exact_probes"]),
         protocol_digest=protocol_digest,
         geometry_digest=geometry_digest,
         code_digest=source_tree_digest(ROOT),
