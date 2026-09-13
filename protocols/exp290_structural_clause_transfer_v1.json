@@ -1,0 +1,55 @@
+{
+  "arbitrary_value_symbol_remapping_claimed": false,
+  "authority_scope": "DEVELOPMENT_EV_E2_ONLY",
+  "capture_threshold": 0.5,
+  "challenge_materialized": false,
+  "confirmatory_data_consumed": false,
+  "cross_domain_transfer_claimed": false,
+  "epsilon_denominator_rescue": false,
+  "experiment_id": "EXP-290",
+  "geometry": {
+    "batch_size": 8,
+    "canonical_indices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "d_model": 64,
+    "decoys": 3,
+    "eval_replicates": 32,
+    "eval_start_replicate": 40000,
+    "hidden_size": 48,
+    "lr": 0.002,
+    "max_search_steps": 24,
+    "noise_std": 0.05,
+    "restarts": 4,
+    "root_prefix": "20260913-exp290-structural-clause-transfer-v1-dev",
+    "target_parameters": 500000,
+    "timesteps": 4,
+    "train_replicates": 64,
+    "variables": 8,
+    "weight_decay": 0.0
+  },
+  "lemma_generation_claimed": false,
+  "oracle_transfer_mode_deployable": false,
+  "predeclaration": "BEFORE_AUTHORITATIVE_DEVELOPMENT_RUN",
+  "primary_endpoint": "source_equivalent_target_dead_end_rate",
+  "protected_endpoints": {
+    "valid_state_overprune_rate_ceiling": 0.005,
+    "verified_solution_rate_floor_delta": -0.01
+  },
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "purpose": "STRUCTURAL_CLAUSE_TRANSFER_DEVELOPMENT_COURT_V1",
+  "schema": "NLM-EXP-290-STRUCTURAL-CLAUSE-TRANSFER-DEVELOPMENT-V1",
+  "scientific_evidence_eligible": false,
+  "stage_a_protocol_modified": false,
+  "successor_scope_if_recurrent": "DESIGN_EXP291_ENCODING_COUNTEREXAMPLE_COURT_ONLY",
+  "surface_randomization": {
+    "event_order_randomized": true,
+    "value_labels_remapped": false,
+    "variable_identity_randomized": true,
+    "variable_order_randomized": true
+  },
+  "zero_opportunity_policy": "retain_raw_episode_exclude_from_transfer_rate_denominator"
+}
