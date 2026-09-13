@@ -4,10 +4,13 @@ on:
   pull_request:
     paths:
       - '.github/workflows/exp287-learned-conflict-localization-ci.yml'
+      - '.github/workflows/exp287-learned-conflict-localization-development.yml'
+      - '.github/workflows/exp287-learned-conflict-localization-freeze-guard.yml'
       - 'protocols/stage_a_v1.json'
       - 'protocols/stage_a_v1.sha256'
       - 'protocols/exp287_development_v1.json'
       - 'protocols/exp287_development_v1.sha256'
+      - 'protocols/exp287-learned-conflict-localization-release.lock'
       - 'src/nolane_ai/experiments/exp287_*.py'
       - 'src/nolane_ai/experiments/matched_conflict_localizer_arms.py'
       - 'scripts/*exp287*.py'
@@ -16,10 +19,13 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/exp287-learned-conflict-localization-ci.yml'
+      - '.github/workflows/exp287-learned-conflict-localization-development.yml'
+      - '.github/workflows/exp287-learned-conflict-localization-freeze-guard.yml'
       - 'protocols/stage_a_v1.json'
       - 'protocols/stage_a_v1.sha256'
       - 'protocols/exp287_development_v1.json'
       - 'protocols/exp287_development_v1.sha256'
+      - 'protocols/exp287-learned-conflict-localization-release.lock'
       - 'src/nolane_ai/experiments/exp287_*.py'
       - 'src/nolane_ai/experiments/matched_conflict_localizer_arms.py'
       - 'scripts/*exp287*.py'
