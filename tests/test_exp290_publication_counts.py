@@ -52,5 +52,8 @@ def test_exp290_production_receipt_publishes_validator_episode_counts() -> None:
         assert mode["episodes"] == evaluation["evaluation_episode_count"]
         assert len(mode["per_episode"]) == evaluation["evaluation_episode_count"]
 
+    # Match the publication layer in scripts/run_exp290_structural_clause_transfer_dev.py:
+    # repository identity is bound after the scientific runner returns and before sealing.
+    result["repository_head"] = "f" * 40
     sealed = seal_root_receipt(result)
     validate_root_receipt(sealed)
