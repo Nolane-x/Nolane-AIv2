@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import asdict, dataclass
-import hashlib
+from dataclasses import asdict, fields
 import json
 from pathlib import Path
 from typing import Any
@@ -12,72 +11,17 @@ import torch
 from .exp301_analysis import reduce_exp301
 from .exp301_compute import COMPUTE_LEDGER_VERSION
 from .exp301_evaluation import commit_prediction, score_committed_prediction
+from .exp301_identity import (
+    EXP301_PREREG_V2_DIGEST,
+    FrozenImplementationIdentity,
+    build_frozen_implementation_identity,
+)
 from .exp301_training import Exp301ByteTokenizer, compute_answer_only_loss
 from .exp301_worlds import materialize_world_set
 
-EXP301_PREREG_V2_DIGEST = "1660a728990290f1c605941d531be1d52fe82591c619a327d104e4b87c1e6bad"
 EXP301_ROOTS = (0, 1, 2, 3)
 EXP301_ARMS = ("A_FIXED", "B_LOOP_SIMPLE", "C_NRS_CORE")
 EXP301_PRIMARY_EFFORTS = (1, 2, 4, 8)
-
-
-@dataclass(frozen=True, slots=True)
-class Exp301ExecutionIdentity:
-    source_commit_sha: str
-    source_tree_digest: str
-    prereg_semantic_digest: str
-    architecture_receipts_digest: str
-    root: int
-    train_generator_digest: str
-    development_generator_digest: str
-    challenge_generator_digest: str
-    selected_hyperparameter_receipt_digest: str
-    parameter_audit_digest: str
-    compute_ledger_version: str
-    scientific_evidence_eligible: bool
-    run_identity: str
-
-
-def _sha256(payload: object) -> str:
-    raw = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
-    return hashlib.sha256(raw).hexdigest()
-
-
-def _identity_payload(identity: Exp301ExecutionIdentity) -> dict[str, Any]:
-    payload = asdict(identity)
-    payload.pop("run_identity", None)
-    return payload
-
-
-def canonical_execution_identity_digest(identity: Exp301ExecutionIdentity) -> str:
-    return _sha256(_identity_payload(identity))
-
-
-def _require_hex(label: str, value: str, length: int) -> None:
-    if len(value) != length or any(ch not in "0123456789abcdef" for ch in value.lower()):
-        raise ValueError(f"{label} must be {length} lowercase hex characters")
-
-
-def build_execution_identity(**values: Any) -> Exp301ExecutionIdentity:
-    if values.get("prereg_semantic_digest") != EXP301_PREREG_V2_DIGEST:
-        raise ValueError("prereg semantic digest must match frozen EXP-301 V2")
-    if values.get("root") not in EXP301_ROOTS:
-        raise ValueError(f"root must be one of {EXP301_ROOTS}")
-    if values.get("compute_ledger_version") != COMPUTE_LEDGER_VERSION:
-        raise ValueError("compute ledger version mismatch")
-    _require_hex("source_commit_sha", values["source_commit_sha"], 40)
-    for field in (
-        "source_tree_digest",
-        "architecture_receipts_digest",
-        "train_generator_digest",
-        "development_generator_digest",
-        "challenge_generator_digest",
-        "selected_hyperparameter_receipt_digest",
-        "parameter_audit_digest",
-    ):
-        _require_hex(field, values[field], 64)
-    provisional = Exp301ExecutionIdentity(**values, run_identity="")
-    return Exp301ExecutionIdentity(**values, run_identity=canonical_execution_identity_digest(provisional))
 
 
 def write_once_json(path: str | Path, payload: dict[str, Any]) -> None:
@@ -86,6 +30,38 @@ def write_once_json(path: str | Path, payload: dict[str, Any]) -> None:
     with path.open("x", encoding="utf-8") as handle:
         json.dump(payload, handle, sort_keys=True, indent=2)
         handle.write("\n")
+
+
+def load_frozen_implementation_identity(path: str | Path) -> FrozenImplementationIdentity:
+    path = Path(path)
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict):
+        raise ValueError("frozen implementation identity must be a JSON object")
+
+    expected_fields = {field.name for field in fields(FrozenImplementationIdentity)}
+    actual_fields = set(raw)
+    unexpected = sorted(actual_fields - expected_fields)
+    missing = sorted(expected_fields - actual_fields)
+    if unexpected:
+        raise ValueError(f"frozen implementation identity has unexpected fields: {unexpected}")
+    if missing:
+        raise ValueError(f"frozen implementation identity is missing fields: {missing}")
+
+    supplied_digest = raw["frozen_implementation_digest"]
+    build_values = dict(raw)
+    build_values.pop("schema")
+    build_values.pop("frozen_implementation_digest")
+    rebuilt = build_frozen_implementation_identity(**build_values)
+    if rebuilt.schema != raw["schema"]:
+        raise ValueError(
+            f"frozen implementation identity schema mismatch: expected {rebuilt.schema}, got {raw['schema']}"
+        )
+    if rebuilt.frozen_implementation_digest != supplied_digest:
+        raise ValueError(
+            "frozen implementation identity digest mismatch: "
+            f"expected {rebuilt.frozen_implementation_digest}, got {supplied_digest}"
+        )
+    return rebuilt
 
 
 def validate_infrastructure_retry(prior: dict[str, Any], *, reason: str) -> dict[str, Any]:
@@ -161,7 +137,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run the frozen EXP-301 execution path")
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--test-only", action="store_true")
-    parser.add_argument("--execution-identity")
+    parser.add_argument("--frozen-implementation-identity")
     return parser
 
 
@@ -170,9 +146,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.test_only:
         run_test_only_court(args.output_dir)
         return 0
-    if not args.execution_identity:
-        raise SystemExit("scientific execution requires --execution-identity after pre-data freeze")
-    raise SystemExit("scientific EXP-301 execution is fail-closed until the pre-data freeze gate is complete")
+    if not args.frozen_implementation_identity:
+        raise SystemExit(
+            "scientific execution requires --frozen-implementation-identity after pre-data freeze"
+        )
+    load_frozen_implementation_identity(args.frozen_implementation_identity)
+    raise SystemExit(
+        "scientific EXP-301 execution is fail-closed until the scientific trainer and challenge boundary are frozen"
+    )
 
 
 if __name__ == "__main__":
