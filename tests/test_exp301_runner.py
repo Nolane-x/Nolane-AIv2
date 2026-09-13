@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
 torch = pytest.importorskip("torch")
 
+from nolane_ai.experiments.exp301_compute import COMPUTE_LEDGER_VERSION
 from nolane_ai.experiments.exp301_runner import (
     EXP301_PREREG_V2_DIGEST,
     Exp301ExecutionIdentity,
@@ -31,7 +31,7 @@ def _identity(**changes) -> Exp301ExecutionIdentity:
         challenge_generator_digest="f" * 64,
         selected_hyperparameter_receipt_digest="1" * 64,
         parameter_audit_digest="2" * 64,
-        compute_ledger_version="exp301-accounted-flops-v2",
+        compute_ledger_version=COMPUTE_LEDGER_VERSION,
         scientific_evidence_eligible=True,
     )
     values.update(changes)
