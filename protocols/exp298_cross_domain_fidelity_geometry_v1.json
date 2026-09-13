@@ -1,0 +1,35 @@
+{
+  "authority_scope": "DEVELOPMENT_EV_E2_ONLY",
+  "balanced_accuracy_gain_mesi": 0.1,
+  "candidates_per_replicate": 16,
+  "canonical_indices": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "challenge_materialized": false,
+  "confirmatory_data_consumed": false,
+  "d_model": 64,
+  "domains": [
+    "code_invariant",
+    "causal_diagnosis",
+    "grounded_language_ambiguity"
+  ],
+  "eval_replicates": 32,
+  "eval_start_replicate": 50000,
+  "exp300_authorized": false,
+  "experiment_id": "EXP-298",
+  "faithful_rejection_ceiling": 0.1,
+  "hidden_size": 64,
+  "max_exact_probes": 4096,
+  "promotion_claimed": false,
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "root_seed_prefix": "20260913-exp298-cross-domain-fidelity-v1-dev",
+  "schema": "NLM-EXP-298-CROSS-DOMAIN-FIDELITY-GEOMETRY-V1",
+  "scientific_evidence_eligible": false,
+  "stage_a_protocol_modified": false,
+  "successor_scope_if_recurrent": "DESIGN_EXP299_SCAFFOLD_REMOVAL_COURT_ONLY",
+  "target_parameters": 500000,
+  "wrong_authority_ceiling": 0.05
+}
