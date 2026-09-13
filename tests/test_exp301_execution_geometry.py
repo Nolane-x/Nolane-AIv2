@@ -1,29 +1,29 @@
 from __future__ import annotations
 
-from nolane_ai.experiments.exp301_training import (
-    EXP301_CHALLENGE_PER_FAMILY,
-    EXP301_DEV_PER_FAMILY,
-    EXP301_MAX_GENERATION_TOKENS,
-    EXP301_MAX_SEQUENCE_TOKENS,
-    EXP301_TRAIN_EPOCHS,
-    EXP301_TRAIN_PER_FAMILY,
-    build_scientific_execution_contract,
-    development_worlds_for_root,
-    scientific_execution_contract_digest,
-    scientific_model_init_seed,
-    training_worlds_for_root,
-)
+import importlib
+import importlib.util
+
 from nolane_ai.experiments.exp301_worlds import EXP301_TASK_FAMILIES
 
 
+MODULE = "nolane_ai.experiments.exp301_execution"
+
+
+def _execution_module():
+    spec = importlib.util.find_spec(MODULE)
+    assert spec is not None, "scientific execution contract must live in a torch-free module"
+    return importlib.import_module(MODULE)
+
+
 def test_scientific_execution_geometry_is_explicit_and_bounded() -> None:
-    contract = build_scientific_execution_contract()
-    assert EXP301_TRAIN_PER_FAMILY == 128
-    assert EXP301_DEV_PER_FAMILY == 64
-    assert EXP301_CHALLENGE_PER_FAMILY == 128
-    assert EXP301_TRAIN_EPOCHS == 1
-    assert EXP301_MAX_SEQUENCE_TOKENS == 512
-    assert EXP301_MAX_GENERATION_TOKENS == 96
+    execution = _execution_module()
+    contract = execution.build_scientific_execution_contract()
+    assert execution.EXP301_TRAIN_PER_FAMILY == 128
+    assert execution.EXP301_DEV_PER_FAMILY == 64
+    assert execution.EXP301_CHALLENGE_PER_FAMILY == 128
+    assert execution.EXP301_TRAIN_EPOCHS == 1
+    assert execution.EXP301_MAX_SEQUENCE_TOKENS == 512
+    assert execution.EXP301_MAX_GENERATION_TOKENS == 96
     assert contract.training_examples_per_root == 128 * len(EXP301_TASK_FAMILIES)
     assert contract.development_examples_per_root == 64 * len(EXP301_TASK_FAMILIES)
     assert contract.challenge_examples_per_root == 128 * len(EXP301_TASK_FAMILIES)
@@ -32,12 +32,13 @@ def test_scientific_execution_geometry_is_explicit_and_bounded() -> None:
     assert contract.primary_efforts == (1, 2, 4, 8)
     assert contract.challenge_efforts == (1, 2, 4, 8, 12, 16)
     assert "family-balanced" in contract.development_selection_rule
-    assert len(scientific_execution_contract_digest()) == 64
+    assert len(execution.scientific_execution_contract_digest()) == 64
 
 
 def test_train_and_development_world_sets_are_frozen_disjoint_and_complete() -> None:
-    train = training_worlds_for_root(2)
-    development = development_worlds_for_root(2)
+    execution = _execution_module()
+    train = execution.training_worlds_for_root(2)
+    development = execution.development_worlds_for_root(2)
 
     assert len(train) == 128 * len(EXP301_TASK_FAMILIES)
     assert len(development) == 64 * len(EXP301_TASK_FAMILIES)
@@ -51,19 +52,21 @@ def test_train_and_development_world_sets_are_frozen_disjoint_and_complete() -> 
 
 
 def test_execution_geometry_never_materializes_challenge_data() -> None:
-    train = training_worlds_for_root(0)
-    development = development_worlds_for_root(0)
+    execution = _execution_module()
+    train = execution.training_worlds_for_root(0)
+    development = execution.development_worlds_for_root(0)
     assert all(item.split != "challenge" for item in (*train, *development))
 
 
 def test_scientific_model_init_seeds_are_deterministic_and_trial_specific() -> None:
+    execution = _execution_module()
     seeds = {
-        scientific_model_init_seed(root=root, arm_id=arm, trial=trial)
+        execution.scientific_model_init_seed(root=root, arm_id=arm, trial=trial)
         for root in range(4)
         for arm in ("A_FIXED", "B_LOOP_SIMPLE", "C_NRS_CORE")
         for trial in range(2)
     }
     assert len(seeds) == 4 * 3 * 2
-    assert scientific_model_init_seed(root=1, arm_id="C_NRS_CORE", trial=0) == scientific_model_init_seed(
+    assert execution.scientific_model_init_seed(root=1, arm_id="C_NRS_CORE", trial=0) == execution.scientific_model_init_seed(
         root=1, arm_id="C_NRS_CORE", trial=0
     )
