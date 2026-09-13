@@ -63,6 +63,12 @@ def _require_false(payload: Mapping[str, Any], key: str) -> None:
         raise ValueError(f"{key} must be false")
 
 
+def _require_nonnegative_int(name: str, value: Any) -> int:
+    if type(value) is not int or value < 0:
+        raise ValueError(f"{name} must be a non-negative integer")
+    return value
+
+
 def _classify_root(metrics: Mapping[str, Any]) -> str:
     oracle_headroom = float(metrics["oracle_headroom"])
     if oracle_headroom <= 0.0:
@@ -109,6 +115,149 @@ def _assert_close(name: str, observed: float, expected: float, *, tolerance: flo
         raise ValueError(f"{name} must be finite")
     if abs(observed - expected) > tolerance:
         raise ValueError(f"{name} is inconsistent with primitive rates")
+
+
+def _recompute_mode_aggregate(mode_name: str, mode: Mapping[str, Any]) -> dict[str, Any]:
+    if mode.get("mode") != mode_name:
+        raise ValueError("mode aggregate name is inconsistent with target mode identity")
+    rows = mode.get("per_episode")
+    if not isinstance(rows, Sequence) or isinstance(rows, (str, bytes)) or not rows:
+        raise ValueError("mode aggregate must contain non-empty per-episode primitives")
+
+    slot_capacity = _require_nonnegative_int(
+        "transferred_slot_capacity", mode.get("transferred_slot_capacity")
+    )
+    if slot_capacity <= 0:
+        raise ValueError("transferred_slot_capacity must be positive")
+
+    opportunities = 0
+    dead_ends = 0
+    transferred_prunes = 0
+    valid_state_prunes = 0
+    solutions = 0
+    charged_comparisons = 0
+    expected_oracle_delivery = mode_name == "ORACLE_ISOMORPHIC_TRANSFER_UPPER_BOUND"
+
+    for row in rows:
+        if not isinstance(row, Mapping):
+            raise ValueError("per-episode primitive must be an object")
+        if row.get("mode") != mode_name:
+            raise ValueError("per-episode primitive mode mismatch")
+        row_capacity = _require_nonnegative_int(
+            "per-episode transferred_slot_capacity", row.get("transferred_slot_capacity")
+        )
+        if row_capacity != slot_capacity:
+            raise ValueError("per-episode primitive transferred-slot capacity mismatch")
+        row_opportunities = _require_nonnegative_int(
+            "per-episode source_equivalent_opportunities",
+            row.get("source_equivalent_opportunities"),
+        )
+        row_dead_ends = _require_nonnegative_int(
+            "per-episode source_equivalent_target_dead_ends",
+            row.get("source_equivalent_target_dead_ends"),
+        )
+        row_transferred = _require_nonnegative_int(
+            "per-episode transferred_prune_count", row.get("transferred_prune_count")
+        )
+        row_valid = _require_nonnegative_int(
+            "per-episode transferred_valid_state_prune_count",
+            row.get("transferred_valid_state_prune_count"),
+        )
+        row_steps = _require_nonnegative_int("per-episode search_steps", row.get("search_steps"))
+        row_comparisons = _require_nonnegative_int(
+            "per-episode transferred_slot_comparisons_charged",
+            row.get("transferred_slot_comparisons_charged"),
+        )
+        if row_dead_ends > row_opportunities:
+            raise ValueError("per-episode primitive dead ends exceed transfer opportunities")
+        if row_valid > row_transferred:
+            raise ValueError("per-episode primitive valid-state prunes exceed transferred prunes")
+        if row_comparisons != row_steps * slot_capacity:
+            raise ValueError("per-episode primitive transferred-slot comparison charge mismatch")
+        if row.get("target_local_memory_enabled") is not True:
+            raise ValueError("per-episode primitive must keep target-local memory enabled")
+        if row.get("target_local_insertion_requires_observed_contradiction") is not True:
+            raise ValueError("per-episode primitive must require contradiction before local insertion")
+        if row.get("transfer_scorer_executed") is not True:
+            raise ValueError("per-episode primitive must execute transfer scorer")
+        if row.get("fixed_transferred_slot_accounting") is not True:
+            raise ValueError("per-episode primitive must use fixed transferred-slot accounting")
+        if row.get("evaluator_truth_gates_target_action") is not False:
+            raise ValueError("per-episode primitive cannot gate action on evaluator truth")
+        if row.get("oracle_mapping_delivered") is not expected_oracle_delivery:
+            raise ValueError("per-episode primitive oracle mapping delivery mismatch")
+        if row.get("evaluation_mapping_delivered") is not expected_oracle_delivery:
+            raise ValueError("per-episode primitive evaluation mapping delivery mismatch")
+
+        opportunities += row_opportunities
+        dead_ends += row_dead_ends
+        transferred_prunes += row_transferred
+        valid_state_prunes += row_valid
+        charged_comparisons += row_comparisons
+        solutions += row.get("verified_solution") is True
+
+    episodes = len(rows)
+    dead_end_rate = float(dead_ends / opportunities) if opportunities else 0.0
+    overprune_rate = float(valid_state_prunes / transferred_prunes) if transferred_prunes else 0.0
+    solution_rate = float(solutions / episodes)
+
+    exact_fields = {
+        "episodes": episodes,
+        "source_equivalent_opportunities": opportunities,
+        "source_equivalent_target_dead_ends": dead_ends,
+        "transferred_prune_count": transferred_prunes,
+        "transferred_valid_state_prune_count": valid_state_prunes,
+        "transferred_slot_comparisons_charged": charged_comparisons,
+    }
+    for key, expected in exact_fields.items():
+        if mode.get(key) != expected:
+            raise ValueError(
+                f"mode aggregate {key} is inconsistent with per-episode primitives"
+            )
+    _assert_close(
+        "mode aggregate source_equivalent_target_dead_end_rate",
+        float(mode["source_equivalent_target_dead_end_rate"]),
+        dead_end_rate,
+    )
+    _assert_close(
+        "mode aggregate valid_state_overprune_rate",
+        float(mode["valid_state_overprune_rate"]),
+        overprune_rate,
+    )
+    _assert_close(
+        "mode aggregate verified_solution_rate",
+        float(mode["verified_solution_rate"]),
+        solution_rate,
+    )
+    if mode.get("target_local_memory_enabled") is not True:
+        raise ValueError("mode aggregate must keep target-local memory enabled")
+    if mode.get("target_local_insertion_requires_observed_contradiction") is not True:
+        raise ValueError("mode aggregate must require contradiction before local insertion")
+    if mode.get("transfer_scorer_executed") is not True:
+        raise ValueError("mode aggregate must execute transfer scorer")
+    if mode.get("fixed_transferred_slot_accounting") is not True:
+        raise ValueError("mode aggregate must use fixed transferred-slot accounting")
+    if mode.get("evaluator_truth_gates_target_action") is not False:
+        raise ValueError("mode aggregate cannot gate action on evaluator truth")
+    if mode.get("oracle_mapping_delivered") is not expected_oracle_delivery:
+        raise ValueError("mode aggregate oracle mapping delivery mismatch")
+    if mode.get("evaluation_mapping_delivered") is not expected_oracle_delivery:
+        raise ValueError("mode aggregate evaluation mapping delivery mismatch")
+    if mode_name == "LOCAL_ONLY_CONTROL" and transferred_prunes != 0:
+        raise ValueError("mode aggregate control unexpectedly activated transferred clauses")
+
+    return {
+        "episodes": episodes,
+        "source_equivalent_opportunities": opportunities,
+        "source_equivalent_target_dead_ends": dead_ends,
+        "source_equivalent_target_dead_end_rate": dead_end_rate,
+        "transferred_prune_count": transferred_prunes,
+        "transferred_valid_state_prune_count": valid_state_prunes,
+        "valid_state_overprune_rate": overprune_rate,
+        "verified_solution_rate": solution_rate,
+        "transferred_slot_capacity": slot_capacity,
+        "transferred_slot_comparisons_charged": charged_comparisons,
+    }
 
 
 def validate_root_receipt(receipt: Mapping[str, Any]) -> None:
@@ -184,14 +333,32 @@ def validate_root_receipt(receipt: Mapping[str, Any]) -> None:
     if not isinstance(modes, Mapping) or set(modes) != set(TARGET_MODES):
         raise ValueError("root evaluation must contain exactly the three frozen target modes")
     model_digest = receipt["post_evaluation_model_digest"]
+    recomputed_modes: dict[str, dict[str, Any]] = {}
     for mode_name in TARGET_MODES:
         mode = modes[mode_name]
         if not isinstance(mode, Mapping):
             raise ValueError("target mode receipt must be an object")
         if mode.get("model_digest") != model_digest:
             raise ValueError("target modes must share the exact frozen model digest")
-        if mode.get("target_local_memory_enabled") is not True:
-            raise ValueError("target-local memory must remain active in every target mode")
+        recomputed_modes[mode_name] = _recompute_mode_aggregate(mode_name, mode)
+
+    evaluation_episode_count = _require_nonnegative_int(
+        "evaluation_episode_count", evaluation.get("evaluation_episode_count")
+    )
+    heldout_nonidentity_count = _require_nonnegative_int(
+        "heldout_nonidentity_episode_count",
+        evaluation.get("heldout_nonidentity_episode_count"),
+    )
+    if evaluation_episode_count <= 0:
+        raise ValueError("evaluation_episode_count must be positive")
+    if heldout_nonidentity_count > evaluation_episode_count:
+        raise ValueError("heldout nonidentity episode count exceeds evaluation episode count")
+    for mode_name, aggregate in recomputed_modes.items():
+        if aggregate["episodes"] != evaluation_episode_count:
+            raise ValueError(
+                f"mode aggregate {mode_name} episode count does not match evaluation_episode_count"
+            )
+
     learned = modes["LEARNED_STRUCTURAL_TRANSFER"]
     if learned.get("oracle_mapping_delivered") is not False:
         raise ValueError("learned mode received oracle mapping")
@@ -223,9 +390,56 @@ def validate_root_receipt(receipt: Mapping[str, Any]) -> None:
         raise ValueError("root_metrics must be an object")
     if metrics.get("primary_endpoint") != "source_equivalent_target_dead_end_rate":
         raise ValueError("unexpected EXP-290 primary endpoint")
-    r0 = float(metrics["control_source_equivalent_target_dead_end_rate"])
-    rl = float(metrics["learned_source_equivalent_target_dead_end_rate"])
-    ro = float(metrics["oracle_source_equivalent_target_dead_end_rate"])
+
+    control_aggregate = recomputed_modes["LOCAL_ONLY_CONTROL"]
+    learned_aggregate = recomputed_modes["LEARNED_STRUCTURAL_TRANSFER"]
+    oracle_aggregate = recomputed_modes["ORACLE_ISOMORPHIC_TRANSFER_UPPER_BOUND"]
+    expected_metric_values = {
+        "control_source_equivalent_target_dead_end_rate": control_aggregate[
+            "source_equivalent_target_dead_end_rate"
+        ],
+        "learned_source_equivalent_target_dead_end_rate": learned_aggregate[
+            "source_equivalent_target_dead_end_rate"
+        ],
+        "oracle_source_equivalent_target_dead_end_rate": oracle_aggregate[
+            "source_equivalent_target_dead_end_rate"
+        ],
+        "learned_valid_state_overprune_rate": learned_aggregate[
+            "valid_state_overprune_rate"
+        ],
+        "control_verified_solution_rate": control_aggregate["verified_solution_rate"],
+        "learned_verified_solution_rate": learned_aggregate["verified_solution_rate"],
+        "oracle_verified_solution_rate": oracle_aggregate["verified_solution_rate"],
+        "heldout_nonidentity_permutation_rate": float(
+            heldout_nonidentity_count / evaluation_episode_count
+        ),
+    }
+    for key, expected in expected_metric_values.items():
+        _assert_close(
+            f"root_metrics {key} inconsistent with mode aggregate",
+            float(metrics[key]),
+            float(expected),
+        )
+    if int(metrics["learned_transferred_prune_count"]) != int(
+        learned_aggregate["transferred_prune_count"]
+    ):
+        raise ValueError(
+            "root_metrics learned_transferred_prune_count inconsistent with mode aggregate"
+        )
+    if metrics.get("evaluation_mapping_used_by_learned_mode") is not False:
+        raise ValueError("root_metrics learned mapping leakage flag must be false")
+    if metrics.get("oracle_mapping_used_by_learned_mode") is not False:
+        raise ValueError("root_metrics learned oracle leakage flag must be false")
+    if metrics.get("local_only_transfer_activated") is not False:
+        raise ValueError("root_metrics local-only transfer activation must be false")
+    if metrics.get("oracle_transfer_mode_deployable") is not False:
+        raise ValueError("root_metrics oracle transfer mode deployability must be false")
+    if metrics.get("epsilon_denominator_rescue_used") is not False:
+        raise ValueError("root_metrics epsilon denominator rescue flag must be false")
+
+    r0 = float(expected_metric_values["control_source_equivalent_target_dead_end_rate"])
+    rl = float(expected_metric_values["learned_source_equivalent_target_dead_end_rate"])
+    ro = float(expected_metric_values["oracle_source_equivalent_target_dead_end_rate"])
     oracle_headroom = r0 - ro
     learned_headroom = r0 - rl
     _assert_close("oracle_headroom", float(metrics["oracle_headroom"]), oracle_headroom)
@@ -235,6 +449,12 @@ def validate_root_receipt(receipt: Mapping[str, Any]) -> None:
         "learned_oracle_value_capture",
         float(metrics["learned_oracle_value_capture"]),
         expected_capture,
+    )
+    expected_nonidentity_rate = float(heldout_nonidentity_count / evaluation_episode_count)
+    _assert_close(
+        "heldout nonidentity permutation rate",
+        float(metrics["heldout_nonidentity_permutation_rate"]),
+        expected_nonidentity_rate,
     )
     expected_decision = _classify_root(metrics)
     if receipt.get("decision") != expected_decision:
