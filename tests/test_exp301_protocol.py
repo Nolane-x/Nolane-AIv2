@@ -11,6 +11,7 @@ from nolane_ai.protocol.v017 import (
     EXP301_CHALLENGE_LOOPS,
     EXP301_EXPECTED_DIGEST,
     EXP301_ROOTS,
+    EXP301_SUPERSEDED_V1_DIGEST,
     EXP301_TRAINING_LOOPS,
     canonical_registration_payload,
     load_exp301_registration,
@@ -19,15 +20,31 @@ from nolane_ai.protocol.v017 import (
 )
 
 
-PROTOCOL_PATH = Path("protocols/v017/exp301_preregistration_v1.json")
+PROTOCOL_PATH = Path("protocols/v017/exp301_preregistration_v2.json")
+V1_PATH = Path("protocols/v017/exp301_preregistration_v1.json")
+EXPECTED_V2_DIGEST = "1660a728990290f1c605941d531be1d52fe82591c619a327d104e4b87c1e6bad"
 
 
-def test_exp301_semantic_digest_matches_frozen_registration() -> None:
+def test_exp301_semantic_digest_matches_current_predata_amendment() -> None:
     payload = load_exp301_registration(PROTOCOL_PATH)
 
-    assert registration_digest(payload) == EXP301_EXPECTED_DIGEST
-    assert payload["registration_digest"] == f"sha256:{EXP301_EXPECTED_DIGEST}"
+    assert EXP301_EXPECTED_DIGEST == EXPECTED_V2_DIGEST
+    assert registration_digest(payload) == EXPECTED_V2_DIGEST
+    assert payload["registration_digest"] == f"sha256:{EXPECTED_V2_DIGEST}"
     validate_exp301_registration(payload)
+
+
+def test_exp301_v1_is_preserved_but_explicitly_superseded_before_data() -> None:
+    v1 = json.loads(V1_PATH.read_text(encoding="utf-8"))
+    v2 = load_exp301_registration(PROTOCOL_PATH)
+    amendment = v2["protocol_amendment"]
+
+    assert registration_digest(v1) == EXP301_SUPERSEDED_V1_DIGEST
+    assert amendment["supersedes_registration_digest"] == f"sha256:{EXP301_SUPERSEDED_V1_DIGEST}"
+    assert amendment["amendment_kind"] == "PRE_DATA_FAIRNESS_CORRECTION"
+    assert amendment["scientific_outcome_consumed"] is False
+    assert amendment["challenge_materialized"] is False
+    assert amendment["hypothesis_changed"] is False
 
 
 def test_exp301_digest_is_key_order_and_whitespace_invariant() -> None:
@@ -59,6 +76,20 @@ def test_exp301_frozen_authority_fields_are_exact() -> None:
     assert tuple(payload["training"]["roots"]) == EXP301_ROOTS
     assert tuple(payload["training"]["loop_training_distribution"]) == EXP301_TRAINING_LOOPS
     assert tuple(payload["training"]["challenge_loop_budgets"]) == EXP301_CHALLENGE_LOOPS
+
+
+def test_exp301_v2_freezes_stateless_fixed_restart_compute_rival() -> None:
+    payload = load_exp301_registration(PROTOCOL_PATH)
+    fixed = payload["arms"][0]
+    compute = payload["compute_matching"]
+
+    assert fixed["id"] == "A_FIXED"
+    assert "stateless repeated restarts" in fixed["role"]
+    assert "no latent state carries across restarts" in fixed["constraints"]
+    assert tuple(compute["effort_multipliers"]) == EXP301_CHALLENGE_LOOPS
+    assert compute["max_relative_flop_mismatch"] == pytest.approx(0.002)
+    assert "no cross-restart latent state" in compute["a_fixed_policy"]
+    assert compute["unmatched_budget_policy"].startswith("INVALID_COMPUTE_MATCH")
 
 
 def test_exp301_loader_rejects_wrong_experiment_even_with_recomputed_self_digest(tmp_path: Path) -> None:
