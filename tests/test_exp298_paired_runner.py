@@ -120,7 +120,7 @@ def test_root_publishes_all_frozen_non_claims_false():
         assert payload[key] is False, key
 
 
-def test_four_root_cross_reducer_runs_inside_focused_torch_ci():
+def test_four_root_cross_reducer_runs_inside_focused_torch_ci_and_rejects_geometry_drift():
     cross = importlib.import_module("nolane_ai.experiments.exp298_cross_reducer")
     roots = [_cross_root(index) for index in range(4)]
     payload = cross.reduce_exp298_roots(roots)
@@ -132,8 +132,6 @@ def test_four_root_cross_reducer_runs_inside_focused_torch_ci():
     assert cross.validate_exp298_cross(payload) == []
 
     roots[-1] = _cross_root(3, max_exact_probes=1)
-    negative = cross.reduce_exp298_roots(roots)
-    assert negative["decision"] == "CROSS_DOMAIN_FIDELITY_TRANSFER_NOT_RECURRENT"
-    assert negative["successor_design_authorized"] is False
-    assert negative["authorization_scope"] == "NONE"
-    assert negative["exp300_authorized"] is False
+    assert roots[-1]["decision"] == "CROSS_DOMAIN_FIDELITY_TRANSFER_NOT_ESTABLISHED"
+    with pytest.raises(ValueError, match="identity drift"):
+        cross.reduce_exp298_roots(roots)
