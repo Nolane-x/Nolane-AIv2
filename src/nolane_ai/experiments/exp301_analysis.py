@@ -27,11 +27,15 @@ REASONING_FAMILIES = (
 LANGUAGE_FAMILY = "language-sequence-control"
 ALL_FAMILIES = (*REASONING_FAMILIES, LANGUAGE_FAMILY)
 EXPECTED_ROOTS = (0, 1, 2, 3)
+UNSEEN_DEPTH_EFFORTS = tuple(
+    effort for effort in EXP301_EFFORTS if effort not in PRIMARY_TRAINED_EFFORTS
+)
 
 RCG_MESI = 0.05
 FAMILY_GAIN_MESI = 0.05
 MIN_QUALIFYING_REASONING_FAMILIES = 2
 MIN_POSITIVE_ROOTS = 3
+_EPS = 1e-12
 
 
 @dataclass(frozen=True, slots=True)
@@ -124,19 +128,13 @@ def _normalized_rcg_from_units(units: Sequence[_PairUnit]) -> float:
     points: list[tuple[float, float]] = []
     for effort in sorted(by_effort):
         group = by_effort[effort]
-        if not group:
-            continue
         gap = sum(unit.candidate_success - unit.rival_success for unit in group) / len(group)
-        # One x coordinate per common operating point. Geometric-mean FLOPs
-        # treats a small symmetric ledger mismatch without privileging an arm.
         log_flops = sum(
             0.5 * (math.log2(unit.candidate_flops) + math.log2(unit.rival_flops))
             for unit in group
         ) / len(group)
         points.append((log_flops, gap))
 
-    if not points:
-        raise ValueError("RCG has no valid operating points")
     if len(points) == 1:
         return points[0][1]
 
@@ -159,6 +157,19 @@ def normalized_rcg(
 ) -> float:
     return _normalized_rcg_from_units(
         _pair_units(rows, candidate_arm=candidate_arm, rival_arm=rival_arm)
+    )
+
+
+def _rcg_for_efforts(
+    rows: Sequence[Exp301EvaluationRow],
+    efforts: Sequence[int],
+) -> float:
+    allowed = set(efforts)
+    subset = [row for row in rows if row.effort_multiplier in allowed]
+    return normalized_rcg(
+        subset,
+        candidate_arm="C_NRS_CORE",
+        rival_arm="A_FIXED",
     )
 
 
@@ -203,14 +214,10 @@ def paired_hierarchical_bootstrap_rcg(
 
     for _ in range(samples):
         sampled_units: list[_PairUnit] = []
-        # Root is the replication stratum. Sample roots with replacement, then
-        # paired held-out instances within each family/effort cell.
         sampled_roots = [rng.choice(roots) for _ in roots]
         for synthetic_root, source_root in enumerate(sampled_roots):
             cells = by_root_cell[source_root]
             for (family, effort), cell in sorted(cells.items()):
-                if not cell:
-                    continue
                 for sample_index in range(len(cell)):
                     chosen = rng.choice(cell)
                     sampled_units.append(
@@ -233,7 +240,6 @@ def paired_hierarchical_bootstrap_rcg(
 def _validate_complete_scientific_ledger(rows: Sequence[Exp301EvaluationRow]) -> str | None:
     if not rows:
         return "scientific ledger is empty"
-
     if {row.arm_id for row in rows} != set(EXP301_ARMS):
         return "scientific ledger does not contain all three registered arms"
     if {row.root for row in rows} != set(EXPECTED_ROOTS):
@@ -263,7 +269,8 @@ def _reasoning_family_gain(rows: Sequence[Exp301EvaluationRow]) -> tuple[int, in
         qualifying = 0
         for family in REASONING_FAMILIES:
             subset = [
-                row for row in rows
+                row
+                for row in rows
                 if row.family == family and row.effort_multiplier == effort
             ]
             units = _pair_units(
@@ -271,8 +278,10 @@ def _reasoning_family_gain(rows: Sequence[Exp301EvaluationRow]) -> tuple[int, in
                 candidate_arm="C_NRS_CORE",
                 rival_arm="A_FIXED",
             )
-            gain = sum(unit.candidate_success - unit.rival_success for unit in units) / len(units)
-            if gain >= FAMILY_GAIN_MESI - 1e-12:
+            gain = sum(
+                unit.candidate_success - unit.rival_success for unit in units
+            ) / len(units)
+            if gain >= FAMILY_GAIN_MESI - _EPS:
                 qualifying += 1
         if qualifying > best_count:
             best_count = qualifying
@@ -284,7 +293,11 @@ def _positive_root_count(rows: Sequence[Exp301EvaluationRow]) -> int:
     positive = 0
     for root in EXPECTED_ROOTS:
         subset = [row for row in rows if row.root == root]
-        if normalized_rcg(subset, candidate_arm="C_NRS_CORE", rival_arm="A_FIXED") > 0.0:
+        if normalized_rcg(
+            subset,
+            candidate_arm="C_NRS_CORE",
+            rival_arm="A_FIXED",
+        ) > 0.0:
             positive += 1
     return positive
 
@@ -319,7 +332,9 @@ def reduce_exp301(
     )
 
     if not infrastructure_valid:
-        reason = completeness_error or "scientific court failed an infrastructure/evidence-boundary floor"
+        reason = completeness_error or (
+            "scientific court failed an infrastructure/evidence-boundary floor"
+        )
         return Exp301AnalysisResult(
             decision=DECISION_INVALID,
             aggregate_rcg=float("nan"),
@@ -354,10 +369,12 @@ def reduce_exp301(
     family_count, qualifying_effort = _reasoning_family_gain(materialized)
     positive_roots = _positive_root_count(materialized)
 
-    scientific_performance_floors = floors["language_control"] and floors["invalid_output"]
+    scientific_performance_floors = (
+        floors["language_control"] and floors["invalid_output"]
+    )
     promote = (
         scientific_performance_floors
-        and aggregate_rcg >= RCG_MESI - 1e-12
+        and aggregate_rcg >= RCG_MESI - _EPS
         and family_count >= MIN_QUALIFYING_REASONING_FAMILIES
         and positive_roots >= MIN_POSITIVE_ROOTS
         and ci_low > 0.0
@@ -366,16 +383,33 @@ def reduce_exp301(
     if promote:
         decision = DECISION_PROMOTE
         reason = "all preregistered EXP-301 promotion conjuncts passed"
-    elif (
-        not representation_stability_ok
-        and aggregate_rcg > 0.0
-        and family_count < MIN_QUALIFYING_REASONING_FAMILIES
-    ):
-        decision = DECISION_STABILITY
-        reason = "positive aggregate recurrence signal lacked trained-depth family qualification and representation stability"
     else:
-        decision = DECISION_KILL
-        reason = "valid EXP-301 court did not clear the full preregistered promotion conjunction"
+        trained_depth_rcg = _rcg_for_efforts(
+            materialized,
+            PRIMARY_TRAINED_EFFORTS,
+        )
+        unseen_depth_rcg = _rcg_for_efforts(
+            materialized,
+            UNSEEN_DEPTH_EFFORTS,
+        )
+        diagnostic_instability = (
+            not representation_stability_ok or not scientific_performance_floors
+        )
+        unseen_only_gain = (
+            unseen_depth_rcg > _EPS and trained_depth_rcg <= _EPS
+        )
+        if unseen_only_gain and diagnostic_instability:
+            decision = DECISION_STABILITY
+            reason = (
+                "gain occurred only beyond trained loop depths while representation "
+                "stability or a protected performance control failed"
+            )
+        else:
+            decision = DECISION_KILL
+            reason = (
+                "valid EXP-301 court did not clear the full preregistered promotion "
+                "conjunction"
+            )
 
     return Exp301AnalysisResult(
         decision=decision,
