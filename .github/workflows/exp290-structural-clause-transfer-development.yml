@@ -1,0 +1,307 @@
+name: exp290-structural-clause-transfer-development
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - protocols/exp290-structural-clause-transfer-release.lock
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: exp290-development-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXP290_DEVELOPMENT_WORKFLOW_NAME: exp290-structural-clause-transfer-development
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Require this run to be the first authoritative DEVELOPMENT run
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          workflow_name = os.environ["EXP290_DEVELOPMENT_WORKFLOW_NAME"]
+          pr_number = int(os.environ["PR_NUMBER"])
+          current_run_id = int(os.environ["GITHUB_RUN_ID"])
+          current_run_attempt = int(os.environ["GITHUB_RUN_ATTEMPT"])
+          if current_run_attempt != 1:
+              raise SystemExit(
+                  f"rerun DEVELOPMENT attempt blocked before root execution: "
+                  f"run_id={current_run_id} attempt={current_run_attempt}"
+              )
+          payload = subprocess.check_output(
+              ["gh", "api", f"repos/{repo}/actions/runs?event=pull_request&per_page=100"],
+              text=True,
+          )
+          candidates = []
+          for run in json.loads(payload)["workflow_runs"]:
+              if run.get("name") != workflow_name:
+                  continue
+              prs = run.get("pull_requests") or []
+              if not any(int(pr.get("number", -1)) == pr_number for pr in prs):
+                  continue
+              candidates.append(run)
+          candidates.sort(key=lambda run: (run.get("created_at", ""), int(run["id"])))
+          if not candidates:
+              raise SystemExit("EXP-290 DEVELOPMENT authority query returned no matching runs")
+          authoritative = int(candidates[0]["id"])
+          if current_run_id != authoritative:
+              raise SystemExit(
+                  f"duplicate DEVELOPMENT run blocked before root execution: "
+                  f"authoritative={authoritative} current={current_run_id}"
+              )
+          print(json.dumps({
+              "schema": "NLM-EXP-290-DEVELOPMENT-RUN-AUTHORITY-V1",
+              "authoritative_development_run_id": authoritative,
+              "current_run_id": current_run_id,
+              "current_run_attempt": current_run_attempt,
+              "observed_development_run_ids": [int(run["id"]) for run in candidates],
+          }, sort_keys=True))
+          PY
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Require marker-only frozen EXP-290 release at exact PR head
+        run: |
+          set -euo pipefail
+          MARKER=protocols/exp290-structural-clause-transfer-release.lock
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          LAST_TOUCH=$(git log -1 --format=%H -- "$MARKER")
+          test "$LAST_TOUCH" = "${{ github.event.pull_request.head.sha }}"
+          mapfile -t CHANGED < <(git diff --name-only HEAD^ HEAD)
+          test "${#CHANGED[@]}" -eq 1
+          test "${CHANGED[0]}" = "$MARKER"
+          PRE_MARKER=$(git rev-parse HEAD^)
+          export PRE_MARKER
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          pre_marker = os.environ["PRE_MARKER"]
+          expected = f"""EXP290_STRUCTURAL_CLAUSE_TRANSFER_RELEASE_V1
+          canonical_indices=0,1,2,3
+          train_replicates=64
+          eval_replicates=32
+          eval_start_replicate=40000
+          batch_size=8
+          d_model=64
+          hidden_size=48
+          target_parameters=500000
+          timesteps=4
+          variables=8
+          decoys=3
+          restarts=4
+          max_search_steps=24
+          noise_std=0.05
+          lr=0.002
+          weight_decay=0.0
+          capture_threshold=0.5
+          valid_state_overprune_rate_ceiling=0.005
+          verified_solution_rate_floor_delta=-0.01
+          root_prefix=20260913-exp290-structural-clause-transfer-v1-dev
+          protocol_digest=c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440
+          geometry_digest=bffb1f01d54a6867f3af6acd0c2339a83add69f6df4bc6fd8d5504aa9eb4d67a
+          authority_scope=DEVELOPMENT_EV_E2_ONLY
+          pre_marker_head={pre_marker}
+          """
+          expected = "\n".join(line.strip() for line in expected.splitlines() if line.strip()) + "\n"
+          actual = Path("protocols/exp290-structural-clause-transfer-release.lock").read_text(encoding="utf-8")
+          if actual != expected:
+              raise SystemExit("EXP-290 release marker content mismatch")
+          PY
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Verify frozen EXP-290 geometry identity
+        run: |
+          test "$(sha256sum protocols/exp290_structural_clause_transfer_v1.json | awk '{print $1}')" = "$(tr -d '\n' < protocols/exp290_structural_clause_transfer_v1.sha256)"
+          PYTHONPATH=src python - <<'PY'
+          from nolane_ai.experiments.exp290_development_geometry import load_exp290_development_geometry
+          geometry, digest = load_exp290_development_geometry(
+              "protocols/exp290_structural_clause_transfer_v1.json",
+              "protocols/exp290_structural_clause_transfer_v1.sha256",
+              protocol_digest="c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+          )
+          assert geometry["canonical_indices"] == [0, 1, 2, 3]
+          assert geometry["train_replicates"] == 64
+          assert geometry["eval_replicates"] == 32
+          assert geometry["eval_start_replicate"] == 40000
+          assert digest == "bffb1f01d54a6867f3af6acd0c2339a83add69f6df4bc6fd8d5504aa9eb4d67a"
+          PY
+
+  root:
+    needs: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        canonical_index: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only model environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Run frozen EXP-290 canonical root
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          CANONICAL_INDEX: ${{ matrix.canonical_index }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PR_HEAD"
+          WORK=/tmp/exp290-root-${CANONICAL_INDEX}
+          mkdir -p "$WORK"
+          python scripts/run_exp290_structural_clause_transfer_dev.py \
+            --canonical-index "$CANONICAL_INDEX" \
+            --output "$WORK/receipt.json"
+          PYTHONPATH=src python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from nolane_ai.protocol.identity import source_tree_digest
+
+          work = Path(f"/tmp/exp290-root-{os.environ['CANONICAL_INDEX']}")
+          identity = {
+              "schema": "NLM-EXP-290-DEVELOPMENT-EXECUTION-IDENTITY-V1",
+              "canonical_index": int(os.environ["CANONICAL_INDEX"]),
+              "repository_head_sha": os.environ["PR_HEAD"],
+              "github_event_sha": os.environ["GITHUB_SHA"],
+              "github_run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "source_tree_digest": source_tree_digest(Path.cwd()),
+              "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+          }
+          work.joinpath("execution-identity.json").write_text(
+              json.dumps(identity, sort_keys=True, separators=(",", ":")) + "\n",
+              encoding="utf-8",
+          )
+          PY
+      - name: Verify root receipt and sidecar before upload
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          CANONICAL_INDEX: ${{ matrix.canonical_index }}
+        run: |
+          PYTHONPATH=src python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from nolane_ai.experiments.exp290_receipts import canonical_receipt_bytes, validate_root_receipt
+          from nolane_ai.protocol.identity import source_tree_digest
+
+          work = Path(f"/tmp/exp290-root-{os.environ['CANONICAL_INDEX']}")
+          receipt = work / "receipt.json"
+          payload = receipt.read_bytes()
+          assert receipt.with_name("receipt.json.sha256").read_text(encoding="utf-8") == hashlib.sha256(payload).hexdigest() + "\n"
+          data = json.loads(payload)
+          assert payload == canonical_receipt_bytes(data)
+          validate_root_receipt(data)
+          assert data["canonical_index"] == int(os.environ["CANONICAL_INDEX"])
+          assert data["code_digest"] == source_tree_digest(Path.cwd())
+          assert data["repository_head"] == os.environ["PR_HEAD"]
+          assert data["scientific_evidence_eligible"] is False
+          assert data["challenge_materialized"] is False
+          assert data["promotion_claimed"] is False
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp290-root-${{ matrix.canonical_index }}-${{ github.sha }}
+          path: /tmp/exp290-root-${{ matrix.canonical_index }}
+          if-no-files-found: error
+          retention-days: 90
+
+  cross:
+    needs: root
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only reducer environment
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: exp290-root-*-${{ github.sha }}
+          path: /tmp/exp290-roots
+      - name: Verify exactly four roots and reduce cross-root court
+        run: |
+          set -euo pipefail
+          mapfile -t ROOTS < <(find /tmp/exp290-roots -type f -name receipt.json | sort)
+          test "${#ROOTS[@]}" -eq 4
+          WORK=/tmp/exp290-cross
+          mkdir -p "$WORK"
+          python scripts/reduce_exp290_structural_clause_transfer_dev.py \
+            --root-receipts "${ROOTS[0]}" "${ROOTS[1]}" "${ROOTS[2]}" "${ROOTS[3]}" \
+            --output "$WORK/receipt.json"
+      - name: Verify sealed cross receipt and boundaries
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          PYTHONPATH=src python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from nolane_ai.experiments.exp290_receipts import canonical_receipt_bytes, validate_cross_receipt
+          from nolane_ai.protocol.identity import source_tree_digest
+
+          work = Path("/tmp/exp290-cross")
+          receipt = work / "receipt.json"
+          payload = receipt.read_bytes()
+          assert receipt.with_name("receipt.json.sha256").read_text(encoding="utf-8") == hashlib.sha256(payload).hexdigest() + "\n"
+          data = json.loads(payload)
+          assert payload == canonical_receipt_bytes(data)
+          validate_cross_receipt(data)
+          assert data["code_digest"] == source_tree_digest(Path.cwd())
+          assert data["repository_head"] == os.environ["PR_HEAD"]
+          assert data["scientific_evidence_eligible"] is False
+          assert data["challenge_materialized"] is False
+          assert data["promotion_claimed"] is False
+          identity = {
+              "schema": "NLM-EXP-290-DEVELOPMENT-CROSS-EXECUTION-IDENTITY-V1",
+              "repository_head_sha": os.environ["PR_HEAD"],
+              "github_event_sha": os.environ["GITHUB_SHA"],
+              "github_run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "source_tree_digest": source_tree_digest(Path.cwd()),
+              "protocol_digest": data["protocol_digest"],
+              "cross_artifact_digest": data["artifact_digest"],
+          }
+          work.joinpath("execution-identity.json").write_text(
+              json.dumps(identity, sort_keys=True, separators=(",", ":")) + "\n",
+              encoding="utf-8",
+          )
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp290-cross-${{ github.sha }}
+          path: /tmp/exp290-cross
+          if-no-files-found: error
+          retention-days: 90
