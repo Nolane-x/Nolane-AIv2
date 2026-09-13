@@ -35,6 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -55,4 +58,45 @@ jobs:
           tests/test_exp298_workflow_contract.py
           tests/test_exp298_freeze_guard_contract.py
       - run: python scripts/verify_protocol.py
+      - name: Publish EXP-298 exact-head pre-data identity
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          PYTHONPATH=src python - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+          from nolane_ai.protocol.evidence import canonical_sha256
+          from nolane_ai.protocol.identity import source_tree_digest
+
+          repository_head = subprocess.check_output(
+              ["git", "rev-parse", "HEAD"], text=True
+          ).strip()
+          assert repository_head == os.environ["PR_HEAD"]
+          geometry = json.loads(
+              Path("protocols/exp298_cross_domain_fidelity_geometry_v1.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          geometry_digest = canonical_sha256(geometry)
+          declared_geometry_digest = Path(
+              "protocols/exp298_cross_domain_fidelity_geometry_v1.sha256"
+          ).read_text(encoding="ascii").strip()
+          protocol_digest = Path("protocols/stage_a_v1.sha256").read_text(
+              encoding="ascii"
+          ).strip()
+          assert geometry_digest == declared_geometry_digest
+          assert geometry["protocol_digest"] == protocol_digest
+          print(json.dumps({
+              "schema": "NLM-EXP-298-PREDATA-IDENTITY-V1",
+              "repository_head": repository_head,
+              "source_tree_digest": source_tree_digest(Path.cwd()),
+              "protocol_digest": protocol_digest,
+              "geometry_digest": geometry_digest,
+              "release_marker_present": Path(
+                  "protocols/exp298-cross-domain-fidelity-release.lock"
+              ).exists(),
+          }, sort_keys=True))
+          PY
       - run: python -m compileall -q src scripts
