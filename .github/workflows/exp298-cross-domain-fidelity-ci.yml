@@ -42,5 +42,7 @@ jobs:
           tests/test_exp298_causal_worlds.py
           tests/test_exp298_language_worlds.py
           tests/test_matched_cross_domain_fidelity_arms.py
+          tests/test_exp298_paired_runner.py
+          tests/test_exp298_tamper_validation.py
       - run: python scripts/verify_protocol.py
       - run: python -m compileall -q src scripts
