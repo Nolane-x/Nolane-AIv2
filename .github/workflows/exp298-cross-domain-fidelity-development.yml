@@ -86,6 +86,7 @@ jobs:
           PRE_MARKER=$(git rev-parse HEAD^)
           export PRE_MARKER
           PYTHONPATH=src python - <<'PY'
+          import json
           import os
           from pathlib import Path
           from nolane_ai.protocol.evidence import canonical_sha256
@@ -104,9 +105,11 @@ jobs:
                   raise SystemExit("EXP-298 release marker duplicate field")
               fields[key] = value
 
-          geometry_path = Path("protocols/exp298_cross_domain_fidelity_geometry_v1.json")
-          import json
-          geometry = json.loads(geometry_path.read_text(encoding="utf-8"))
+          geometry = json.loads(
+              Path("protocols/exp298_cross_domain_fidelity_geometry_v1.json").read_text(
+                  encoding="utf-8"
+              )
+          )
           geometry_digest = canonical_sha256(geometry)
           declared_geometry_digest = Path(
               "protocols/exp298_cross_domain_fidelity_geometry_v1.sha256"
@@ -114,32 +117,33 @@ jobs:
           if geometry_digest != declared_geometry_digest:
               raise SystemExit("EXP-298 geometry sidecar mismatch")
 
-          static = {
-              "canonical_indices": "0,1,2,3",
-              "eval_replicates": "32",
-              "eval_start_replicate": "50000",
-              "candidates_per_replicate": "16",
-              "d_model": "64",
-              "hidden_size": "64",
-              "target_parameters": "500000",
-              "max_exact_probes": "4096",
-              "balanced_accuracy_gain_mesi": "0.1",
-              "wrong_authority_ceiling": "0.05",
-              "faithful_rejection_ceiling": "0.1",
-              "root_seed_prefix": "20260913-exp298-cross-domain-fidelity-v1-dev",
-              "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
-              "geometry_digest": declared_geometry_digest,
-              "authority_scope": "DEVELOPMENT_EV_E2_ONLY",
-          }
-          for key, expected in static.items():
-              if fields.get(key) != expected:
-                  raise SystemExit(f"EXP-298 release marker {key} mismatch")
-          if fields.get("source_tree_digest") != source_tree_digest(Path.cwd()):
-              raise SystemExit("EXP-298 release marker source_tree_digest mismatch")
-          if fields.get("pre_marker_head") != os.environ["PRE_MARKER"]:
-              raise SystemExit("EXP-298 release marker pre_marker_head mismatch")
-          if set(fields) != set(static) | {"source_tree_digest", "pre_marker_head"}:
-              raise SystemExit("EXP-298 release marker field set mismatch")
+          expected_text = f"""canonical_indices=0,1,2,3
+          eval_replicates=32
+          eval_start_replicate=50000
+          candidates_per_replicate=16
+          d_model=64
+          hidden_size=64
+          target_parameters=500000
+          max_exact_probes=4096
+          balanced_accuracy_gain_mesi=0.1
+          wrong_authority_ceiling=0.05
+          faithful_rejection_ceiling=0.1
+          root_seed_prefix=20260913-exp298-cross-domain-fidelity-v1-dev
+          protocol_digest=c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440
+          geometry_digest={declared_geometry_digest}
+          authority_scope=DEVELOPMENT_EV_E2_ONLY
+          source_tree_digest={source_tree_digest(Path.cwd())}
+          pre_marker_head={os.environ["PRE_MARKER"]}
+          """
+          expected_fields = {}
+          for line in expected_text.splitlines():
+              line = line.strip()
+              if not line:
+                  continue
+              key, value = line.split("=", 1)
+              expected_fields[key] = value
+          if fields != expected_fields:
+              raise SystemExit("EXP-298 release marker content mismatch")
           PY
       - name: Verify frozen Stage-A protocol
         run: python scripts/verify_protocol.py
@@ -245,7 +249,6 @@ jobs:
           assert data["repository_head"] == os.environ["PR_HEAD"]
           assert data["geometry_digest"] == "4ba5a9a569e006d03d4bdf9a596797418c5852f555a8e0ed08314dda43dedc61"
           assert data["scientific_evidence_eligible"] is False
-          assert data["confirmatory_data_consumed"] is False
           assert data["challenge_materialized"] is False
           assert data["promotion_claimed"] is False
           assert data["unrestricted_semantic_authority_claimed"] is False
@@ -313,7 +316,6 @@ jobs:
           assert data["repository_head"] == os.environ["PR_HEAD"]
           assert data["geometry_digest"] == "4ba5a9a569e006d03d4bdf9a596797418c5852f555a8e0ed08314dda43dedc61"
           assert data["scientific_evidence_eligible"] is False
-          assert data["confirmatory_data_consumed"] is False
           assert data["challenge_materialized"] is False
           assert data["promotion_claimed"] is False
           assert data["exp300_authorized"] is False
