@@ -9,6 +9,8 @@ on:
       - tests/test_exp298_*.py
       - tests/test_matched_cross_domain_fidelity_arms.py
       - .github/workflows/exp298-cross-domain-fidelity-ci.yml
+      - .github/workflows/exp298-cross-domain-fidelity-development.yml
+      - .github/workflows/exp298-cross-domain-fidelity-freeze-guard.yml
       - protocols/exp298_cross_domain_fidelity_geometry_v1.json
       - protocols/exp298_cross_domain_fidelity_geometry_v1.sha256
   push:
@@ -20,6 +22,8 @@ on:
       - tests/test_exp298_*.py
       - tests/test_matched_cross_domain_fidelity_arms.py
       - .github/workflows/exp298-cross-domain-fidelity-ci.yml
+      - .github/workflows/exp298-cross-domain-fidelity-development.yml
+      - .github/workflows/exp298-cross-domain-fidelity-freeze-guard.yml
       - protocols/exp298_cross_domain_fidelity_geometry_v1.json
       - protocols/exp298_cross_domain_fidelity_geometry_v1.sha256
 
@@ -48,5 +52,7 @@ jobs:
           tests/test_exp298_tamper_validation.py
           tests/test_exp298_cross_reducer.py
           tests/test_exp298_paired_cli.py
+          tests/test_exp298_workflow_contract.py
+          tests/test_exp298_freeze_guard_contract.py
       - run: python scripts/verify_protocol.py
       - run: python -m compileall -q src scripts
