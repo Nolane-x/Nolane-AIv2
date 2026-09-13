@@ -28,6 +28,7 @@ from nolane_ai.experiments.exp287_receipts import (
 
 PROTOCOL_DIGEST = "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440"
 ROOT_PREFIX = "20260913-exp287-learned-conflict-localization-v1-dev"
+CODE_DIGEST = "a" * 64
 GEOMETRY = {
     "root_prefix": ROOT_PREFIX,
     "canonical_indices": [0, 1, 2, 3],
@@ -122,6 +123,7 @@ def _primitive_root(index: int, *, established: bool = True) -> dict:
         "root_seed": f"{ROOT_PREFIX}::{index}",
         "geometry": deepcopy(GEOMETRY),
         "geometry_digest": hashlib.sha256(b"frozen-exp287-geometry").hexdigest(),
+        "code_digest": CODE_DIGEST,
         "protocol_digest": PROTOCOL_DIGEST,
         "model_init_seed": 1000 + index,
         "model_state_digest": model_digest,
