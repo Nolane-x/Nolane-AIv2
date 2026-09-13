@@ -5,6 +5,7 @@ on:
     paths:
       - src/nolane_ai/experiments/exp298_*.py
       - src/nolane_ai/experiments/matched_cross_domain_fidelity_arms.py
+      - scripts/run_exp298_cross_domain_fidelity_dev.py
       - tests/test_exp298_*.py
       - tests/test_matched_cross_domain_fidelity_arms.py
       - .github/workflows/exp298-cross-domain-fidelity-ci.yml
@@ -15,6 +16,7 @@ on:
     paths:
       - src/nolane_ai/experiments/exp298_*.py
       - src/nolane_ai/experiments/matched_cross_domain_fidelity_arms.py
+      - scripts/run_exp298_cross_domain_fidelity_dev.py
       - tests/test_exp298_*.py
       - tests/test_matched_cross_domain_fidelity_arms.py
       - .github/workflows/exp298-cross-domain-fidelity-ci.yml
@@ -44,5 +46,7 @@ jobs:
           tests/test_matched_cross_domain_fidelity_arms.py
           tests/test_exp298_paired_runner.py
           tests/test_exp298_tamper_validation.py
+          tests/test_exp298_cross_reducer.py
+          tests/test_exp298_paired_cli.py
       - run: python scripts/verify_protocol.py
       - run: python -m compileall -q src scripts
