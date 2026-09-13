@@ -51,6 +51,18 @@ def test_development_workflow_is_marker_only_and_has_exact_head_preflight() -> N
     assert "python scripts/verify_protocol.py" in text
 
 
+def test_development_preflight_allows_only_the_first_authoritative_run_before_data_jobs() -> None:
+    text = _text(DEVELOPMENT)
+    assert "actions: read" in text
+    assert "EXP287_DEVELOPMENT_WORKFLOW_NAME" in text
+    assert 'current_run_id = int(os.environ["GITHUB_RUN_ID"])' in text
+    assert "candidates.sort" in text
+    assert 'authoritative = int(candidates[0]["id"])' in text
+    assert "current_run_id != authoritative" in text
+    assert "duplicate DEVELOPMENT run blocked before root execution" in text
+    assert text.index("duplicate DEVELOPMENT run blocked before root execution") < text.index("root:")
+
+
 def test_development_workflow_has_exact_four_root_jobs_then_one_cross_reducer() -> None:
     text = _text(DEVELOPMENT)
     assert "root:" in text
@@ -76,25 +88,27 @@ def test_development_workflow_has_no_scientific_or_secret_escape_hatch() -> None
         "scientific_evidence_eligible = true",
         'promotion_claimed"] = True',
         "promotion_claimed: true",
+        "actions: write",
     )
     for token in forbidden:
         assert token not in text
     assert "contents: read" in text
 
 
-def test_freeze_guard_preserves_first_authoritative_development_run_and_cancels_later_active_duplicates() -> None:
+def test_freeze_guard_is_read_only_and_fails_closed_on_duplicate_development_runs() -> None:
     text = _text(FREEZE_GUARD)
     assert "name: exp287-learned-conflict-localization-freeze-guard" in text
     assert "pull_request:" in text
-    assert "actions: write" in text
+    assert "actions: read" in text
+    assert "actions: write" not in text
     assert "exp287-learned-conflict-localization-development" in text
     assert "candidates.sort" in text
     assert 'authoritative = int(candidates[0]["id"]) if candidates else None' in text
-    assert "for run in candidates[1:]" in text
-    assert '"/cancel"' in text or "/cancel" in text
     assert "authoritative_development_run_id" in text
-    assert "cancelled_duplicate_run_ids" in text
+    assert "duplicate_development_run_ids" in text
     assert "observed_development_run_ids" in text
+    assert "duplicate DEVELOPMENT runs detected" in text
+    assert "/cancel" not in text
 
 
 def test_release_marker_is_absent_before_predata_green() -> None:
