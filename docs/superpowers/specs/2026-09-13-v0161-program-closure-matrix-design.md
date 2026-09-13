@@ -4,7 +4,7 @@
 
 This document turns the V0.16.1 EXP-277..EXP-300 roadmap into an evidence-aware dependency authority. It does not rewrite the original research specification and does not reinterpret negative results as success. Its job is to prevent two failure modes: continuing a downstream experiment after its parent hypothesis has been killed, and treating DEVELOPMENT diagnostics as confirmatory scientific closure.
 
-Base authority for this matrix is `main@150252b63f7268157e66024a4f9e55ad61088e35` plus preserved GitHub experiment evidence. The frozen Stage-A protocol digest remains `c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440`.
+Base authority for this matrix is `main@b9b9f63980e31313a1f86ccb1f41fce78596b553` plus preserved GitHub experiment evidence. The frozen Stage-A protocol digest remains `c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440`.
 
 ## Canonical status vocabulary
 
@@ -93,7 +93,23 @@ Applying the already-frozen four-of-four cross rule to the four sealed authorita
 
 A later GitHub workflow object (`34751503700`, run #2) was created by cumulative PR path semantics after a test-only commit, but its first-authority preflight failed before checkout/root/model execution. It is not a second scientific execution. PR #70 was closed unmerged and the experiment branch sealed.
 
-Consequence: EXP-299 may now be designed and preregistered as the next scaffold/cache/retrieval-removal court, but that design authority does not itself authorize data execution. EXP-298 does not establish open-language understanding, general program verification, causal discovery, unrestricted semantic authority, or integrated VCPF superiority.
+Consequence: EXP-299 was validly authorized for design/preregistration as the next scaffold-removal court. EXP-299 has now executed and closed separately; the positive EXP-298 result remains intact within its bounded fidelity-fabric scope and does not itself establish native scaffold-free gains.
+
+### EXP-299 — native fidelity scaffold removal
+
+EXP-299 V1 / `H-NATIVE-01` was a preregistered DEVELOPMENT / EV-E2 court asking whether fit-time auxiliary exact-court teacher supervision leaves a material neural fidelity/authority advantage after the exact court is completely removed from held-out causal inference.
+
+Before release, exact-head dedicated EXP-299 contracts, structural leakage checks, fresh-process validator portability, generic core Python 3.11 and 3.13, generic model-smoke, Stage-A/geometry identity checks, compileall, and the zero-run freeze guard were all green. The marker-only release bound pre-marker head `564aa26b9e4dc0c9189aaa824dc9999c824c92f1`, source-tree digest `422d0c43ee1cf3d3384c0b2c59cee7ade594ce9477946880ea57e2b89c11b4c8`, geometry digest `7210e64dca010c6c1c8ab2cf20c7f03f7d7f263a88f9c8ae162d43151bb9932e`, structural-encoder contract digest `843069e7081309842f8e594f1ab8833f3ad23b2b3d49c975351268e10f157a23`, and frozen Stage-A digest.
+
+Exactly one authoritative DEVELOPMENT run (`34753873059`, run #1, attempt 1) executed all four canonical roots and the cross reducer at marker head `2ab16177fd2bda5e53bc5353b9aa9ec01590dd81`. Each root used 4,608 fit candidates plus 1,536 held-out candidates across the three frozen domain families. Root receipts reported zero inconclusive cases, disjoint fit/evaluation identities, prediction commitments before evaluator-court materialization, and unchanged model-state digests across held-out evaluation.
+
+All four roots closed `NATIVE_FIDELITY_NOT_ESTABLISHED`. The native teacher arm showed isolated positive cells, but the advantage was not recurrent or conjunctively safe across the frozen domains and roots. Examples include root 0 code-invariant gain `+0.4375` with wrong-authority `0.125`; root 2 grounded-language gain `+0.125` with zero wrong authority while code-invariant gain was `-0.35546875` with wrong-authority `0.765625`; and root 3 causal/language gains were only `+0.0625`, below the frozen `+0.10` MESI, while code invariant rejected all faithful cases.
+
+The sealed cross decision is `NATIVE_FIDELITY_NOT_ESTABLISHED_RECURRENT`, cross artifact digest `40a4259f912402e171a01a99adc74093749f756fba049428d00764d5a4210520`, with `established_root_count=0`, `successor_design_authorized=false`, `authorization_scope=NONE`, and `exp300_execution_authorized=false`. Evidence remains EV-E2 / DEVELOPMENT. Program status: `DEVELOPMENT_CLOSED_NEGATIVE`.
+
+Independent post-run byte audit of all four root artifacts and the cross artifact revalidated receipt sidecars, internal artifact digests, partition identities, raw metric reconstruction, prediction commitments, model-state immutability, root-to-cross digest linkage, and protected evidence flags. No audit mismatch was found. PR #72 was then closed unmerged and the experiment branch sealed.
+
+Consequence: EXP-300 remains blocked on this lineage. EXP-299 V1 may not be repaired by post-result threshold changes, auxiliary-weight tuning, representation changes, sample escalation, root replacement, domain removal, or rerun. Any future return to scaffold-free native fidelity requires a scientifically distinct preregistered hypothesis; it cannot inherit successor authority from EXP-299 V1.
 
 ## EXP-277..EXP-300 matrix
 
@@ -119,22 +135,26 @@ Consequence: EXP-299 may now be designed and preregistered as the next scaffold/
 | EXP-294 | Utility-governed Lemma Economy | `BLOCKED_ON_PARENT` | Requires EXP-292/293 viable lemma artifacts |
 | EXP-295 | Clause/lemma garbage collection | `BLOCKED_ON_PARENT` | Requires a live library and utility semantics from EXP-294 |
 | EXP-296 | Truth-maintenance dependency tracking | `BLOCKED_ON_PARENT` | Requires reusable clauses/lemmas with provenance dependencies |
-| EXP-297 | Encoding Fidelity Court | `SCIENTIFICALLY_CLOSED_PROMOTE` | Scoped positive fidelity court preserved; EXP-298 transfer seam now closed positive in DEVELOPMENT |
-| EXP-298 | Transfer beyond SAT/CSP | `DEVELOPMENT_CLOSED_POSITIVE` | Frozen controlled-domain V1 closed 4/4 recurrent; authorizes EXP-299 design only |
-| EXP-299 | Gains after scaffold/cache/retrieval removal | `AUTHORIZED_DESIGN_ONLY` | Preregister scaffold-removal court; no execution until its own frozen protocol and pre-data gate are complete |
-| EXP-300 | Full V0.16 vs strongest 100M rivals | `BLOCKED_ON_PARENT` | Requires model-native gains after EXP-299 plus an integrated candidate and VCPF/safety gate |
+| EXP-297 | Encoding Fidelity Court | `SCIENTIFICALLY_CLOSED_PROMOTE` | Scoped positive fidelity court preserved; EXP-298 transfer seam closed positive in DEVELOPMENT |
+| EXP-298 | Transfer beyond SAT/CSP | `DEVELOPMENT_CLOSED_POSITIVE` | Frozen controlled-domain V1 closed 4/4 recurrent; authorized EXP-299 design only, now consumed |
+| EXP-299 | Gains after scaffold/cache/retrieval removal | `DEVELOPMENT_CLOSED_NEGATIVE` | V1 closed `NATIVE_FIDELITY_NOT_ESTABLISHED_RECURRENT`; no successor authority and no same-hypothesis rerun |
+| EXP-300 | Full V0.16 vs strongest 100M rivals | `BLOCKED_ON_PARENT` | EXP-299 did not establish required native scaffold-free gains or authorize successor design/execution |
 
-## Priority rule after EXP-298 closure
+## Priority rule after EXP-299 closure
 
-The next active research priority is **design of EXP-299**, because:
+The original straight-line EXP-297 → EXP-298 → EXP-299 → EXP-300 dependency path has no currently authorized successor after EXP-299 V1, because:
 
-1. EXP-298 closed positively at DEVELOPMENT / EV-E2 under its frozen controlled-domain transfer question and satisfied the four-of-four recurrence rule.
-2. EXP-298's explicit authorization scope is design of the EXP-299 scaffold/cache/retrieval-removal court only; it does not authorize an EXP-299 data run merely by existing.
-3. EXP-299 must freeze its own question, arms, primary/protected endpoints, statistical unit, MESI, resource match, scaffold-removal geometry, failure classification, and decision rule before implementation consumes any evaluation data.
-4. EXP-300 remains blocked. Neither EXP-297 nor EXP-298 establishes model-native scaffold-free gains or integrated VCPF superiority.
-5. EXP-290 remains closed validly negative, so EXP-291 remains blocked and EXP-292..EXP-296 remain blocked on that dependency chain unless a scientifically distinct replacement hypothesis is preregistered.
-6. EXP-287 V1 and EXP-290 V1 remain immutable negative DEVELOPMENT courts; neither may be tuned or rerun merely to keep the roadmap moving.
-7. EXP-279's current routing/representation line remains redesign-only, while EXP-278 and EXP-280..285 require independent dependency review rather than inheriting positive authority.
+1. EXP-298 remains a valid positive DEVELOPMENT / EV-E2 result for its frozen fidelity-fabric transfer question, but its scoped successor authority was consumed by EXP-299 design/preregistration.
+2. EXP-299 executed exactly once under its own frozen court and closed `NATIVE_FIDELITY_NOT_ESTABLISHED_RECURRENT` with `0/4` established roots.
+3. EXP-299 grants neither successor-design nor EXP-300 execution authority. EXP-300 therefore remains blocked rather than being mechanically opened to keep the roadmap moving.
+4. EXP-299 V1 is immutable after held-out visibility. Threshold tuning, teacher-weight tuning, representation edits, root replacement, domain removal, sample escalation, or same-hypothesis rerun are not permitted.
+5. A future attempt at model-native scaffold-free fidelity must start from a scientifically distinct hypothesis—such as a different representation, objective, learning mechanism, or internalization mechanism—with a new preregistration and new pre-data gate. Merely renaming or widening EXP-299 V1 does not reopen it.
+6. A future integrated V0.16 comparison requires an independently justified viable native candidate plus its own VCPF/safety authority. Neither EXP-297, EXP-298, nor EXP-299 establishes integrated superiority.
+7. EXP-290 remains closed validly negative, so EXP-291 remains blocked and EXP-292..EXP-296 remain blocked on that dependency chain unless a scientifically distinct replacement hypothesis is preregistered.
+8. EXP-287 V1 and EXP-290 V1 remain immutable negative DEVELOPMENT courts; neither may be tuned or rerun merely to keep the roadmap moving.
+9. EXP-279's current routing/representation line remains redesign-only, while EXP-278 and EXP-280..285 require independent dependency review rather than inheriting positive authority.
+
+The next legitimate research action is therefore **hypothesis generation and preregistration**, not execution of EXP-300 and not repair/rerun of EXP-299 V1.
 
 ## Closure discipline
 
