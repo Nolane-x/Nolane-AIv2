@@ -1,0 +1,160 @@
+{
+  "schema_version": "nlm-v017-prereg-v2",
+  "program": "NLM V0.17 10M Native Recursive Substrate",
+  "authority_parent": {
+    "repo": "Nolane-x/Nolane-AIv2",
+    "main": "a7d14a97ae74ace9a0f4be4e72fade434cbaa96b",
+    "v0161_terminal_state": "V0161_PROGRAM_EXECUTION_CYCLE_CLOSED"
+  },
+  "protocol_amendment": {
+    "amendment_kind": "PRE_DATA_FAIRNESS_CORRECTION",
+    "supersedes_schema_version": "nlm-v017-prereg-v1",
+    "supersedes_registration_digest": "sha256:110701d1054fe0743bac2b65d16faa602182a1d90ab85bdc7d3d426de0212253",
+    "reason": "Pre-data FLOP audit showed that an exact-10M one-pass untied fixed-depth frontier cannot match the multi-loop recurrent compute curve beyond the one-loop point without reusing computation; retaining it would bias RCG toward recurrence.",
+    "scientific_outcome_consumed": false,
+    "challenge_materialized": false,
+    "hypothesis_changed": false
+  },
+  "experiment_id": "EXP-301",
+  "hypothesis_ids": [
+    "H-RD-01",
+    "H-RD-R1",
+    "H-RD-R2",
+    "H-RD-R3"
+  ],
+  "question": "At exactly matched 10M resident-parameter budgets and matched accounted inference-compute budgets, does stateful shared recurrence provide reproducible verified-generalization headroom over a stateless repeated-restart fixed-depth Transformer and a simple recurrent rival without protected-domain regressions?",
+  "architecture_candidate": {
+    "vocab_size": 4608,
+    "d_model": 448,
+    "n_heads": 7,
+    "head_dim": 64,
+    "shared_layers": 3,
+    "d_ff": 1152,
+    "weight_tied_across_loops": true,
+    "max_resident_parameters": 10000000,
+    "core_parameter_count_before_capacity_exchange": 9120832,
+    "capacity_exchange_envelope": 879168
+  },
+  "arms": [
+    {
+      "id": "A_FIXED",
+      "role": "fixed-depth 10M Transformer with stateless repeated restarts as the compute-scaling rival",
+      "constraints": [
+        "same tokenizer",
+        "same training examples",
+        "same optimizer/search-budget family",
+        "resident trainable params exactly 10000000",
+        "three untied layers within each fixed-depth pass",
+        "each restart begins from the original token embedding plus a frozen parameter-free restart code",
+        "no latent state carries across restarts",
+        "restart states are mean-aggregated before one final normalization and tied LM projection",
+        "accounted FLOPs matched to recurrent operating points within frozen tolerance"
+      ]
+    },
+    {
+      "id": "B_LOOP_SIMPLE",
+      "role": "simple stateful weight-tied recurrent Transformer rival",
+      "constraints": [
+        "same 10M resident budget",
+        "same three-layer core repeatedly applied with latent state carry",
+        "no loop-index conditioning",
+        "no event router",
+        "no uncertainty sidecar",
+        "no conflict memory",
+        "fixed loop count"
+      ]
+    },
+    {
+      "id": "C_NRS_CORE",
+      "role": "V0.17 stateful recurrent core candidate",
+      "constraints": [
+        "same three-layer core repeatedly applied with latent state carry",
+        "bounded loop conditioning only",
+        "no optional V0.17 sidecars in EXP-301",
+        "same data and accounted-compute contracts"
+      ]
+    }
+  ],
+  "compute_matching": {
+    "effort_multipliers": [
+      1,
+      2,
+      4,
+      8,
+      12,
+      16
+    ],
+    "a_fixed_policy": "run exactly effort_multiplier stateless fixed-depth restarts; no cross-restart latent state; mean latent aggregation; one final output projection",
+    "b_loop_simple_policy": "run exactly effort_multiplier recurrent latent loops with shared weights; one final output projection",
+    "c_nrs_core_policy": "run exactly effort_multiplier recurrent latent loops with shared weights and frozen loop-conditioning implementation; one final output projection",
+    "restart_code": "deterministic parameter-free sinusoidal restart-index code, added to the original token embedding before each A_FIXED restart",
+    "max_relative_flop_mismatch": 0.002,
+    "unmatched_budget_policy": "INVALID_COMPUTE_MATCH for all arms at that operating point; never interpolate or repair after outcome"
+  },
+  "training": {
+    "roots": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "development_only": false,
+    "challenge_generators_created_after_freeze": true,
+    "no_post_result_tuning": true,
+    "loop_training_distribution": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "challenge_loop_budgets": [
+      1,
+      2,
+      4,
+      8,
+      12,
+      16
+    ],
+    "task_families": [
+      "iterative-grid-and-maze",
+      "algorithmic-sequence-transform",
+      "generator-heldout-abstract-transformation",
+      "language-sequence-control"
+    ]
+  },
+  "primary_endpoints": {
+    "verified_success_curve": "paired verified task success as a function of accounted inference FLOPs",
+    "recurrent_compute_gain": "normalized area under C_NRS_CORE minus A_FIXED verified-success versus log2(accounted-FLOPs) over valid common budgets",
+    "mesis": {
+      "recurrent_compute_gain_absolute": 0.05,
+      "verified_success_pp_on_at_least_two_reasoning_families": 5.0,
+      "protected_language_control_max_drop_pp": 2.0
+    }
+  },
+  "protected_floors": [
+    "no challenge leakage or generator identity overlap",
+    "no >2 percentage-point regression on language-sequence control",
+    "no increase in invalid-output rate >0.5 percentage points",
+    "no hidden external memory/tool/scaffold access",
+    "resident parameter count and accounted compute validated"
+  ],
+  "decision_rule": {
+    "promote": "C_NRS_CORE must clear all protected floors, achieve RCG >= +0.05 versus A_FIXED, show >= +5pp verified success on at least two reasoning families at one valid common compute budget, and be directionally positive on >=3/4 roots; 95% paired hierarchical-bootstrap CI for aggregate RCG must exclude 0.",
+    "kill": "Kill H-RD-01 if C_NRS_CORE fails the promote rule without a protocol invalidation. Do not rescue by changing restart policy, loop schedule, thresholds, roots, task-family weights, or compute accounting after outcome.",
+    "diagnostic_only": "If gains occur only beyond trained loop depths while representation rank collapses or protected controls regress, mark recurrence unstable and authorize only a distinct recurrence-stability hypothesis, not scale."
+  },
+  "analysis_plan": {
+    "statistical_unit": "held-out generator instance, paired across arms; train root is replication stratum",
+    "estimator": "root-stratified paired hierarchical bootstrap; family-level effects reported separately before aggregate",
+    "missingness": "failed or invalid runs remain in ledger; infrastructure-invalid runs may rerun only under frozen rerun policy",
+    "multiplicity": "one primary RCG endpoint; family effects are protected/secondary unless explicitly named in rule",
+    "anti_goodhart": [
+      "early stopping that saves FLOPs while increasing wrong answers",
+      "looping that improves seen-depth tasks but collapses at unseen depths",
+      "tokenization shortcut or generator-template memorization",
+      "fixed rival intentionally under-computed, deterministic-repeated without restart diversity, or under-optimized"
+    ]
+  },
+  "posthoc_policy": "Any unregistered metric, new task family, altered restart policy, altered loop schedule, or new baseline discovered after challenge materialization is exploratory and cannot authorize EXP-302.",
+  "registration_digest": "sha256:1660a728990290f1c605941d531be1d52fe82591c619a327d104e4b87c1e6bad"
+}
