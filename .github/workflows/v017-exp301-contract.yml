@@ -12,6 +12,7 @@ on:
       - "tests/test_exp301_*.py"
       - "scripts/run_exp301.py"
       - ".github/workflows/v017-exp301-contract.yml"
+      - ".github/workflows/exp301-scientific-court.yml"
   workflow_dispatch:
 
 concurrency:
@@ -40,4 +41,10 @@ jobs:
           tests/test_exp301_evaluation.py
           tests/test_exp301_analysis.py
           tests/test_exp301_runner.py
+          tests/test_exp301_workflows.py
+      - name: Run EXP-301 TEST-ONLY end-to-end smoke
+        run: >-
+          python scripts/run_exp301.py
+          --test-only
+          --output-dir /tmp/nlm-exp301-test-only
       - run: python -m compileall -q src scripts
