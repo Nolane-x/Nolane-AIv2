@@ -1,7 +1,24 @@
 from __future__ import annotations
 
 from itertools import product
+from statistics import mean
 from typing import Any
+
+import torch
+
+from nolane_ai.experiments.exp290_correspondence import (
+    Exp290CorrespondenceModel,
+    exp290_correspondence_loss,
+    exp290_model_state_digest,
+    learned_row_top1_mapping,
+)
+from nolane_ai.experiments.exp290_transfer_geometry import EXP290_GEOMETRY
+from nolane_ai.experiments.exp290_transfer_worlds import Exp290TransferGenerator
+from nolane_ai.protocol.seeds import derive_stream_seed
+from nolane_ai.training.optimizer import (
+    build_functional_optimizer,
+    functional_trainable_named_parameters,
+)
 
 
 NULL_TRANSFER_CONTROL = "NULL_TRANSFER_CONTROL"
@@ -9,12 +26,13 @@ RAW_SURFACE_TRANSFER_CONTROL = "RAW_SURFACE_TRANSFER_CONTROL"
 LEARNED_STRUCTURAL_TRANSFER = "LEARNED_STRUCTURAL_TRANSFER"
 ORACLE_STRUCTURAL_TRANSFER_UPPER_BOUND = "ORACLE_STRUCTURAL_TRANSFER_UPPER_BOUND"
 
-_EXP290_MODES = {
+_EXP290_MODE_ORDER = (
     NULL_TRANSFER_CONTROL,
     RAW_SURFACE_TRANSFER_CONTROL,
     LEARNED_STRUCTURAL_TRANSFER,
     ORACLE_STRUCTURAL_TRANSFER_UPPER_BOUND,
-}
+)
+_EXP290_MODES = set(_EXP290_MODE_ORDER)
 
 
 def _canonical_clause(clause: list[list[Any]]) -> list[list[Any]]:
@@ -31,10 +49,7 @@ def _clause_key(clause: list[list[Any]]) -> tuple[tuple[str, int], ...]:
     return tuple((str(name), int(value)) for name, value in _canonical_clause(clause))
 
 
-def _public_contradiction(
-    problem: dict[str, Any],
-    assignment: dict[str, int],
-) -> bool:
+def _public_contradiction(problem: dict[str, Any], assignment: dict[str, int]) -> bool:
     for constraint in problem["constraints"]:
         scope = [str(name) for name in constraint["scope"]]
         if not all(name in assignment for name in scope):
@@ -454,3 +469,388 @@ def classify_exp290_root(metrics: dict[str, object]) -> str:
         if learned_ok
         else "LEARNED_CLAUSE_TRANSFER_NOT_ESTABLISHED"
     )
+
+
+def _inverse_bijection(source_to_target: list[int]) -> list[int]:
+    inverse = [-1] * len(source_to_target)
+    for source_index, target_index in enumerate(source_to_target):
+        if target_index < 0 or target_index >= len(source_to_target):
+            raise ValueError("correspondence label is outside target range")
+        if inverse[target_index] != -1:
+            raise ValueError("correspondence labels must define a bijection")
+        inverse[target_index] = source_index
+    if any(index < 0 for index in inverse):
+        raise ValueError("correspondence labels must define a complete bijection")
+    return inverse
+
+
+def _functional_parameter_count(model: torch.nn.Module) -> int:
+    return int(
+        sum(
+            parameter.numel()
+            for _, parameter in functional_trainable_named_parameters(model)
+        )
+    )
+
+
+def _aggregate_rate(rows: list[dict[str, Any]], *, numerator: str, denominator: str) -> float:
+    den = sum(int(row[denominator]) for row in rows)
+    num = sum(int(row[numerator]) for row in rows)
+    return float(num / den) if den > 0 else 0.0
+
+
+def _run_exp290_root(
+    *,
+    root_seed: str,
+    train_replicates: int,
+    eval_replicates: int,
+    eval_start_replicate: int,
+) -> dict[str, Any]:
+    """Run one frozen EXP-290 DEVELOPMENT root.
+
+    This helper deliberately accepts only lineage counts needed by tiny tests. The
+    public canonical wrapper introduced with the receipt/CLI layer supplies the
+    frozen V1 geometry from EXP290_GEOMETRY rather than exposing tuning knobs.
+    """
+
+    if not root_seed:
+        raise ValueError("root_seed must be non-empty")
+    if min(train_replicates, eval_replicates) <= 0:
+        raise ValueError("train_replicates and eval_replicates must be positive")
+    if eval_start_replicate < 0:
+        raise ValueError("eval_start_replicate must be non-negative")
+    train_lineage = set(range(train_replicates))
+    eval_lineage = set(range(eval_start_replicate, eval_start_replicate + eval_replicates))
+    if train_lineage & eval_lineage:
+        raise ValueError("training and evaluation replicate lineages must be disjoint")
+
+    geometry = EXP290_GEOMETRY
+    generator = Exp290TransferGenerator(root_seed=root_seed)
+    model_seed = derive_stream_seed(root_seed, "EXP-290", 0, "model_init")
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(model_seed)
+        model = Exp290CorrespondenceModel(
+            geometry.d_model,
+            geometry.hidden_size,
+            geometry.target_parameters,
+            device="cpu",
+        )
+
+    optimizer = build_functional_optimizer(
+        model,
+        lr=geometry.lr,
+        weight_decay=geometry.weight_decay,
+    )
+    train_rows: list[dict[str, Any]] = []
+    model.train()
+    for replicate in range(train_replicates):
+        batch = generator.make_batch(
+            replicate=replicate,
+            rng_stream="augmentation",
+            device="cpu",
+        )
+        source_labels = torch.tensor(
+            [pair["hidden_source_to_target_index"] for pair in batch.metadata["pairs"]],
+            dtype=torch.long,
+        )
+        target_labels = torch.tensor(
+            [
+                _inverse_bijection([int(index) for index in pair["hidden_source_to_target_index"]])
+                for pair in batch.metadata["pairs"]
+            ],
+            dtype=torch.long,
+        )
+        optimizer.zero_grad(set_to_none=True)
+        output = model(
+            batch.source_surface_events,
+            batch.target_surface_events,
+            batch.source_variable_states,
+            batch.target_variable_states,
+        )
+        loss, loss_audit = exp290_correspondence_loss(
+            output.source_to_target_similarity,
+            output.target_to_source_similarity,
+            source_to_target_labels=source_labels,
+            target_to_source_labels=target_labels,
+        )
+        loss.backward()
+        optimizer.step()
+        train_rows.append(
+            {
+                "replicate": int(replicate),
+                "batch_digest": batch.digest,
+                "loss": float(loss.detach().item()),
+            }
+        )
+
+    post_training_digest = exp290_model_state_digest(model)
+    functional_parameters = _functional_parameter_count(model)
+    correspondence_inference_operations_per_pair = int(2 * functional_parameters)
+    candidate_step_cost = int(geometry.variables + 3)
+
+    mode_rows: dict[str, list[dict[str, Any]]] = {mode: [] for mode in _EXP290_MODE_ORDER}
+    mode_costs: dict[str, list[float]] = {mode: [] for mode in _EXP290_MODE_ORDER}
+    mode_model_digests: dict[str, str] = {}
+    correspondence_correct = 0
+    correspondence_total = 0
+    clause_recovery_correct = 0
+    clause_recovery_total = 0
+    pair_receipts: list[dict[str, Any]] = []
+
+    model.eval()
+    with torch.no_grad():
+        for replicate in range(eval_start_replicate, eval_start_replicate + eval_replicates):
+            batch = generator.make_batch(
+                replicate=replicate,
+                rng_stream="evaluation",
+                device="cpu",
+            )
+            per_mode_outputs: dict[str, Any] = {}
+            for mode in _EXP290_MODE_ORDER:
+                per_mode_outputs[mode] = model(
+                    batch.source_surface_events,
+                    batch.target_surface_events,
+                    batch.source_variable_states,
+                    batch.target_variable_states,
+                )
+                digest = exp290_model_state_digest(model)
+                previous = mode_model_digests.get(mode)
+                if previous is not None and previous != digest:
+                    raise RuntimeError("EXP-290 model state drifted within an evaluation mode")
+                mode_model_digests[mode] = digest
+                if digest != post_training_digest:
+                    raise RuntimeError("EXP-290 model state drifted after training freeze")
+
+            learned_mapping_batch = learned_row_top1_mapping(
+                per_mode_outputs[LEARNED_STRUCTURAL_TRANSFER].source_to_target_similarity
+            )
+
+            for pair_index, pair in enumerate(batch.metadata["pairs"]):
+                source = acquire_source_clauses(
+                    pair=pair,
+                    restart_orders=batch.source_restart_orders[pair_index],
+                    restart_value_orders=batch.source_restart_value_orders[pair_index],
+                    max_search_steps=geometry.max_search_steps,
+                )
+                source_clauses = source["clauses"]
+                learned_mapping = [
+                    int(index)
+                    for index in learned_mapping_batch[pair_index].tolist()
+                ]
+                hidden_mapping = [
+                    int(index) for index in pair["hidden_source_to_target_index"]
+                ]
+                correspondence_correct += sum(
+                    int(predicted == truth)
+                    for predicted, truth in zip(learned_mapping, hidden_mapping, strict=True)
+                )
+                correspondence_total += len(hidden_mapping)
+
+                learned_clauses, _ = _build_learned_transferred_clauses(
+                    source_clauses=source_clauses,
+                    source_names=[str(name) for name in pair["source_surface_names"]],
+                    target_names=[str(name) for name in pair["target_surface_names"]],
+                    learned_source_to_target=learned_mapping,
+                )
+                oracle_clauses = _build_oracle_transferred_clauses(
+                    pair=pair,
+                    source_clauses=source_clauses,
+                )
+                learned_keys = {_clause_key(clause) for clause in learned_clauses}
+                oracle_keys = {_clause_key(clause) for clause in oracle_clauses}
+                clause_recovery_correct += sum(
+                    int(_clause_key(clause) in learned_keys)
+                    for clause in oracle_clauses
+                )
+                clause_recovery_total += len(oracle_keys)
+
+                source_cost = int(
+                    source["source_search_steps"] * candidate_step_cost
+                    + sum(len(clause) for clause in source_clauses)
+                )
+                pair_modes: dict[str, dict[str, Any]] = {}
+                for mode in _EXP290_MODE_ORDER:
+                    mode_result = run_target_mode(
+                        mode=mode,
+                        pair=pair,
+                        source_clauses=source_clauses,
+                        learned_source_to_target=learned_mapping,
+                        restart_orders=batch.target_restart_orders[pair_index],
+                        restart_value_orders=batch.target_restart_value_orders[pair_index],
+                        max_search_steps=geometry.max_search_steps,
+                    )
+                    # Correspondence is executed and charged in every arm. Mapping
+                    # selection is likewise charged equally so only transferred
+                    # clause/search behavior can create economic headroom.
+                    matched_mapping_operations = geometry.variables
+                    total_cost = float(
+                        source_cost
+                        + correspondence_inference_operations_per_pair
+                        + matched_mapping_operations
+                        + int(mode_result["search_accounted_operations"])
+                    )
+                    row = {
+                        **mode_result,
+                        "replicate": int(replicate),
+                        "pair_index": int(pair_index),
+                        "batch_digest": batch.digest,
+                        "source_clause_count": int(len(source_clauses)),
+                        "source_cost": int(source_cost),
+                        "correspondence_inference_operations": correspondence_inference_operations_per_pair,
+                        "matched_mapping_operations": int(matched_mapping_operations),
+                        "accounted_cost": total_cost,
+                        "model_digest": post_training_digest,
+                    }
+                    mode_rows[mode].append(row)
+                    mode_costs[mode].append(total_cost)
+                    pair_modes[mode] = row
+
+                pair_receipts.append(
+                    {
+                        "replicate": int(replicate),
+                        "pair_index": int(pair_index),
+                        "batch_digest": batch.digest,
+                        "source_clause_receipts": source["receipts"],
+                        "source_clause_count": int(len(source_clauses)),
+                        "learned_mapping": learned_mapping,
+                        "modes": pair_modes,
+                    }
+                )
+
+    post_evaluation_digest = exp290_model_state_digest(model)
+    if post_evaluation_digest != post_training_digest:
+        raise RuntimeError("EXP-290 model state changed during frozen evaluation")
+
+    def _mean_cost(mode: str) -> float:
+        return float(mean(mode_costs[mode]))
+
+    c0 = _mean_cost(NULL_TRANSFER_CONTROL)
+    cr = _mean_cost(RAW_SURFACE_TRANSFER_CONTROL)
+    cl = _mean_cost(LEARNED_STRUCTURAL_TRANSFER)
+    co = _mean_cost(ORACLE_STRUCTURAL_TRANSFER_UPPER_BOUND)
+    oracle_headroom = float(c0 - co)
+    learned_headroom = float(c0 - cl)
+    capture = float(learned_headroom / oracle_headroom) if oracle_headroom > 0.0 else 0.0
+
+    null_rate = _aggregate_rate(
+        mode_rows[NULL_TRANSFER_CONTROL],
+        numerator="structural_repeat_dead_end_reentries",
+        denominator="predeclared_transfer_opportunities",
+    )
+    learned_rate = _aggregate_rate(
+        mode_rows[LEARNED_STRUCTURAL_TRANSFER],
+        numerator="structural_repeat_dead_end_reentries",
+        denominator="predeclared_transfer_opportunities",
+    )
+    oracle_rate = _aggregate_rate(
+        mode_rows[ORACLE_STRUCTURAL_TRANSFER_UPPER_BOUND],
+        numerator="structural_repeat_dead_end_reentries",
+        denominator="predeclared_transfer_opportunities",
+    )
+    oracle_repeat_reduction = (
+        float((null_rate - oracle_rate) / null_rate) if null_rate > 0.0 else 0.0
+    )
+    learned_prunes = sum(
+        int(row["transferred_prune_event_count"])
+        for row in mode_rows[LEARNED_STRUCTURAL_TRANSFER]
+    )
+    learned_invalid_prunes = sum(
+        int(row["invalid_transferred_prune_count"])
+        for row in mode_rows[LEARNED_STRUCTURAL_TRANSFER]
+    )
+    learned_overprune = (
+        float(learned_invalid_prunes / learned_prunes) if learned_prunes > 0 else 0.0
+    )
+
+    root_metrics: dict[str, object] = {
+        "null_cost": c0,
+        "raw_cost": cr,
+        "learned_cost": cl,
+        "oracle_cost": co,
+        "oracle_headroom": oracle_headroom,
+        "learned_headroom": learned_headroom,
+        "learned_oracle_value_capture": capture,
+        "null_structural_repeat_dead_end_rate": null_rate,
+        "oracle_structural_repeat_dead_end_rate": oracle_rate,
+        "oracle_structural_repeat_relative_reduction": oracle_repeat_reduction,
+        "learned_structural_repeat_dead_end_rate": learned_rate,
+        "learned_source_to_target_correspondence_accuracy": (
+            float(correspondence_correct / correspondence_total)
+            if correspondence_total > 0
+            else 0.0
+        ),
+        "learned_exact_transferred_clause_recovery_rate": (
+            float(clause_recovery_correct / clause_recovery_total)
+            if clause_recovery_total > 0
+            else 0.0
+        ),
+        "null_verified_solution_rate": float(
+            mean(float(row["verified_solution_rate"]) for row in mode_rows[NULL_TRANSFER_CONTROL])
+        ),
+        "learned_verified_solution_rate": float(
+            mean(float(row["verified_solution_rate"]) for row in mode_rows[LEARNED_STRUCTURAL_TRANSFER])
+        ),
+        "learned_valid_state_overprune_rate": learned_overprune,
+        "learned_oracle_correspondence_delivered": False,
+        "learned_evaluator_validity_truth_delivered": False,
+        "learned_target_clause_truth_delivered": False,
+        "raw_surface_transfer_hit_count": int(
+            sum(int(row["raw_surface_transfer_hit_count"]) for row in mode_rows[RAW_SURFACE_TRANSFER_CONTROL])
+        ),
+        "surface_namespaces_disjoint": all(
+            bool(row["surface_namespaces_disjoint"])
+            for mode in _EXP290_MODE_ORDER
+            for row in mode_rows[mode]
+        ),
+    }
+    decision = classify_exp290_root(root_metrics)
+
+    return {
+        "schema": "NLM-EXP-290-LEARNED-CLAUSE-TRANSFER-ROOT-V1",
+        "experiment_id": "EXP-290",
+        "root_seed": root_seed,
+        "model_init_seed": int(model_seed),
+        "training": {
+            "rng_stream": "augmentation",
+            "replicates": int(train_replicates),
+            "per_replicate": train_rows,
+            "evaluation_lineage_consumed": False,
+            "evaluation_correspondence_used_for_training": False,
+            "loss_weights": {
+                "source_to_target_ce": 0.5,
+                "target_to_source_ce": 0.5,
+            },
+            "calibration_used": False,
+            "early_stopping": False,
+            "hard_negative_mining": False,
+        },
+        "evaluation": {
+            "rng_stream": "evaluation",
+            "start_replicate": int(eval_start_replicate),
+            "replicates": int(eval_replicates),
+            "pair_count": int(eval_replicates * geometry.batch_size),
+            "mode_model_digests": mode_model_digests,
+            "pair_receipts": pair_receipts,
+            "raw_surface_transfer_hit_count": int(root_metrics["raw_surface_transfer_hit_count"]),
+            "surface_namespaces_disjoint": bool(root_metrics["surface_namespaces_disjoint"]),
+            "learned_oracle_correspondence_delivered": False,
+            "learned_evaluator_validity_truth_delivered": False,
+            "learned_target_clause_truth_delivered": False,
+        },
+        "post_training_model_digest": post_training_digest,
+        "post_evaluation_model_digest": post_evaluation_digest,
+        "functional_parameter_count": functional_parameters,
+        "correspondence_inference_operations_per_pair": correspondence_inference_operations_per_pair,
+        "candidate_step_cost": candidate_step_cost,
+        "root_metrics": root_metrics,
+        "decision": decision,
+        "target_local_clause_learning_enabled": False,
+        "scientific_evidence_eligible": False,
+        "confirmatory_data_consumed": False,
+        "challenge_materialized": False,
+        "promotion_claimed": False,
+        "stage_a_protocol_modified": False,
+        "oracle_mode_deployable": False,
+        "lifelong_clause_reuse_claimed": False,
+        "semantic_authority_claimed": False,
+    }
