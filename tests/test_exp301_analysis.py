@@ -63,30 +63,27 @@ def _promotion_rows() -> list[Exp301EvaluationRow]:
                 for index in range(20):
                     if family == LANGUAGE_FAMILY:
                         a_success = index < 18
+                        b_success = index < 18
                         c_success = index < 18
                     else:
                         a_success = index < 8
+                        b_success = index < 9
                         c_success = index < 12
-                    rows.append(
-                        _row(
-                            arm="A_FIXED",
-                            family=family,
-                            root=root,
-                            effort=effort,
-                            index=index,
-                            success=a_success,
+                    for arm, success in (
+                        ("A_FIXED", a_success),
+                        ("B_LOOP_SIMPLE", b_success),
+                        ("C_NRS_CORE", c_success),
+                    ):
+                        rows.append(
+                            _row(
+                                arm=arm,
+                                family=family,
+                                root=root,
+                                effort=effort,
+                                index=index,
+                                success=success,
+                            )
                         )
-                    )
-                    rows.append(
-                        _row(
-                            arm="C_NRS_CORE",
-                            family=family,
-                            root=root,
-                            effort=effort,
-                            index=index,
-                            success=c_success,
-                        )
-                    )
     return rows
 
 
@@ -110,26 +107,21 @@ def test_unseen_depth_rows_cannot_change_primary_rcg() -> None:
         for family in (*REASONING_FAMILIES, LANGUAGE_FAMILY):
             for effort in (12, 16):
                 for index in range(20):
-                    rows.append(
-                        _row(
-                            arm="A_FIXED",
-                            family=family,
-                            root=root,
-                            effort=effort,
-                            index=index,
-                            success=False,
+                    for arm, success in (
+                        ("A_FIXED", False),
+                        ("B_LOOP_SIMPLE", False),
+                        ("C_NRS_CORE", True),
+                    ):
+                        rows.append(
+                            _row(
+                                arm=arm,
+                                family=family,
+                                root=root,
+                                effort=effort,
+                                index=index,
+                                success=success,
+                            )
                         )
-                    )
-                    rows.append(
-                        _row(
-                            arm="C_NRS_CORE",
-                            family=family,
-                            root=root,
-                            effort=effort,
-                            index=index,
-                            success=True,
-                        )
-                    )
 
     after = compute_primary_rcg(rows)
     assert after.aggregate_rcg == baseline.aggregate_rcg
@@ -208,6 +200,15 @@ def test_compute_mismatch_makes_court_invalid_not_negative() -> None:
 
 def test_missing_root_makes_court_invalid() -> None:
     rows = [row for row in _promotion_rows() if row.root != 3]
+
+    summary = reduce_exp301(rows, bootstrap_samples=100)
+
+    assert summary.decision == "INVALID_COURT"
+    assert summary.infrastructure_valid is False
+
+
+def test_missing_simple_recurrent_rival_makes_court_invalid() -> None:
+    rows = [row for row in _promotion_rows() if row.arm_id != "B_LOOP_SIMPLE"]
 
     summary = reduce_exp301(rows, bootstrap_samples=100)
 
