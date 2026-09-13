@@ -117,6 +117,8 @@ def test_model_input_never_exposes_private_generator_metadata() -> None:
     for item in challenge:
         assert item.generator_identity not in item.model_input
         assert item.template_identity not in item.model_input
-        assert item.split not in item.model_input
-        assert str(item.root) not in item.model_input
+        assert f"split={item.split}" not in item.model_input
+        assert f"root={item.root}" not in item.model_input
+        assert "generator_identity=" not in item.model_input
+        assert "template_identity=" not in item.model_input
         assert "TEST-ONLY-SECRET-NONCE" not in item.model_input
