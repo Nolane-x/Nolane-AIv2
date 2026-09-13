@@ -1,0 +1,37 @@
+{
+  "authority_scope": "DEVELOPMENT_ONLY",
+  "challenge_materialized": false,
+  "confirmatory_authority": false,
+  "experiment_id": "EXP-287",
+  "geometry": {
+    "batch_size": 8,
+    "canonical_indices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "capture_threshold": 0.5,
+    "d_model": 64,
+    "decoys": 3,
+    "eval_replicates": 32,
+    "eval_start_replicate": 10000,
+    "hidden_size": 48,
+    "lr": 0.002,
+    "max_search_steps": 16,
+    "noise_std": 0.05,
+    "precision_threshold": 0.5,
+    "root_prefix": "20260913-exp287-learned-conflict-localization-v1-dev",
+    "solution_rate_floor_delta": -0.005,
+    "target_parameters": 500000,
+    "timesteps": 4,
+    "top_k": 2,
+    "train_replicates": 64,
+    "variables": 8,
+    "weight_decay": 0.0
+  },
+  "predeclaration": "BEFORE_HELDOUT_EVALUATION",
+  "protocol_digest": "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440",
+  "schema": "NLM-EXP-287-DEVELOPMENT-GEOMETRY-V1",
+  "scientific_evidence_eligible": false
+}
