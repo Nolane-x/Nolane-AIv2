@@ -4,7 +4,7 @@
 
 This document turns the V0.16.1 EXP-277..EXP-300 roadmap into an evidence-aware dependency authority. It does not rewrite the original research specification and does not reinterpret negative results as success. Its job is to prevent two failure modes: continuing a downstream experiment after its parent hypothesis has been killed, and treating DEVELOPMENT diagnostics as confirmatory scientific closure.
 
-Base authority for this matrix is `main@803fb474eca9cf57713f190e89ef17a113f335e5` plus preserved GitHub experiment evidence. The frozen Stage-A protocol digest remains `c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440`.
+Base authority for this matrix is `main@e7a034365e542895b772701a247f6ad9b931bfc9` plus preserved GitHub experiment evidence. The frozen Stage-A protocol digest remains `c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440`.
 
 ## Canonical status vocabulary
 
@@ -59,7 +59,19 @@ Consequence: EXP-288 remains blocked under the current hypothesis. EXP-287 V1 ma
 
 Real EV-E3 Gate-B court closed `PROMOTE_TO_NEXT_STAGE` for the frozen episode-local nogood comparison. Program status: `SCIENTIFICALLY_CLOSED_PROMOTE`.
 
-Consequence: EXP-290 is authorized as a learned-clause transfer/generalization research seam. Because EXP-287 closed negative and EXP-288 is blocked, EXP-290 becomes the highest-priority currently authorized next court.
+Consequence: EXP-289 validly authorized EXP-290 as a learned-clause transfer/generalization research seam. EXP-290 has now executed and closed separately; the positive EXP-289 result remains intact.
+
+### EXP-290 — structural clause transfer
+
+EXP-290 V1 was a preregistered DEVELOPMENT / EV-E2 court asking whether a supervised learned source→target clause translator could reuse observed one-literal nogoods across mandatory non-identity variable surface permutations while preserving EXP-289 safety floors.
+
+The exact pre-data head passed dedicated EXP-290 CI, generic core 3.11/core 3.13/model-smoke, Stage-A/geometry identity checks, and a zero-run freeze guard before a marker-only release. Exactly one authoritative DEVELOPMENT run (`34743509423`, attempt 1) executed four canonical roots and one cross reducer; the post-release freeze guard observed that run only and no duplicates.
+
+All four roots reproduced strong positive fresh oracle transfer headroom (`0.673828125..0.6875`), so the denominator for learned transfer value was valid. However, learned oracle-value capture was only about `0.1282..0.1834`, far below the frozen `0.50` majority-of-oracle threshold. Learned valid-state over-prune was about `0.6839..0.8106`, far above the frozen `0.005` safety ceiling, and learned verified-solution rate was only `0.36328125..0.5234375` versus control `1.0` on every root.
+
+All four roots therefore closed `LEARNED_STRUCTURAL_TRANSFER_NOT_ESTABLISHED`. The sealed cross decision is `STRUCTURAL_CLAUSE_TRANSFER_NOT_ESTABLISHED`, with `successor_design_authorized=false`, `authorization_scope=NONE`, and `mechanism_successor_authorized=false`. Evidence remained EV-E2 / DEVELOPMENT. Program status: `DEVELOPMENT_CLOSED_NEGATIVE`.
+
+Consequence: EXP-291 remains blocked on this dependency path. EXP-290 V1 may not be repaired by post-result calibration, top-k/cardinality changes, threshold changes, sample escalation, replacement roots, geometry changes, or rerun. This negative result closes only the frozen V1 representation/objective; it does not erase EXP-289 or prove that all structural-transfer representations are impossible.
 
 ### EXP-297 — Encoding Fidelity Court
 
@@ -83,28 +95,29 @@ Consequence: EXP-298 is independently authorized as a cross-domain transfer cour
 | EXP-286 | Oracle conflict-core value | `SCIENTIFICALLY_CLOSED_PROMOTE` | Positive oracle headroom preserved; learned seam tested by EXP-287 |
 | EXP-287 | Learned conflict localization approaches oracle value | `DEVELOPMENT_CLOSED_NEGATIVE` | V1 closed `LOCALIZATION_VALUE_NOT_ESTABLISHED`; no same-hypothesis rerun |
 | EXP-288 | Dependency-directed backjump vs chronological rollback | `BLOCKED_ON_PARENT` | EXP-287 did not authorize successor design |
-| EXP-289 | Episode-local nogoods | `SCIENTIFICALLY_CLOSED_PROMOTE` | Authorizes EXP-290 |
-| EXP-290 | Learned clauses transfer across surface randomization | `AUTHORIZED_NEXT_STAGE` | Highest-priority currently authorized next court; separate preregistration required |
-| EXP-291 | Detect spurious counterexamples from bad encoding/modeling | `BLOCKED_ON_PARENT` | Requires learned clause/counterexample machinery from EXP-290 or a new independent design |
+| EXP-289 | Episode-local nogoods | `SCIENTIFICALLY_CLOSED_PROMOTE` | Positive scoped local-memory result preserved; its authorized EXP-290 seam has now closed negative |
+| EXP-290 | Learned clauses transfer across surface randomization | `DEVELOPMENT_CLOSED_NEGATIVE` | V1 closed `STRUCTURAL_CLAUSE_TRANSFER_NOT_ESTABLISHED`; no same-hypothesis rerun |
+| EXP-291 | Detect spurious counterexamples from bad encoding/modeling | `BLOCKED_ON_PARENT` | EXP-290 did not authorize successor design; new independent hypothesis required to reopen |
 | EXP-292 | Counterexample-guided invariant/lemma generation | `BLOCKED_ON_PARENT` | Requires trustworthy counterexample/encoding boundary, normally EXP-291 |
 | EXP-293 | Lemma-precondition eligibility checks | `BLOCKED_ON_PARENT` | Requires a viable lemma generator/library from EXP-292 |
 | EXP-294 | Utility-governed Lemma Economy | `BLOCKED_ON_PARENT` | Requires EXP-292/293 viable lemma artifacts |
 | EXP-295 | Clause/lemma garbage collection | `BLOCKED_ON_PARENT` | Requires a live library and utility semantics from EXP-294 |
 | EXP-296 | Truth-maintenance dependency tracking | `BLOCKED_ON_PARENT` | Requires reusable clauses/lemmas with provenance dependencies |
 | EXP-297 | Encoding Fidelity Court | `SCIENTIFICALLY_CLOSED_PROMOTE` | Authorizes scoped EXP-298 transfer research |
-| EXP-298 | Transfer beyond SAT/CSP | `AUTHORIZED_NEXT_STAGE` | Independently authorized; must preserve EXP-297 semantic-authority limits |
+| EXP-298 | Transfer beyond SAT/CSP | `AUTHORIZED_NEXT_STAGE` | Highest-priority currently authorized surviving court; must preserve EXP-297 semantic-authority limits |
 | EXP-299 | Gains after scaffold/cache/retrieval removal | `BLOCKED_ON_PARENT` | Requires integrated gains in domains from EXP-298 and earlier surviving chains |
 | EXP-300 | Full V0.16 vs strongest 100M rivals | `BLOCKED_ON_PARENT` | Requires an integrated candidate assembled only from surviving mechanisms |
 
-## Priority rule after EXP-287 closure
+## Priority rule after EXP-290 closure
 
-The next active research priority is EXP-290 because:
+The next active research priority is EXP-298 because:
 
-1. EXP-287 closed validly negative, so EXP-288 remains blocked and cannot be opened by reinterpretation.
-2. EXP-289 already produced real EV-E3 positive evidence for episode-local nogoods, giving EXP-290 a direct surviving parent.
-3. EXP-290 asks a distinct transfer/generalization question rather than repairing EXP-287 post hoc.
-4. EXP-298 is also independently authorized and remains the next parallel option after or alongside EXP-290, subject to separate preregistration.
-5. EXP-279 V10 and EXP-287 V1 remain immutable negative DEVELOPMENT courts; neither may be tuned or rerun merely to keep the roadmap moving.
+1. EXP-290 closed validly negative, so EXP-291 remains blocked and cannot be opened by reinterpretation.
+2. EXP-292..EXP-296 consequently remain blocked on their counterexample/lemma dependency chain unless a scientifically distinct replacement hypothesis is preregistered.
+3. EXP-297 already produced real EV-E3 positive evidence for the scoped encoding-fidelity question and explicitly authorized EXP-298 as the next cross-domain transfer court.
+4. EXP-298 is independent of the failed EXP-290 mechanism, so pursuing it does not launder EXP-290's negative result into a successor authorization.
+5. EXP-287 V1 and EXP-290 V1 remain immutable negative DEVELOPMENT courts; neither may be tuned or rerun merely to keep the roadmap moving.
+6. EXP-279's current routing/representation line remains redesign-only, while EXP-278 and EXP-280..285 require independent dependency review rather than inheriting positive authority.
 
 ## Closure discipline
 
