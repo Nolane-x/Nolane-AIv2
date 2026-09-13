@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   contract:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,7 +28,10 @@ jobs:
         with:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e '.[dev,model]'
+      - name: Install CPU-only model stack
+        run: |
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.7'
+          python -m pip install -e '.[dev]'
       - name: Structural encoder contract
         run: pytest -q tests/test_exp299_structural_encoding.py
       - name: Matched native arm contract
