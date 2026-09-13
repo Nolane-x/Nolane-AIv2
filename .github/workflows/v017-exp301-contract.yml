@@ -43,6 +43,7 @@ jobs:
           tests/test_exp301_evaluation.py
           tests/test_exp301_analysis.py
           tests/test_exp301_runner.py
+          tests/test_exp301_scientific.py
           tests/test_exp301_workflows.py
       - name: Run EXP-301 TEST-ONLY end-to-end smoke
         run: >-
