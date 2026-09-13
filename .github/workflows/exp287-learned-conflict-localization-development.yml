@@ -10,6 +10,10 @@ permissions:
   contents: read
   actions: read
 
+concurrency:
+  group: exp287-development-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
 jobs:
   preflight:
     runs-on: ubuntu-24.04
@@ -30,6 +34,12 @@ jobs:
           workflow_name = os.environ["EXP287_DEVELOPMENT_WORKFLOW_NAME"]
           pr_number = int(os.environ["PR_NUMBER"])
           current_run_id = int(os.environ["GITHUB_RUN_ID"])
+          current_run_attempt = int(os.environ["GITHUB_RUN_ATTEMPT"])
+          if current_run_attempt != 1:
+              raise SystemExit(
+                  f"rerun DEVELOPMENT attempt blocked before root execution: "
+                  f"run_id={current_run_id} attempt={current_run_attempt}"
+              )
           payload = subprocess.check_output(
               ["gh", "api", f"repos/{repo}/actions/runs?event=pull_request&per_page=100"],
               text=True,
@@ -55,6 +65,7 @@ jobs:
               "schema": "NLM-EXP-287-DEVELOPMENT-RUN-AUTHORITY-V1",
               "authoritative_development_run_id": authoritative,
               "current_run_id": current_run_id,
+              "current_run_attempt": current_run_attempt,
               "observed_development_run_ids": [int(run["id"]) for run in candidates],
           }, sort_keys=True))
           PY
@@ -194,6 +205,7 @@ jobs:
           import os
           from pathlib import Path
           from nolane_ai.experiments.exp287_receipts import canonical_json_bytes, validate_exp287_root_receipt
+          from nolane_ai.protocol.identity import source_tree_digest
 
           work = Path(f"/tmp/exp287-root-{os.environ['CANONICAL_INDEX']}")
           receipt = work / "receipt.json"
@@ -204,6 +216,7 @@ jobs:
           assert payload == canonical_json_bytes(data)
           validate_exp287_root_receipt(data)
           assert data["canonical_index"] == int(os.environ["CANONICAL_INDEX"])
+          assert data["code_digest"] == source_tree_digest(Path.cwd())
           assert data["scientific_evidence_eligible"] is False
           assert data["confirmatory_data_consumed"] is False
           assert data["challenge_materialized"] is False
@@ -266,6 +279,7 @@ jobs:
           data = json.loads(payload)
           assert payload == canonical_json_bytes(data)
           validate_exp287_cross_receipt(data)
+          assert data["code_digest"] == source_tree_digest(Path.cwd())
           assert data["scientific_evidence_eligible"] is False
           assert data["confirmatory_data_consumed"] is False
           assert data["challenge_materialized"] is False
