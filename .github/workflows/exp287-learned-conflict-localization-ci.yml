@@ -1,0 +1,46 @@
+name: exp287-learned-conflict-localization-ci
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/exp287-learned-conflict-localization-ci.yml'
+      - 'protocols/stage_a_v1.json'
+      - 'protocols/stage_a_v1.sha256'
+      - 'protocols/exp287_development_v1.json'
+      - 'protocols/exp287_development_v1.sha256'
+      - 'src/nolane_ai/experiments/exp287_*.py'
+      - 'src/nolane_ai/experiments/matched_conflict_localizer_arms.py'
+      - 'scripts/*exp287*.py'
+      - 'tests/test_exp287_*.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/exp287-learned-conflict-localization-ci.yml'
+      - 'protocols/stage_a_v1.json'
+      - 'protocols/stage_a_v1.sha256'
+      - 'protocols/exp287_development_v1.json'
+      - 'protocols/exp287_development_v1.sha256'
+      - 'src/nolane_ai/experiments/exp287_*.py'
+      - 'src/nolane_ai/experiments/matched_conflict_localizer_arms.py'
+      - 'scripts/*exp287*.py'
+      - 'tests/test_exp287_*.py'
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,model]'
+      - name: Run EXP-287 focused contract
+        run: pytest -q tests/test_exp287_*.py
+      - name: Verify frozen Stage-A protocol
+        run: python scripts/verify_protocol.py
+      - name: Compile source and scripts
+        run: python -m compileall -q src scripts
