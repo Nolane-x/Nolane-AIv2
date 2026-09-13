@@ -46,10 +46,20 @@ def test_cross_reducer_authorizes_only_on_four_of_four_established_roots():
     assert m.validate_exp298_cross(payload) == []
 
 
-def test_cross_reducer_keeps_successor_closed_when_one_valid_root_is_negative():
+def test_cross_reducer_keeps_successor_closed_when_one_validated_root_is_negative(monkeypatch):
     m = _module()
-    roots = [_root(index) for index in range(3)] + [_root(3, max_exact_probes=1)]
-    assert roots[-1]["decision"] == "CROSS_DOMAIN_FIDELITY_TRANSFER_NOT_ESTABLISHED"
+    runner = importlib.import_module("nolane_ai.experiments.exp298_paired_runner")
+    roots = [_root(index) for index in range(4)]
+    negative = deepcopy(roots[-1])
+    negative["decision"] = "CROSS_DOMAIN_FIDELITY_TRANSFER_NOT_ESTABLISHED"
+    clean = deepcopy(negative)
+    clean.pop("artifact_digest", None)
+    negative["artifact_digest"] = canonical_sha256(clean)
+    roots[-1] = negative
+
+    # This unit test isolates reducer decision semantics. Root receipt integrity and
+    # reconstruction are independently enforced by validate_exp298_root tests.
+    monkeypatch.setattr(runner, "validate_exp298_root", lambda payload: [])
     payload = m.reduce_exp298_roots(roots)
     assert payload["decision"] == "CROSS_DOMAIN_FIDELITY_TRANSFER_NOT_RECURRENT"
     assert payload["successor_design_authorized"] is False
@@ -65,6 +75,7 @@ def test_cross_reducer_rejects_missing_duplicate_and_identity_drift_before_scien
     duplicate = [roots[0], roots[1], roots[2], roots[2]]
     with pytest.raises(ValueError, match="canonical indices"):
         m.reduce_exp298_roots(duplicate)
+
     drifted = deepcopy(roots)
     drifted[3]["protocol_digest"] = "e" * 64
     clean = deepcopy(drifted[3])
@@ -72,6 +83,11 @@ def test_cross_reducer_rejects_missing_duplicate_and_identity_drift_before_scien
     drifted[3]["artifact_digest"] = canonical_sha256(clean)
     with pytest.raises(ValueError, match="identity drift"):
         m.reduce_exp298_roots(drifted)
+
+    geometry_drifted = roots[:3] + [_root(3, max_exact_probes=1)]
+    assert geometry_drifted[-1]["decision"] == "CROSS_DOMAIN_FIDELITY_TRANSFER_NOT_ESTABLISHED"
+    with pytest.raises(ValueError, match="identity drift"):
+        m.reduce_exp298_roots(geometry_drifted)
 
 
 def test_cross_receipt_tamper_is_detected_after_rehash():
