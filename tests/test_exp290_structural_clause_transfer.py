@@ -9,7 +9,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from nolane_ai.protocol.loader import load_protocol
+from nolane_ai.protocol.schema import load_and_validate_protocol
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,15 +24,22 @@ def _module(name: str):
     return importlib.import_module(name)
 
 
+def _stage_a_digest() -> str:
+    spec = load_and_validate_protocol(PROTOCOL)
+    assert spec.protocol_id == "NLM-REASONING-STAGE-A-CONFIRMATORY-V1"
+    digest = hashlib.sha256(PROTOCOL.read_bytes()).hexdigest()
+    assert digest == PROTOCOL_SHA.read_text(encoding="utf-8").strip()
+    return digest
+
+
 def test_exp290_geometry_module_and_frozen_manifest_exist() -> None:
     geometry_mod = _module("nolane_ai.experiments.exp290_development_geometry")
-    protocol = load_protocol(PROTOCOL, PROTOCOL_SHA)
     geometry, digest = geometry_mod.load_exp290_development_geometry(
         EXP290_MANIFEST,
         EXP290_MANIFEST_SHA,
-        protocol_digest=protocol.digest,
+        protocol_digest=_stage_a_digest(),
     )
-    assert protocol.digest == STAGE_A_DIGEST
+    assert _stage_a_digest() == STAGE_A_DIGEST
     assert geometry == {
         "batch_size": 8,
         "canonical_indices": [0, 1, 2, 3],
@@ -85,11 +92,10 @@ def test_exp290_manifest_freezes_development_only_authority_and_parent_safety() 
 
 def test_exp290_train_and_evaluation_lineages_are_disjoint() -> None:
     geometry_mod = _module("nolane_ai.experiments.exp290_development_geometry")
-    protocol = load_protocol(PROTOCOL, PROTOCOL_SHA)
     geometry, _ = geometry_mod.load_exp290_development_geometry(
         EXP290_MANIFEST,
         EXP290_MANIFEST_SHA,
-        protocol_digest=protocol.digest,
+        protocol_digest=_stage_a_digest(),
     )
     training = set(range(geometry["train_replicates"]))
     evaluation = set(range(geometry["eval_start_replicate"], geometry["eval_start_replicate"] + geometry["eval_replicates"]))
@@ -164,6 +170,6 @@ def test_exp290_model_parameter_and_compute_audit_is_mode_invariant() -> None:
 
 
 def test_exp290_stage_a_protocol_does_not_claim_exp290_confirmatory_authority() -> None:
-    payload = json.loads(PROTOCOL.read_text(encoding="utf-8"))
-    assert "EXP-290" not in {item["experiment_id"] for item in payload["experiments"]}
-    assert hashlib.sha256(PROTOCOL.read_bytes()).hexdigest() == STAGE_A_DIGEST
+    spec = load_and_validate_protocol(PROTOCOL)
+    assert "EXP-290" not in set(spec.experiment_ids)
+    assert _stage_a_digest() == STAGE_A_DIGEST
