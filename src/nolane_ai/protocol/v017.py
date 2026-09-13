@@ -39,6 +39,17 @@ def validate_exp301_registration(payload: Mapping[str, Any]) -> None:
     _require_equal("schema_version", payload.get("schema_version"), "nlm-v017-prereg-v1")
     _require_equal("experiment_id", payload.get("experiment_id"), "EXP-301")
 
+    # The immutable scientific digest boundary comes before field-level
+    # diagnostics. A mutation that keeps the frozen digest must die here.
+    declared = payload.get("registration_digest")
+    _require_equal("registration_digest", declared, f"sha256:{EXP301_EXPECTED_DIGEST}")
+    actual_digest = registration_digest(payload)
+    if actual_digest != EXP301_EXPECTED_DIGEST:
+        raise ValueError(
+            "EXP-301 registration digest mismatch: "
+            f"expected {EXP301_EXPECTED_DIGEST}, got {actual_digest}"
+        )
+
     authority = payload.get("authority_parent")
     if not isinstance(authority, Mapping):
         raise ValueError("EXP-301 authority_parent must be an object")
@@ -68,15 +79,6 @@ def validate_exp301_registration(payload: Mapping[str, Any]) -> None:
     _require_equal("roots", tuple(training.get("roots", ())), EXP301_ROOTS)
     _require_equal("training loops", tuple(training.get("loop_training_distribution", ())), EXP301_TRAINING_LOOPS)
     _require_equal("challenge loops", tuple(training.get("challenge_loop_budgets", ())), EXP301_CHALLENGE_LOOPS)
-
-    declared = payload.get("registration_digest")
-    _require_equal("registration_digest", declared, f"sha256:{EXP301_EXPECTED_DIGEST}")
-    actual_digest = registration_digest(payload)
-    if actual_digest != EXP301_EXPECTED_DIGEST:
-        raise ValueError(
-            "EXP-301 registration digest mismatch: "
-            f"expected {EXP301_EXPECTED_DIGEST}, got {actual_digest}"
-        )
 
 
 def load_exp301_registration(path: str | Path) -> dict[str, Any]:
