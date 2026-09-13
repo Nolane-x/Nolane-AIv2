@@ -10,6 +10,7 @@ on:
       - "protocols/v017/**"
       - "tests/test_v017_*.py"
       - "tests/test_exp301_*.py"
+      - "scripts/run_exp301.py"
       - ".github/workflows/v017-exp301-contract.yml"
   workflow_dispatch:
 
@@ -37,4 +38,6 @@ jobs:
           tests/test_exp301_worlds.py
           tests/test_exp301_training.py
           tests/test_exp301_evaluation.py
-      - run: python -m compileall -q src
+          tests/test_exp301_analysis.py
+          tests/test_exp301_runner.py
+      - run: python -m compileall -q src scripts
