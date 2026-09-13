@@ -4,7 +4,7 @@
 
 This document turns the V0.16.1 EXP-277..EXP-300 roadmap into an evidence-aware dependency authority. It does not rewrite the original research specification and does not reinterpret negative results as success. Its job is to prevent two failure modes: continuing a downstream experiment after its parent hypothesis has been killed, and treating DEVELOPMENT diagnostics as confirmatory scientific closure.
 
-Base authority for this matrix is `main@e7a034365e542895b772701a247f6ad9b931bfc9` plus preserved GitHub experiment evidence. The frozen Stage-A protocol digest remains `c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440`.
+Base authority for this matrix is `main@150252b63f7268157e66024a4f9e55ad61088e35` plus preserved GitHub experiment evidence. The frozen Stage-A protocol digest remains `c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440`.
 
 ## Canonical status vocabulary
 
@@ -12,14 +12,16 @@ Every EXP-277..EXP-300 row has exactly one program status:
 
 - `SCIENTIFICALLY_CLOSED_PROMOTE` — a frozen scientific court reached a promotion disposition for the scoped hypothesis.
 - `SCIENTIFICALLY_CLOSED_KILL` — a frozen scientific court killed the scoped hypothesis. This is not a blanket refutation of neighboring hypotheses.
+- `DEVELOPMENT_CLOSED_POSITIVE` — a preregistered DEVELOPMENT / EV-E2 court passed its frozen scoped decision rule. This is not EV-E3 scientific promotion; it may grant only the explicit successor authority encoded by that DEVELOPMENT court.
 - `DEVELOPMENT_CLOSED_NEGATIVE` — a preregistered DEVELOPMENT court closed negatively but cannot be promoted to EV-E3 scientific closure.
 - `DEVELOPMENT_OPEN` — development machinery/results exist but the experiment family has no final scientific disposition.
 - `AUTHORIZED_NEXT_STAGE` — upstream evidence explicitly supports opening this experiment as the next learned/integrated court.
+- `AUTHORIZED_DESIGN_ONLY` — upstream evidence authorizes preregistration/design of the named successor court only. It does not authorize implementation-time data consumption or execution before that successor has its own frozen protocol and pre-data gate.
 - `DEPENDENCY_REVIEW_REQUIRED` — the experiment is not forbidden, but an upstream kill or unresolved parent invalidates the original straight-line justification; a new hypothesis must be preregistered before implementation.
 - `BLOCKED_ON_PARENT` — this experiment must not run until the named parent experiment passes its required gate.
 - `NOT_STARTED` — no current implementation/evidence authority was found and no stronger dependency status applies.
 
-`SCIENTIFICALLY_CLOSED_*` refers only to the frozen experiment scope. `PROMOTE` never means integrated NLM success. `KILL` never silently expands beyond the frozen hypothesis.
+`SCIENTIFICALLY_CLOSED_*` refers only to the frozen experiment scope. `PROMOTE` never means integrated NLM success. `KILL` never silently expands beyond the frozen hypothesis. `DEVELOPMENT_CLOSED_POSITIVE` remains DEVELOPMENT evidence and must not be rewritten as confirmatory promotion.
 
 ## Evidence anchors already established
 
@@ -77,7 +79,21 @@ Consequence: EXP-291 remains blocked on this dependency path. EXP-290 V1 may not
 
 Real EV-E3 Gate-B evidence closed `PROMOTE_TO_NEXT_STAGE` for the frozen synthetic semantic-formalization challenge family while explicitly keeping unrestricted semantic authority false. Program status: `SCIENTIFICALLY_CLOSED_PROMOTE`.
 
-Consequence: EXP-298 is independently authorized as a cross-domain transfer court, but no open-domain semantic claim may be inherited from EXP-297.
+Consequence: EXP-298 was independently authorized as a cross-domain transfer court, but no open-domain semantic claim could be inherited from EXP-297.
+
+### EXP-298 — cross-domain fidelity transfer
+
+EXP-298 V1 executed as a preregistered DEVELOPMENT / EV-E2 court across bounded code invariants, finite intervention-based causal diagnosis, and controlled grounded-language ambiguity. The exact pre-data head passed dedicated EXP-298 CI, generic core 3.11/core 3.13/model-smoke, Stage-A/geometry identity checks, compile checks, and a zero-run freeze guard before a marker-only release.
+
+The sole authoritative scientific execution is DEVELOPMENT run `34751159358` at marker head `262e786e5bea59e78a380c9d8a552259b10e7908`. All four canonical root jobs completed successfully, validated their receipts before upload, and sealed their GitHub Actions artifacts. Every root/domain cell contained 512 candidates (256 faithful / 256 wrong). Compile-only balanced accuracy was `0.5`; fidelity-fabric balanced accuracy was `1.0`; the gain was therefore `+0.5` in every one of the 12 root/domain cells versus frozen MESI `+0.10`. Fidelity wrong-formalization authority and faithful-formalization rejection were both `0.0` everywhere. All four roots closed `CROSS_DOMAIN_FIDELITY_TRANSFER_ESTABLISHED`.
+
+The workflow cross job later failed because full root reconstruction in a new process reported `EXP-298 root reconstruction mismatch`. The producing jobs had already passed the same root validator in-process. Post-run forensic verification of the sealed root artifacts independently revalidated receipt byte sidecars, internal artifact digests, frozen identities, causal authority decisions, domain metrics, model-state immutability, matched-arm boundaries, and all four established decisions without re-executing the model. The failure is archived as `CROSS_PROCESS_FULL_PAYLOAD_RECONSTRUCTION_PORTABILITY_FAILURE`; no hardware-specific cause is asserted as proven.
+
+Applying the already-frozen four-of-four cross rule to the four sealed authoritative root decisions yields `CROSS_DOMAIN_FIDELITY_TRANSFER_RECURRENT`. The recovered disposition explicitly records the original cross-job failure and authorizes only `DESIGN_EXP299_SCAFFOLD_REMOVAL_COURT_ONLY`; EXP-300 remains unauthorized. Evidence remains DEVELOPMENT / EV-E2. Program status: `DEVELOPMENT_CLOSED_POSITIVE`.
+
+A later GitHub workflow object (`34751503700`, run #2) was created by cumulative PR path semantics after a test-only commit, but its first-authority preflight failed before checkout/root/model execution. It is not a second scientific execution. PR #70 was closed unmerged and the experiment branch sealed.
+
+Consequence: EXP-299 may now be designed and preregistered as the next scaffold/cache/retrieval-removal court, but that design authority does not itself authorize data execution. EXP-298 does not establish open-language understanding, general program verification, causal discovery, unrestricted semantic authority, or integrated VCPF superiority.
 
 ## EXP-277..EXP-300 matrix
 
@@ -103,24 +119,25 @@ Consequence: EXP-298 is independently authorized as a cross-domain transfer cour
 | EXP-294 | Utility-governed Lemma Economy | `BLOCKED_ON_PARENT` | Requires EXP-292/293 viable lemma artifacts |
 | EXP-295 | Clause/lemma garbage collection | `BLOCKED_ON_PARENT` | Requires a live library and utility semantics from EXP-294 |
 | EXP-296 | Truth-maintenance dependency tracking | `BLOCKED_ON_PARENT` | Requires reusable clauses/lemmas with provenance dependencies |
-| EXP-297 | Encoding Fidelity Court | `SCIENTIFICALLY_CLOSED_PROMOTE` | Authorizes scoped EXP-298 transfer research |
-| EXP-298 | Transfer beyond SAT/CSP | `AUTHORIZED_NEXT_STAGE` | Highest-priority currently authorized surviving court; must preserve EXP-297 semantic-authority limits |
-| EXP-299 | Gains after scaffold/cache/retrieval removal | `BLOCKED_ON_PARENT` | Requires integrated gains in domains from EXP-298 and earlier surviving chains |
-| EXP-300 | Full V0.16 vs strongest 100M rivals | `BLOCKED_ON_PARENT` | Requires an integrated candidate assembled only from surviving mechanisms |
+| EXP-297 | Encoding Fidelity Court | `SCIENTIFICALLY_CLOSED_PROMOTE` | Scoped positive fidelity court preserved; EXP-298 transfer seam now closed positive in DEVELOPMENT |
+| EXP-298 | Transfer beyond SAT/CSP | `DEVELOPMENT_CLOSED_POSITIVE` | Frozen controlled-domain V1 closed 4/4 recurrent; authorizes EXP-299 design only |
+| EXP-299 | Gains after scaffold/cache/retrieval removal | `AUTHORIZED_DESIGN_ONLY` | Preregister scaffold-removal court; no execution until its own frozen protocol and pre-data gate are complete |
+| EXP-300 | Full V0.16 vs strongest 100M rivals | `BLOCKED_ON_PARENT` | Requires model-native gains after EXP-299 plus an integrated candidate and VCPF/safety gate |
 
-## Priority rule after EXP-290 closure
+## Priority rule after EXP-298 closure
 
-The next active research priority is EXP-298 because:
+The next active research priority is **design of EXP-299**, because:
 
-1. EXP-290 closed validly negative, so EXP-291 remains blocked and cannot be opened by reinterpretation.
-2. EXP-292..EXP-296 consequently remain blocked on their counterexample/lemma dependency chain unless a scientifically distinct replacement hypothesis is preregistered.
-3. EXP-297 already produced real EV-E3 positive evidence for the scoped encoding-fidelity question and explicitly authorized EXP-298 as the next cross-domain transfer court.
-4. EXP-298 is independent of the failed EXP-290 mechanism, so pursuing it does not launder EXP-290's negative result into a successor authorization.
-5. EXP-287 V1 and EXP-290 V1 remain immutable negative DEVELOPMENT courts; neither may be tuned or rerun merely to keep the roadmap moving.
-6. EXP-279's current routing/representation line remains redesign-only, while EXP-278 and EXP-280..285 require independent dependency review rather than inheriting positive authority.
+1. EXP-298 closed positively at DEVELOPMENT / EV-E2 under its frozen controlled-domain transfer question and satisfied the four-of-four recurrence rule.
+2. EXP-298's explicit authorization scope is design of the EXP-299 scaffold/cache/retrieval-removal court only; it does not authorize an EXP-299 data run merely by existing.
+3. EXP-299 must freeze its own question, arms, primary/protected endpoints, statistical unit, MESI, resource match, scaffold-removal geometry, failure classification, and decision rule before implementation consumes any evaluation data.
+4. EXP-300 remains blocked. Neither EXP-297 nor EXP-298 establishes model-native scaffold-free gains or integrated VCPF superiority.
+5. EXP-290 remains closed validly negative, so EXP-291 remains blocked and EXP-292..EXP-296 remain blocked on that dependency chain unless a scientifically distinct replacement hypothesis is preregistered.
+6. EXP-287 V1 and EXP-290 V1 remain immutable negative DEVELOPMENT courts; neither may be tuned or rerun merely to keep the roadmap moving.
+7. EXP-279's current routing/representation line remains redesign-only, while EXP-278 and EXP-280..285 require independent dependency review rather than inheriting positive authority.
 
 ## Closure discipline
 
-A program row changes state only with an immutable evidence record that names the experiment, frozen hypothesis, evidence level, decision, exact code/protocol identity, and scope boundary. Negative results reduce the active architecture. They are not converted into “partial success” merely to preserve a roadmap.
+A program row changes state only with an immutable evidence record that names the experiment, frozen hypothesis, evidence level, decision, exact code/protocol identity, and scope boundary. Negative results reduce the active architecture. Positive DEVELOPMENT results grant no more authority than their preregistered successor scope.
 
 A downstream experiment may be skipped permanently if its parent is killed or fails its authorization gate and no scientifically distinct replacement hypothesis is preregistered. Completion of V0.16.1 therefore means closing the dependency graph honestly, not mechanically executing every numeric experiment.
