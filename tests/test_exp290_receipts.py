@@ -65,10 +65,13 @@ def _metrics(*, established: bool = True, oracle: bool = True) -> dict[str, obje
 
 
 def _root(index: int, *, established: bool = True, oracle: bool = True) -> dict[str, object]:
-    from nolane_ai.experiments.exp290_structural_clause_transfer import classify_exp290_root
-
     metrics = _metrics(established=established, oracle=oracle)
-    decision = classify_exp290_root(metrics)
+    if not oracle:
+        decision = "ORACLE_TRANSFER_HEADROOM_NOT_REPLICATED"
+    elif established:
+        decision = "LEARNED_STRUCTURAL_TRANSFER_ESTABLISHED"
+    else:
+        decision = "LEARNED_STRUCTURAL_TRANSFER_NOT_ESTABLISHED"
     return {
         "schema": "NLM-EXP-290-STRUCTURAL-CLAUSE-TRANSFER-ROOT-V1",
         "experiment_id": "EXP-290",
