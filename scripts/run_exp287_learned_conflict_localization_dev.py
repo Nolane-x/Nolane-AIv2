@@ -23,6 +23,7 @@ from nolane_ai.experiments.exp287_receipts import (
     canonical_json_bytes,
     validate_exp287_root_receipt,
 )
+from nolane_ai.protocol.identity import source_tree_digest
 
 
 def parse_args() -> argparse.Namespace:
@@ -83,6 +84,7 @@ def main() -> int:
         args.canonical_index,
         protocol_digest=PROTOCOL_DIGEST,
     )
+    primitive["code_digest"] = source_tree_digest(ROOT)
     receipt = build_exp287_root_receipt(primitive)
     validate_exp287_root_receipt(receipt)
     _write_receipt_atomic(args.output, receipt)
@@ -92,6 +94,7 @@ def main() -> int:
                 "artifact_digest": receipt["artifact_digest"],
                 "canonical_index": receipt["canonical_index"],
                 "classification": receipt["decision"]["classification"],
+                "code_digest": receipt["code_digest"],
                 "output": str(args.output),
                 "protocol_digest": receipt["protocol_digest"],
             },
