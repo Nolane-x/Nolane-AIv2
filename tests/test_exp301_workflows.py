@@ -4,19 +4,20 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CI = ROOT / ".github" / "workflows" / "ci.yml"
+SMOKE = ROOT / ".github" / "workflows" / "v017-exp301-contract.yml"
 SCIENTIFIC = ROOT / ".github" / "workflows" / "exp301-scientific-court.yml"
 
 
 def test_normal_ci_runs_only_test_only_exp301_smoke() -> None:
-    text = CI.read_text(encoding="utf-8")
+    text = SMOKE.read_text(encoding="utf-8")
+    assert "pull_request:" in text
     assert "tests/test_exp301_analysis.py" in text
     assert "tests/test_exp301_runner.py" in text
     assert "tests/test_exp301_workflows.py" in text
     assert "python scripts/run_exp301.py" in text
     assert "--test-only" in text
     assert "--execution-identity" not in text
-    assert "EXP-301 scientific" not in text
+    assert "scientific court" not in text.lower()
 
 
 def test_scientific_workflow_is_manual_only_and_freeze_gated() -> None:
