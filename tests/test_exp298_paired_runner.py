@@ -29,6 +29,24 @@ def _run():
     )
 
 
+def _cross_root(index: int, *, max_exact_probes: int = 4096):
+    m = _module()
+    return m.run_exp298_root(
+        root_seed=f"20260913-exp298-focused-cross-{index}",
+        canonical_index=index,
+        eval_replicates=1,
+        eval_start_replicate=61000,
+        d_model=8,
+        hidden_size=8,
+        target_parameters=20000,
+        max_exact_probes=max_exact_probes,
+        protocol_digest="a" * 64,
+        geometry_digest="b" * 64,
+        code_digest="c" * 64,
+        repository_head="d" * 40,
+    )
+
+
 def test_root_runner_publishes_three_domain_reconstructable_evidence():
     m = _module()
     payload = _run()
@@ -100,3 +118,22 @@ def test_root_publishes_all_frozen_non_claims_false():
         "exp291_296_authority_inherited",
     ):
         assert payload[key] is False, key
+
+
+def test_four_root_cross_reducer_runs_inside_focused_torch_ci():
+    cross = importlib.import_module("nolane_ai.experiments.exp298_cross_reducer")
+    roots = [_cross_root(index) for index in range(4)]
+    payload = cross.reduce_exp298_roots(roots)
+    assert payload["canonical_indices"] == [0, 1, 2, 3]
+    assert payload["decision"] == "CROSS_DOMAIN_FIDELITY_TRANSFER_RECURRENT"
+    assert payload["successor_design_authorized"] is True
+    assert payload["authorization_scope"] == "DESIGN_EXP299_SCAFFOLD_REMOVAL_COURT_ONLY"
+    assert payload["exp300_authorized"] is False
+    assert cross.validate_exp298_cross(payload) == []
+
+    roots[-1] = _cross_root(3, max_exact_probes=1)
+    negative = cross.reduce_exp298_roots(roots)
+    assert negative["decision"] == "CROSS_DOMAIN_FIDELITY_TRANSFER_NOT_RECURRENT"
+    assert negative["successor_design_authorized"] is False
+    assert negative["authorization_scope"] == "NONE"
+    assert negative["exp300_authorized"] is False
