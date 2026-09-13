@@ -4,6 +4,8 @@ from dataclasses import replace
 
 import pytest
 
+# RED authority: this contract intentionally imports the not-yet-implemented
+# production evaluator so CI must first fail for the missing module.
 from nolane_ai.experiments.exp301_evaluation import (
     PRIMARY_TRAINED_EFFORTS,
     UNSEEN_DEPTH_EFFORTS,
