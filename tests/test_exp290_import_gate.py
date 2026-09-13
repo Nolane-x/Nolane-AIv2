@@ -13,3 +13,7 @@ def test_exp290_world_module_exists() -> None:
 
 def test_exp290_correspondence_module_exists() -> None:
     assert importlib.util.find_spec("nolane_ai.experiments.exp290_correspondence") is not None
+
+
+def test_exp290_runner_module_exists() -> None:
+    assert importlib.util.find_spec("nolane_ai.experiments.exp290_learned_clause_transfer") is not None
