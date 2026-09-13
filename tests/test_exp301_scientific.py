@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+import inspect
 
 import pytest
 
@@ -9,12 +10,16 @@ torch = pytest.importorskip("torch")
 from nolane_ai.experiments.exp301_scientific import (
     ScientificTrialResult,
     build_scientific_arm,
+    family_balanced_development_score,
     forward_scientific_arm,
     frozen_trial_plan,
     greedy_generate,
     model_state_digest,
+    run_scientific_trial,
+    scientific_train_step,
     select_development_trial,
 )
+from nolane_ai.experiments.exp301_worlds import generate_world_instance
 
 
 def test_frozen_trial_plan_is_exactly_three_arms_times_two_lrs() -> None:
@@ -27,8 +32,6 @@ def test_frozen_trial_plan_is_exactly_three_arms_times_two_lrs() -> None:
 
 
 def test_real_scientific_arms_are_exact_10m() -> None:
-    # Meta construction is used only for resident-parameter identity. Real
-    # scientific execution runs on an actual compute device.
     for arm_id in ("A_FIXED", "B_LOOP_SIMPLE", "C_NRS_CORE"):
         compiled = build_scientific_arm(arm_id, device="meta")
         assert sum(p.numel() for p in compiled.model.parameters() if p.requires_grad) == 10_000_000
@@ -85,6 +88,53 @@ def test_development_selection_is_family_balanced_and_ties_choose_lower_lr() -> 
 
     better = replace(high, development_family_balanced_score=0.51)
     assert select_development_trial((low, better)).learning_rate == 3e-4
+
+
+def test_family_balanced_score_is_not_pooled_by_family_size() -> None:
+    score, families = family_balanced_development_score(
+        {
+            "family-a": (1, 1),
+            "family-b": (0, 9),
+        }
+    )
+    assert families == (("family-a", 1.0), ("family-b", 0.0))
+    assert score == pytest.approx(0.5)
+
+
+def test_scientific_train_step_uses_frozen_effort_schedule_and_updates_model() -> None:
+    class ToyCompiled:
+        arm_id = type("Arm", (), {"value": "C_NRS_CORE"})()
+
+        class Model(torch.nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.bias = torch.nn.Parameter(torch.zeros(4_608))
+
+            def forward(self, tokens: torch.Tensor, *, loops: int) -> torch.Tensor:
+                assert loops == 1
+                return self.bias.view(1, 1, -1).expand(tokens.shape[0], tokens.shape[1], -1)
+
+        model = Model()
+
+    compiled = ToyCompiled()
+    optimizer = torch.optim.AdamW(compiled.model.parameters(), lr=1e-4, weight_decay=0.01)
+    world = generate_world_instance(
+        family="iterative-grid-and-maze",
+        root=0,
+        split="train",
+        index=0,
+    )
+    before = compiled.model.bias.detach().clone()
+    loss = scientific_train_step(compiled, world, optimizer=optimizer, step=0)
+    assert torch.isfinite(torch.tensor(loss))
+    assert not torch.equal(before, compiled.model.bias.detach())
+
+
+def test_public_scientific_trial_has_no_tuning_override_surface() -> None:
+    parameters = set(inspect.signature(run_scientific_trial).parameters)
+    assert {"plan", "device", "checkpoint_path"} <= parameters
+    for forbidden in ("max_steps", "sample_count", "learning_rate", "loops", "threshold", "task_weight"):
+        assert forbidden not in parameters
 
 
 def test_greedy_generation_never_requires_canonical_answer() -> None:
