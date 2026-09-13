@@ -1,0 +1,57 @@
+name: exp299-native-fidelity-freeze-guard
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  freeze-guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXP299_DEVELOPMENT_WORKFLOW_NAME: exp299-native-fidelity-development
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Audit first authoritative EXP-299 DEVELOPMENT run and fail on duplicates
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          pr_number = int(os.environ["PR_NUMBER"])
+          workflow_name = os.environ["EXP299_DEVELOPMENT_WORKFLOW_NAME"]
+          payload = subprocess.check_output(
+              ["gh", "api", f"repos/{repo}/actions/runs?event=pull_request&per_page=100"],
+              text=True,
+          )
+          candidates = []
+          for run in json.loads(payload)["workflow_runs"]:
+              if run.get("name") != workflow_name:
+                  continue
+              prs = run.get("pull_requests") or []
+              if not any(int(pr.get("number", -1)) == pr_number for pr in prs):
+                  continue
+              candidates.append(run)
+
+          candidates.sort(key=lambda run: (run.get("created_at", ""), int(run["id"])))
+          authoritative = int(candidates[0]["id"]) if candidates else None
+          duplicates = [int(run["id"]) for run in candidates[1:]]
+          result = {
+              "schema": "NLM-EXP-299-DEVELOPMENT-FREEZE-GUARD-V1",
+              "authoritative_development_run_id": authoritative,
+              "duplicate_development_run_ids": duplicates,
+              "observed_development_run_ids": [int(run["id"]) for run in candidates],
+          }
+          print(json.dumps(result, sort_keys=True))
+          if duplicates:
+              raise SystemExit(
+                  "duplicate DEVELOPMENT runs detected; first run remains authoritative"
+              )
+          PY
