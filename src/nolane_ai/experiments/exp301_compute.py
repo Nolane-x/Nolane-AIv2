@@ -9,7 +9,9 @@ from nolane_ai.protocol.v017 import (
 )
 
 
-COMPUTE_LEDGER_VERSION = "exp301-flops-v1"
+# V2 closes a pre-freeze accounting gap: scientific prediction receipts charge
+# every autoregressive decode forward rather than only a single prompt pass.
+COMPUTE_LEDGER_VERSION = "exp301-flops-v2"
 ARM_IDS = ("A_FIXED", "B_LOOP_SIMPLE", "C_NRS_CORE")
 VOCAB_SIZE = 4_608
 D_MODEL = 448
@@ -37,6 +39,28 @@ class ComputeMatchReceipt:
     ledger_version: str
     effort_multiplier: int
     sequence_length: int
+    flops_by_arm: dict[str, int]
+    relative_mismatch: float
+    status: str
+
+
+@dataclass(frozen=True, slots=True)
+class AutoregressiveComputeReceipt:
+    ledger_version: str
+    arm_id: str
+    effort_multiplier: int
+    prompt_token_count: int
+    generated_token_count: int
+    decode_sequence_lengths: tuple[int, ...]
+    total_flops: int
+
+
+@dataclass(frozen=True, slots=True)
+class AutoregressiveComputeMatchReceipt:
+    ledger_version: str
+    effort_multiplier: int
+    prompt_token_count: int
+    generated_token_count: int
     flops_by_arm: dict[str, int]
     relative_mismatch: float
     status: str
@@ -97,8 +121,6 @@ def _capacity_exchange_flops(
     residual_add = t * d
     tail = 0
     if tail_parameters:
-        # Dot product against the active tail plus scale/project/add back into
-        # the residual stream. The tail is scientific capacity, not padding.
         tail = 2 * t * tail_parameters + 2 * t * d
     return two_linear_projections + silu + residual_add + tail
 
@@ -133,15 +155,10 @@ def account_arm_flops(
     aggregation_flops = 0
 
     if arm_id == "C_NRS_CORE":
-        # Learned loop embedding lookup is memory access; the broadcast add is
-        # charged once per latent loop.
         conditioning_flops = effort_multiplier * sequence_length * D_MODEL
     elif arm_id == "A_FIXED":
-        # Parameter-free sinusoidal restart codes may be precomputed; applying
-        # the code is still charged. Restarts do not carry latent state.
         restart_code_flops = effort_multiplier * sequence_length * D_MODEL
         if effort_multiplier > 1:
-            # (k-1) state additions plus one division for the mean.
             aggregation_flops = effort_multiplier * sequence_length * D_MODEL
 
     finalization_flops = 5 * sequence_length * D_MODEL
@@ -167,6 +184,37 @@ def account_arm_flops(
         finalization_flops=finalization_flops,
         output_projection_flops=output_projection_flops,
         total_flops=total_flops,
+    )
+
+
+def account_autoregressive_flops(
+    arm_id: str,
+    *,
+    effort_multiplier: int,
+    prompt_token_count: int,
+    generated_token_count: int,
+) -> AutoregressiveComputeReceipt:
+    if prompt_token_count <= 0:
+        raise ValueError("prompt_token_count must be positive")
+    if generated_token_count <= 0:
+        raise ValueError("generated_token_count must be positive")
+    sequence_lengths = tuple(prompt_token_count + offset for offset in range(generated_token_count))
+    total = sum(
+        account_arm_flops(
+            arm_id,
+            effort_multiplier=effort_multiplier,
+            sequence_length=sequence_length,
+        ).total_flops
+        for sequence_length in sequence_lengths
+    )
+    return AutoregressiveComputeReceipt(
+        ledger_version=COMPUTE_LEDGER_VERSION,
+        arm_id=arm_id,
+        effort_multiplier=effort_multiplier,
+        prompt_token_count=prompt_token_count,
+        generated_token_count=generated_token_count,
+        decode_sequence_lengths=sequence_lengths,
+        total_flops=total,
     )
 
 
@@ -214,6 +262,34 @@ def match_common_compute(
         ledger_version=COMPUTE_LEDGER_VERSION,
         effort_multiplier=effort_multiplier,
         sequence_length=sequence_length,
+        flops_by_arm=flops_by_arm,
+        relative_mismatch=mismatch,
+        status=status,
+    )
+
+
+def match_autoregressive_compute(
+    *,
+    effort_multiplier: int,
+    prompt_token_count: int,
+    generated_token_count: int,
+) -> AutoregressiveComputeMatchReceipt:
+    receipts = {
+        arm: account_autoregressive_flops(
+            arm,
+            effort_multiplier=effort_multiplier,
+            prompt_token_count=prompt_token_count,
+            generated_token_count=generated_token_count,
+        )
+        for arm in ARM_IDS
+    }
+    flops_by_arm = {arm: receipt.total_flops for arm, receipt in receipts.items()}
+    status, mismatch = validate_compute_match(flops_by_arm)
+    return AutoregressiveComputeMatchReceipt(
+        ledger_version=COMPUTE_LEDGER_VERSION,
+        effort_multiplier=effort_multiplier,
+        prompt_token_count=prompt_token_count,
+        generated_token_count=generated_token_count,
         flops_by_arm=flops_by_arm,
         relative_mismatch=mismatch,
         status=status,

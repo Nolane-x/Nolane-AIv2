@@ -7,8 +7,8 @@ from typing import Iterable
 
 from nolane_ai.experiments.exp301_compute import (
     COMPUTE_LEDGER_VERSION,
-    account_arm_flops,
-    match_common_compute,
+    account_autoregressive_flops,
+    match_autoregressive_compute,
 )
 from nolane_ai.experiments.exp301_worlds import Exp301WorldInstance, verify_world_answer
 
@@ -18,7 +18,7 @@ EXP301_EFFORTS = (1, 2, 4, 8, 12, 16)
 PRIMARY_TRAINED_EFFORTS = (1, 2, 4, 8)
 UNSEEN_DEPTH_EFFORTS = (12, 16)
 RESIDENT_PARAMETERS = 10_000_000
-PREDICTION_SCHEMA = "exp301-prediction-commitment-v1"
+PREDICTION_SCHEMA = "exp301-prediction-commitment-v2"
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,6 +29,8 @@ class PredictionCommitment:
     effort_multiplier: int
     content_id: str
     candidate_answer: str
+    prompt_token_count: int
+    generation_token_count: int
     resident_parameters: int
     accounted_flops: int
     compute_ledger_version: str
@@ -84,6 +86,10 @@ def validate_prediction_commitment(commitment: PredictionCommitment) -> None:
         raise ValueError("prediction commitment arm mismatch")
     if commitment.effort_multiplier not in EXP301_EFFORTS:
         raise ValueError("prediction commitment effort mismatch")
+    if commitment.prompt_token_count <= 0:
+        raise ValueError("prediction commitment prompt token count mismatch")
+    if commitment.generation_token_count <= 0:
+        raise ValueError("prediction commitment generation token count mismatch")
     if commitment.resident_parameters != RESIDENT_PARAMETERS:
         raise ValueError("prediction commitment resident parameter mismatch")
     if commitment.compute_ledger_version != COMPUTE_LEDGER_VERSION:
@@ -102,6 +108,7 @@ def commit_prediction(
     root: int,
     effort_multiplier: int,
     candidate_answer: str,
+    generation_token_count: int = 1,
 ) -> PredictionCommitment:
     if arm_id not in EXP301_ARMS:
         raise ValueError(f"arm must be one of {EXP301_ARMS}")
@@ -111,16 +118,22 @@ def commit_prediction(
         raise ValueError(f"effort must be one of {EXP301_EFFORTS}")
     if not isinstance(candidate_answer, str):
         raise ValueError("candidate_answer must be a string")
+    if generation_token_count <= 0:
+        raise ValueError("generation_token_count must be positive")
 
-    sequence_length = max(1, len(instance.model_input.encode("utf-8")))
-    arm_receipt = account_arm_flops(
+    # Byte tokenizer prompt geometry is deterministic without importing the
+    # torch-dependent training module: BOS + UTF-8 bytes + separator.
+    prompt_token_count = len(instance.model_input.encode("utf-8")) + 2
+    arm_receipt = account_autoregressive_flops(
         arm_id,
         effort_multiplier=effort_multiplier,
-        sequence_length=sequence_length,
+        prompt_token_count=prompt_token_count,
+        generated_token_count=generation_token_count,
     )
-    match = match_common_compute(
+    match = match_autoregressive_compute(
         effort_multiplier=effort_multiplier,
-        sequence_length=sequence_length,
+        prompt_token_count=prompt_token_count,
+        generated_token_count=generation_token_count,
     )
     without_digest = {
         "schema": PREDICTION_SCHEMA,
@@ -129,6 +142,8 @@ def commit_prediction(
         "effort_multiplier": effort_multiplier,
         "content_id": instance.content_id,
         "candidate_answer": candidate_answer,
+        "prompt_token_count": prompt_token_count,
+        "generation_token_count": generation_token_count,
         "resident_parameters": RESIDENT_PARAMETERS,
         "accounted_flops": arm_receipt.total_flops,
         "compute_ledger_version": COMPUTE_LEDGER_VERSION,
@@ -144,8 +159,6 @@ def score_committed_prediction(
     commitment: PredictionCommitment,
     instance: Exp301WorldInstance,
 ) -> Exp301EvaluationRow:
-    # The commitment is validated before the verifier is called. This preserves
-    # the causal boundary: answer first, ground truth/verifier second.
     validate_prediction_commitment(commitment)
     if commitment.content_id != instance.content_id:
         raise ValueError("prediction content_id does not match world instance")
