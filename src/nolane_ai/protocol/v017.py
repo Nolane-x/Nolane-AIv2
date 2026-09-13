@@ -6,13 +6,16 @@ from pathlib import Path
 from typing import Any, Mapping
 
 
-EXP301_EXPECTED_DIGEST = "110701d1054fe0743bac2b65d16faa602182a1d90ab85bdc7d3d426de0212253"
+EXP301_SUPERSEDED_V1_DIGEST = "110701d1054fe0743bac2b65d16faa602182a1d90ab85bdc7d3d426de0212253"
+EXP301_EXPECTED_DIGEST = "1660a728990290f1c605941d531be1d52fe82591c619a327d104e4b87c1e6bad"
+EXP301_SCHEMA_VERSION = "nlm-v017-prereg-v2"
 EXP301_ARM_IDS = ("A_FIXED", "B_LOOP_SIMPLE", "C_NRS_CORE")
 EXP301_ROOTS = (0, 1, 2, 3)
 EXP301_TRAINING_LOOPS = (1, 2, 4, 8)
 EXP301_CHALLENGE_LOOPS = (1, 2, 4, 8, 12, 16)
 EXP301_PARAMETER_CEILING = 10_000_000
 EXP301_AUTHORITY_PARENT = "a7d14a97ae74ace9a0f4be4e72fade434cbaa96b"
+EXP301_MAX_RELATIVE_FLOP_MISMATCH = 0.002
 
 
 def canonical_registration_payload(payload: Mapping[str, Any]) -> bytes:
@@ -36,11 +39,12 @@ def _require_equal(label: str, actual: Any, expected: Any) -> None:
 
 
 def validate_exp301_registration(payload: Mapping[str, Any]) -> None:
-    _require_equal("schema_version", payload.get("schema_version"), "nlm-v017-prereg-v1")
+    _require_equal("schema_version", payload.get("schema_version"), EXP301_SCHEMA_VERSION)
     _require_equal("experiment_id", payload.get("experiment_id"), "EXP-301")
 
-    # The immutable scientific digest boundary comes before field-level
-    # diagnostics. A mutation that keeps the frozen digest must die here.
+    # The immutable scientific digest boundary comes before most field-level
+    # diagnostics. A mutation that keeps/recomputes its own self-digest is not
+    # allowed to redefine the frozen V2 authority.
     declared = payload.get("registration_digest")
     _require_equal("registration_digest", declared, f"sha256:{EXP301_EXPECTED_DIGEST}")
     actual_digest = registration_digest(payload)
@@ -54,6 +58,23 @@ def validate_exp301_registration(payload: Mapping[str, Any]) -> None:
     if not isinstance(authority, Mapping):
         raise ValueError("EXP-301 authority_parent must be an object")
     _require_equal("authority_parent.main", authority.get("main"), EXP301_AUTHORITY_PARENT)
+
+    amendment = payload.get("protocol_amendment")
+    if not isinstance(amendment, Mapping):
+        raise ValueError("EXP-301 protocol_amendment must be an object")
+    _require_equal(
+        "protocol_amendment.amendment_kind",
+        amendment.get("amendment_kind"),
+        "PRE_DATA_FAIRNESS_CORRECTION",
+    )
+    _require_equal(
+        "protocol_amendment.supersedes_registration_digest",
+        amendment.get("supersedes_registration_digest"),
+        f"sha256:{EXP301_SUPERSEDED_V1_DIGEST}",
+    )
+    _require_equal("protocol_amendment.scientific_outcome_consumed", amendment.get("scientific_outcome_consumed"), False)
+    _require_equal("protocol_amendment.challenge_materialized", amendment.get("challenge_materialized"), False)
+    _require_equal("protocol_amendment.hypothesis_changed", amendment.get("hypothesis_changed"), False)
 
     architecture = payload.get("architecture_candidate")
     if not isinstance(architecture, Mapping):
@@ -72,6 +93,17 @@ def validate_exp301_registration(payload: Mapping[str, Any]) -> None:
     if not isinstance(arms, list):
         raise ValueError("EXP-301 arms must be a list")
     _require_equal("arm ids", tuple(arm.get("id") for arm in arms), EXP301_ARM_IDS)
+
+    compute = payload.get("compute_matching")
+    if not isinstance(compute, Mapping):
+        raise ValueError("EXP-301 compute_matching must be an object")
+    _require_equal("compute effort multipliers", tuple(compute.get("effort_multipliers", ())), EXP301_CHALLENGE_LOOPS)
+    _require_equal("max relative FLOP mismatch", compute.get("max_relative_flop_mismatch"), EXP301_MAX_RELATIVE_FLOP_MISMATCH)
+    _require_equal(
+        "unmatched budget policy",
+        compute.get("unmatched_budget_policy"),
+        "INVALID_COMPUTE_MATCH for all arms at that operating point; never interpolate or repair after outcome",
+    )
 
     training = payload.get("training")
     if not isinstance(training, Mapping):
