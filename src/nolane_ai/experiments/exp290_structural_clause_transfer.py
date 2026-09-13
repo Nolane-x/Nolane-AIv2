@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 import hashlib
 import json
-from statistics import mean
 from typing import Any
 
 import torch
@@ -36,6 +35,10 @@ def _canonical_bytes(value: Any) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
+def _json_digest(value: Any) -> str:
+    return hashlib.sha256(_canonical_bytes(value)).hexdigest()
+
+
 def _state_digest(model: torch.nn.Module) -> str:
     hasher = hashlib.sha256()
     hasher.update(b"NLM-EXP-290-MODEL-STATE-V1\0")
@@ -55,6 +58,22 @@ def _state_digest(model: torch.nn.Module) -> str:
         hasher.update(b"\0")
         hasher.update(tensor_raw_bytes(cpu))
     return hasher.hexdigest()
+
+
+def _mapping_tensor(pair: Exp290TransferPairBatch) -> torch.Tensor:
+    rows = [
+        episode["evaluator_only_source_to_target_variable_permutation"]
+        for episode in pair.metadata["episodes"]
+    ]
+    return torch.tensor(rows, dtype=torch.long)
+
+
+def _nonidentity_episode_count(pair: Exp290TransferPairBatch, variables: int) -> int:
+    identity = list(range(variables))
+    return sum(
+        episode["evaluator_only_source_to_target_variable_permutation"] != identity
+        for episode in pair.metadata["episodes"]
+    )
 
 
 def training_contract_receipt() -> dict[str, Any]:
@@ -84,7 +103,7 @@ def _require_digest(name: str, value: str) -> None:
 
 
 def _validate_geometry(geometry: Mapping[str, object], canonical_index: int) -> None:
-    required_positive = (
+    for key in (
         "batch_size",
         "d_model",
         "eval_replicates",
@@ -95,8 +114,7 @@ def _validate_geometry(geometry: Mapping[str, object], canonical_index: int) -> 
         "timesteps",
         "train_replicates",
         "variables",
-    )
-    for key in required_positive:
+    ):
         if int(geometry[key]) <= 0:
             raise ValueError(f"EXP-290 geometry {key} must be positive")
     if canonical_index not in [int(value) for value in geometry["canonical_indices"]]:
@@ -152,7 +170,7 @@ def _train_model(
     batch_size = int(geometry["batch_size"])
     variables = int(geometry["variables"])
     rows: list[dict[str, Any]] = []
-    batch_digests: list[str] = []
+    pair_digests: list[str] = []
 
     model.train()
     for replicate in range(int(geometry["train_replicates"])):
@@ -168,15 +186,13 @@ def _train_model(
             rng_stream="augmentation",
             device="cpu",
         )
-        batch_digests.append(pair.pair_digest)
+        pair_digests.append(pair.digest)
 
         source_index = pair.source.restart_orders[:, 0, 0].to(torch.long)
         gather_index = source_index.view(batch_size, 1)
         source_truth = pair.source.solution_targets.gather(1, gather_index).squeeze(1)
         source_literal = 1 - source_truth
-        target_index = pair.evaluator_only_source_to_target_variable_permutation.gather(
-            1, gather_index
-        ).squeeze(1)
+        target_index = _mapping_tensor(pair).gather(1, gather_index).squeeze(1)
 
         optimizer.zero_grad(set_to_none=True)
         reasoner = model.encode_reasoner_state(
@@ -203,7 +219,7 @@ def _train_model(
         rows.append(
             {
                 "replicate": int(replicate),
-                "pair_digest": pair.pair_digest,
+                "pair_digest": pair.digest,
                 "branch_cross_entropy": float(branch_loss.detach().item()),
                 "verifier_binary_cross_entropy": float(verifier_loss.detach().item()),
                 "transfer_mapping_cross_entropy": float(transfer_loss.detach().item()),
@@ -218,7 +234,7 @@ def _train_model(
         "start_replicate": 0,
         "replicates": int(geometry["train_replicates"]),
         "batch_size": batch_size,
-        "pair_digests": batch_digests,
+        "pair_digests": pair_digests,
         "per_replicate": rows,
         "post_training_model_digest": _state_digest(model),
     }
@@ -293,10 +309,10 @@ def build_common_source_phase(
                         )
                     contradicted = True
                     break
-            if search_steps >= max_search_steps:
-                break
             if not contradicted and len(assignment) == variables:
                 verified_solution = True
+                break
+            if search_steps >= max_search_steps:
                 break
 
         episodes.append(
@@ -311,8 +327,8 @@ def build_common_source_phase(
 
     return {
         "schema": "NLM-EXP-290-COMMON-SOURCE-PHASE-V1",
-        "pair_digest": pair.pair_digest,
-        "source_batch_digest": pair.source.digest,
+        "pair_digest": pair.digest,
+        "source_batch_digest": _json_digest(source.metadata),
         "source_clause_set_sealed_before_target": True,
         "evaluator_truth_gated_insertion": False,
         "oracle_mapping_used": False,
@@ -350,12 +366,11 @@ def _translate_isomorphic_source_clauses(
     episode_index: int,
     source_clauses: list[dict[str, int]],
 ) -> list[tuple[int, int]]:
-    mapping = pair.evaluator_only_source_to_target_variable_permutation[episode_index]
+    mapping = pair.metadata["episodes"][episode_index][
+        "evaluator_only_source_to_target_variable_permutation"
+    ]
     return [
-        (
-            int(mapping[int(clause["variable_index"])].item()),
-            int(clause["value"]),
-        )
+        (int(mapping[int(clause["variable_index"])]), int(clause["value"]))
         for clause in source_clauses
     ]
 
@@ -459,10 +474,10 @@ def _evaluate_target_episode(
                     target_local_insertions += 1
                 contradicted = True
                 break
-        if search_steps >= max_search_steps:
-            break
         if not contradicted and len(assignment) == variables:
             verified_solution = True
+            break
+        if search_steps >= max_search_steps:
             break
 
     return {
@@ -572,10 +587,11 @@ def run_exp290_root(
     post_training_digest = str(training["post_training_model_digest"])
     model.eval()
 
-    transferred_slot_capacity = int(geometry["variables"])
+    variables = int(geometry["variables"])
+    transferred_slot_capacity = variables
     audit = audit_exp290_transfer_model(
         model,
-        variables=int(geometry["variables"]),
+        variables=variables,
         source_clause_slots=transferred_slot_capacity,
     )
     rows_by_mode: dict[str, list[dict[str, Any]]] = {mode: [] for mode in TARGET_MODES}
@@ -591,16 +607,15 @@ def run_exp290_root(
                 batch_size=int(geometry["batch_size"]),
                 timesteps=int(geometry["timesteps"]),
                 restarts=int(geometry["restarts"]),
-                variables=int(geometry["variables"]),
+                variables=variables,
                 decoys=int(geometry["decoys"]),
                 d_model=int(geometry["d_model"]),
                 noise_std=float(geometry["noise_std"]),
                 rng_stream="evaluation",
                 device="cpu",
             )
-            pair_digests.append(pair.pair_digest)
-            if pair.mapping_nonidentity_enforced:
-                nonidentity_count += int(geometry["batch_size"])
+            pair_digests.append(pair.digest)
+            nonidentity_count += _nonidentity_episode_count(pair, variables)
             source_phase = build_common_source_phase(
                 pair,
                 max_search_steps=int(geometry["max_search_steps"]),
