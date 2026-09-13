@@ -141,8 +141,8 @@ class ActiveCapacityExchange(nn.Module):
         device=None,
     ) -> None:
         super().__init__()
-        if d_model <= 0 or bottleneck <= 0 or tail_parameters <= 0:
-            raise ValueError("capacity-exchange dimensions must be positive")
+        if d_model <= 0 or bottleneck <= 0 or tail_parameters < 0:
+            raise ValueError("capacity-exchange dimensions must be positive except an optional zero tail")
         if tail_parameters > d_model:
             raise ValueError("tail_parameters cannot exceed d_model")
         self.d_model = int(d_model)
@@ -150,15 +150,21 @@ class ActiveCapacityExchange(nn.Module):
         self.tail_parameters = int(tail_parameters)
         self.up = nn.Linear(self.d_model, self.bottleneck, bias=False, device=device)
         self.down = nn.Linear(self.bottleneck, self.d_model, bias=False, device=device)
-        self.tail = nn.Parameter(torch.empty(self.tail_parameters, device=device))
-        if device != "meta":
-            nn.init.normal_(self.tail, mean=0.0, std=0.02)
-        direction = torch.linspace(-1.0, 1.0, self.d_model, device=device)
-        direction = direction / direction.square().mean().sqrt().clamp_min(1e-12)
-        self.register_buffer("tail_direction", direction, persistent=False)
+        if self.tail_parameters:
+            self.tail = nn.Parameter(torch.empty(self.tail_parameters, device=device))
+            if device != "meta":
+                nn.init.normal_(self.tail, mean=0.0, std=0.02)
+            direction = torch.linspace(-1.0, 1.0, self.d_model, device=device)
+            direction = direction / direction.square().mean().sqrt().clamp_min(1e-12)
+            self.register_buffer("tail_direction", direction, persistent=False)
+        else:
+            self.register_parameter("tail", None)
+            self.register_buffer("tail_direction", None, persistent=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         residual = self.down(F.silu(self.up(x))) / math.sqrt(self.bottleneck)
+        if self.tail is None:
+            return x + residual
         tail_signal = (x[..., : self.tail_parameters] * self.tail).sum(dim=-1, keepdim=True)
         tail_signal = tail_signal / math.sqrt(self.tail_parameters)
         return x + residual + tail_signal * self.tail_direction
