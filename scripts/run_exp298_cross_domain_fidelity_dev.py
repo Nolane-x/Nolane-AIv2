@@ -15,14 +15,6 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from nolane_ai.experiments.exp298_cross_reducer import (
-    reduce_exp298_roots,
-    validate_exp298_cross,
-)
-from nolane_ai.experiments.exp298_paired_runner import (
-    run_exp298_root,
-    validate_exp298_root,
-)
 from nolane_ai.protocol.evidence import canonical_sha256
 from nolane_ai.protocol.identity import (
     require_frozen_stage_a_v1_sha256,
@@ -135,6 +127,8 @@ def _write_canonical_atomic(output: Path, receipt: dict[str, Any]) -> None:
 
 
 def _load_root(path: Path) -> dict[str, Any]:
+    from nolane_ai.experiments.exp298_paired_runner import validate_exp298_root
+
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError(f"EXP-298 root receipt must be an object: {path}")
@@ -151,6 +145,8 @@ def _load_root(path: Path) -> dict[str, Any]:
 
 
 def _run_root(canonical_index: int) -> dict[str, Any]:
+    from nolane_ai.experiments.exp298_paired_runner import run_exp298_root
+
     protocol_digest = STAGE_A_DIGEST.read_text(encoding="utf-8").strip()
     require_frozen_stage_a_v1_sha256(protocol_digest)
     geometry_digest = canonical_sha256(FROZEN_GEOMETRY)
@@ -173,11 +169,18 @@ def _run_root(canonical_index: int) -> dict[str, Any]:
 def main() -> int:
     args = parse_args()
     if args.mode == "root":
+        from nolane_ai.experiments.exp298_paired_runner import validate_exp298_root
+
         receipt = _run_root(args.canonical_index)
         errors = validate_exp298_root(receipt)
         if errors:
             raise RuntimeError("EXP-298 root validation failed: " + "; ".join(errors))
     else:
+        from nolane_ai.experiments.exp298_cross_reducer import (
+            reduce_exp298_roots,
+            validate_exp298_cross,
+        )
+
         roots = [_load_root(path) for path in args.root_receipt]
         receipt = reduce_exp298_roots(roots)
         errors = validate_exp298_cross(receipt)
