@@ -39,6 +39,7 @@ jobs:
           tests/test_exp301_worlds.py
           tests/test_exp301_training.py
           tests/test_exp301_execution_geometry.py
+          tests/test_exp301_identity.py
           tests/test_exp301_evaluation.py
           tests/test_exp301_analysis.py
           tests/test_exp301_runner.py
