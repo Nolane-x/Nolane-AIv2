@@ -53,3 +53,24 @@ jobs:
           fi
       - run: python scripts/verify_protocol.py
       - run: python -m compileall -q src scripts
+      - name: Emit frozen pre-release identity
+        run: |
+          PYTHONPATH=src python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+          from nolane_ai.experiments.exp299_structural_encoding import structural_encoder_contract
+          from nolane_ai.protocol.evidence import canonical_sha256
+          from nolane_ai.protocol.identity import source_tree_digest
+
+          geometry_digest = Path("protocols/exp299_native_fidelity_geometry_v1.sha256").read_text(encoding="ascii").strip()
+          identity = {
+              "schema": "NLM-EXP-299-PRE-RELEASE-IDENTITY-V1",
+              "repository_head": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+              "source_tree_digest": source_tree_digest(Path.cwd()),
+              "geometry_digest": geometry_digest,
+              "structural_encoder_contract_digest": canonical_sha256(structural_encoder_contract()),
+              "protocol_digest": Path("protocols/stage_a_v1.sha256").read_text(encoding="ascii").strip(),
+          }
+          print("EXP299_PRE_RELEASE_IDENTITY=" + json.dumps(identity, sort_keys=True))
+          PY
