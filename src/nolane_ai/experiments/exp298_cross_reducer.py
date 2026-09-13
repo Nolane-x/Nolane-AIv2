@@ -3,7 +3,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Iterable
 
-from nolane_ai.experiments.exp298_paired_runner import validate_exp298_root
 from nolane_ai.protocol.evidence import canonical_sha256
 
 SCHEMA = "NLM-EXP-298-CROSS-DOMAIN-FIDELITY-CROSS-V1"
@@ -50,6 +49,8 @@ def _validate_hex(name: str, value: Any, length: int) -> str | None:
 
 
 def _normalize_roots(root_receipts: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    from nolane_ai.experiments.exp298_paired_runner import validate_exp298_root
+
     roots = list(root_receipts)
     if len(roots) != 4:
         raise ValueError("EXP-298 cross reducer requires exactly four root receipts")
