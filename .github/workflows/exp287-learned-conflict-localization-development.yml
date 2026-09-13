@@ -8,12 +8,56 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   preflight:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXP287_DEVELOPMENT_WORKFLOW_NAME: exp287-learned-conflict-localization-development
+      PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
+      - name: Require this run to be the first authoritative DEVELOPMENT run
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import subprocess
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          workflow_name = os.environ["EXP287_DEVELOPMENT_WORKFLOW_NAME"]
+          pr_number = int(os.environ["PR_NUMBER"])
+          current_run_id = int(os.environ["GITHUB_RUN_ID"])
+          payload = subprocess.check_output(
+              ["gh", "api", f"repos/{repo}/actions/runs?event=pull_request&per_page=100"],
+              text=True,
+          )
+          candidates = []
+          for run in json.loads(payload)["workflow_runs"]:
+              if run.get("name") != workflow_name:
+                  continue
+              prs = run.get("pull_requests") or []
+              if not any(int(pr.get("number", -1)) == pr_number for pr in prs):
+                  continue
+              candidates.append(run)
+          candidates.sort(key=lambda run: (run.get("created_at", ""), int(run["id"])))
+          if not candidates:
+              raise SystemExit("EXP-287 DEVELOPMENT authority query returned no matching runs")
+          authoritative = int(candidates[0]["id"])
+          if current_run_id != authoritative:
+              raise SystemExit(
+                  f"duplicate DEVELOPMENT run blocked before root execution: "
+                  f"authoritative={authoritative} current={current_run_id}"
+              )
+          print(json.dumps({
+              "schema": "NLM-EXP-287-DEVELOPMENT-RUN-AUTHORITY-V1",
+              "authoritative_development_run_id": authoritative,
+              "current_run_id": current_run_id,
+              "observed_development_run_ids": [int(run["id"]) for run in candidates],
+          }, sort_keys=True))
+          PY
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
