@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 GEOMETRY = ROOT / "protocols" / "exp299_native_fidelity_geometry_v1.json"
 GEOMETRY_SHA = ROOT / "protocols" / "exp299_native_fidelity_geometry_v1.sha256"
 SCRIPT = ROOT / "scripts" / "run_exp299_native_fidelity_dev.py"
+RELEASE = ROOT / "protocols" / "exp299-native-fidelity-release.lock"
 
 
 def _load_script_module():
@@ -92,5 +93,13 @@ def test_cli_atomic_writer_publishes_sha_sidecar_and_never_overwrites(tmp_path) 
         module._write_canonical_atomic(output, receipt)
 
 
-def test_release_marker_is_absent_before_one_shot_release() -> None:
-    assert not (ROOT / "protocols" / "exp299-native-fidelity-release.lock").exists()
+def test_cli_cannot_create_or_mutate_release_authority() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    assert "exp299-native-fidelity-release.lock" not in text
+    assert "workflow_dispatch" not in text
+    # The release marker may legitimately exist later as a marker-only commit;
+    # scientific execution authority belongs to the DEVELOPMENT workflow, not CLI.
+    if RELEASE.exists():
+        assert RELEASE.read_text(encoding="utf-8").startswith(
+            "EXP299_NATIVE_FIDELITY_RELEASE_V1\n"
+        )
