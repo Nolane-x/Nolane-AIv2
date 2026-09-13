@@ -108,7 +108,13 @@ def test_cross_reducer_rejects_missing_duplicate_and_identity_drift_before_scien
     with pytest.raises(ValueError, match="identity drift"):
         m.reduce_exp299_roots(drifted)
 
-    geometry_drifted = roots[:3] + [_root(3, max_exact_probes=1)]
+    # Identity-drift coverage must not create a scientifically invalid root.
+    # Mutate only sealed configuration metadata after a valid root exists, then
+    # rehash it. The root validator accepts the internally coherent receipt and
+    # the cross reducer must reject its mismatch against the other three roots.
+    geometry_drifted = deepcopy(roots)
+    geometry_drifted[3]["config"]["batch_size"] = 17
+    _rehash(geometry_drifted[3])
     with pytest.raises(ValueError, match="identity drift"):
         m.reduce_exp299_roots(geometry_drifted)
 
