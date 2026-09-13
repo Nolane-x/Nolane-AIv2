@@ -96,7 +96,7 @@ def test_unknown_domain_fails_closed() -> None:
 
 def test_wrong_domain_object_fails_closed() -> None:
     code = generate_exp298_code_world(7)
-    with pytest.raises(TypeError, match="CodeInvariantProblem"):
+    with pytest.raises(TypeError, match="CausalDiagnosisProblem"):
         encode_exp299_problem("causal_diagnosis", code.source)
 
 
