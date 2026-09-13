@@ -34,4 +34,6 @@ jobs:
           tests/test_v017_recursive_model.py
           tests/test_exp301_arms.py
           tests/test_exp301_compute.py
+          tests/test_exp301_worlds.py
+          tests/test_exp301_training.py
       - run: python -m compileall -q src
