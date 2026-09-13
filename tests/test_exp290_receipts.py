@@ -11,6 +11,7 @@ PROTOCOL = "c010d90b9d626cfde4f7727b76fcd053f1ebf7f2f7aa201d7d13d2d828cef440"
 GEOMETRY = "a" * 64
 CODE = "b" * 64
 MODEL = "c" * 64
+REPOSITORY_HEAD = "f" * 40
 
 
 def _canonical_without_artifact_digest(value: dict[str, object]) -> bytes:
@@ -73,6 +74,7 @@ def _root(index: int, *, established: bool = True, oracle: bool = True) -> dict[
         "experiment_id": "EXP-290",
         "canonical_index": index,
         "root_seed": f"20260913-exp290-structural-clause-transfer-v1-dev-root-{index}",
+        "repository_head": REPOSITORY_HEAD,
         "evidence_level": "EV-E2",
         "scientific_evidence_eligible": False,
         "confirmatory_data_consumed": False,
@@ -83,6 +85,9 @@ def _root(index: int, *, established: bool = True, oracle: bool = True) -> dict[
         "evaluation_mapping_used_by_learned_mode": False,
         "oracle_mapping_used_by_learned_mode": False,
         "oracle_transfer_mode_deployable": False,
+        "arbitrary_value_symbol_remapping_claimed": False,
+        "cross_domain_transfer_claimed": False,
+        "lemma_generation_claimed": False,
         "protocol_digest": PROTOCOL,
         "geometry_digest": GEOMETRY,
         "code_digest": CODE,
@@ -148,6 +153,7 @@ def test_exp290_root_receipt_seals_canonical_bytes_and_digest() -> None:
     assert encoded.endswith(b"\n")
     assert encoded == (json.dumps(json.loads(encoded), sort_keys=True, separators=(",", ":")) + "\n").encode()
     assert sealed["artifact_digest"] == hashlib.sha256(_canonical_without_artifact_digest(sealed)).hexdigest()
+    assert len(sealed["source_clause_set_digest"]) == 64
 
 
 def test_exp290_validator_recomputes_semantic_decision_even_after_rehash() -> None:
@@ -173,6 +179,12 @@ def test_exp290_root_validator_rejects_boundary_and_lineage_leakage() -> None:
     promoted = _root(0)
     promoted["promotion_claimed"] = True
     cases.append(promoted)
+    remap_claim = _root(0)
+    remap_claim["arbitrary_value_symbol_remapping_claimed"] = True
+    cases.append(remap_claim)
+    lemma_claim = _root(0)
+    lemma_claim["lemma_generation_claimed"] = True
+    cases.append(lemma_claim)
     drifted = _root(0)
     drifted["post_evaluation_model_digest"] = "d" * 64
     cases.append(drifted)
@@ -199,6 +211,7 @@ def test_exp290_cross_reducer_requires_exact_four_unique_matching_roots() -> Non
     assert recurrent["confirmatory_data_consumed"] is False
     assert recurrent["challenge_materialized"] is False
     assert recurrent["promotion_claimed"] is False
+    assert recurrent["repository_head"] == REPOSITORY_HEAD
 
     with pytest.raises(ValueError, match="canonical roots"):
         reduce_cross_roots(roots[:3])
