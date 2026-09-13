@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import inspect
 
-import torch
+import pytest
+
+torch = pytest.importorskip("torch")
 
 from nolane_ai.experiments.exp299_structural_encoding import PAIR_FEATURE_WIDTH
 from nolane_ai.experiments.matched_native_fidelity_arms import (
