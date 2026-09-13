@@ -63,6 +63,17 @@ def test_development_preflight_allows_only_the_first_authoritative_run_before_da
     assert text.index("duplicate DEVELOPMENT run blocked before root execution") < text.index("root:")
 
 
+def test_development_blocks_same_run_reruns_and_serializes_duplicate_run_ids() -> None:
+    text = _text(DEVELOPMENT)
+    assert "concurrency:" in text
+    assert "exp287-development-pr-${{ github.event.pull_request.number }}" in text
+    assert "cancel-in-progress: false" in text
+    assert 'current_run_attempt = int(os.environ["GITHUB_RUN_ATTEMPT"])' in text
+    assert "current_run_attempt != 1" in text
+    assert "rerun DEVELOPMENT attempt blocked before root execution" in text
+    assert text.index("rerun DEVELOPMENT attempt blocked before root execution") < text.index("root:")
+
+
 def test_development_workflow_has_exact_four_root_jobs_then_one_cross_reducer() -> None:
     text = _text(DEVELOPMENT)
     assert "root:" in text
