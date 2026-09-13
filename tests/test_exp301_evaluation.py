@@ -4,6 +4,7 @@ from dataclasses import replace
 
 import pytest
 
+from nolane_ai.experiments.exp301_compute import account_autoregressive_flops
 from nolane_ai.experiments.exp301_evaluation import (
     PRIMARY_TRAINED_EFFORTS,
     UNSEEN_DEPTH_EFFORTS,
@@ -39,6 +40,34 @@ def test_prediction_is_committed_before_verifier_scoring() -> None:
     assert row.verified_success is True
     assert row.invalid_output is False
     assert row.prediction_digest == commitment.prediction_digest
+
+
+def test_prediction_commitment_binds_full_autoregressive_compute() -> None:
+    world = _world(index=3)
+    generated = 7
+    commitment = commit_prediction(
+        world,
+        arm_id="C_NRS_CORE",
+        root=0,
+        effort_multiplier=4,
+        candidate_answer=world.canonical_answer,
+        generation_token_count=generated,
+    )
+    prompt_tokens = len(world.model_input.encode("utf-8")) + 2  # BOS + separator
+    expected = account_autoregressive_flops(
+        "C_NRS_CORE",
+        effort_multiplier=4,
+        prompt_token_count=prompt_tokens,
+        generated_token_count=generated,
+    )
+    assert commitment.prompt_token_count == prompt_tokens
+    assert commitment.generation_token_count == generated
+    assert commitment.accounted_flops == expected.total_flops
+    validate_prediction_commitment(commitment)
+
+    tampered = replace(commitment, generation_token_count=generated + 1)
+    with pytest.raises(ValueError, match="digest"):
+        validate_prediction_commitment(tampered)
 
 
 def test_tampered_prediction_commitment_is_rejected() -> None:
