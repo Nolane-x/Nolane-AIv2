@@ -22,8 +22,8 @@ from .exp301_scientific import (
     ScientificTrialPlan,
     ScientificTrialResult,
     frozen_trial_plan,
-    greedy_generate,
     run_scientific_trial,
+    scientific_challenge_generate,
 )
 
 
@@ -74,7 +74,7 @@ def commit_challenge_predictions(
     challenge: ChallengeMaterialization,
     *,
     selected_models: Mapping[str, object],
-    predictor: Callable[..., GenerationResult] = greedy_generate,
+    predictor: Callable[..., GenerationResult] = scientific_challenge_generate,
 ) -> tuple[PredictionCommitment, ...]:
     if set(selected_models) != set(EXP301_ARMS):
         raise ValueError(f"selected_models must contain exactly arms {EXP301_ARMS}")
