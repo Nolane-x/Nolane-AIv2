@@ -46,6 +46,7 @@ jobs:
           tests/test_exp301_scientific.py
           tests/test_exp301_ceremony.py
           tests/test_exp301_scientific_executor.py
+          tests/test_exp301_scientific_root.py
           tests/test_exp301_selected_checkpoint.py
           tests/test_exp301_evidence.py
           tests/test_exp301_cross_root.py
