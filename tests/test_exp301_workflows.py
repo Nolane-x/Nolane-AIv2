@@ -28,6 +28,8 @@ def test_scientific_workflow_is_manual_only_and_freeze_gated() -> None:
     assert "schedule:" not in text
     assert "protocols/v017/exp301_execution_identity_v1.json" in text
     assert "protocols/v017/exp301_execution_identity_v1.sha256" in text
+    assert "scripts/verify_exp301_freeze.py" in text
+    assert "fetch-depth: 0" in text
     assert "--frozen-implementation-identity" in text
     assert "--execution-identity" not in text
     assert "--test-only" not in text
