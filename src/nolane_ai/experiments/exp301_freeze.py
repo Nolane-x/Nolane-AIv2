@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import asdict
 import hashlib
 import json
+from pathlib import Path
+import subprocess
 from typing import Iterable
 
 from .exp301_compute import COMPUTE_LEDGER_VERSION
@@ -18,6 +20,17 @@ EXP301_MARKER_PATHS = (
     "protocols/v017/exp301_execution_identity_v1.json",
     "protocols/v017/exp301_execution_identity_v1.sha256",
 )
+EXP301_WORLD_PATH = "src/nolane_ai/experiments/exp301_worlds.py"
+EXP301_ANALYSIS_PATHS = (
+    "src/nolane_ai/experiments/exp301_analysis.py",
+    "src/nolane_ai/experiments/exp301_cross_root.py",
+    "src/nolane_ai/experiments/exp301_evidence.py",
+    "src/nolane_ai/experiments/exp301_evaluation.py",
+    "src/nolane_ai/experiments/exp301_compute.py",
+    "src/nolane_ai/experiments/exp301_execution.py",
+    "src/nolane_ai/experiments/exp301_identity.py",
+)
+EXP301_WORKFLOW_PATH = ".github/workflows/exp301-scientific-court.yml"
 EXP301_ROOTS = (0, 1, 2, 3)
 EXP301_TASK_FAMILIES = (
     "iterative-grid-and-maze",
@@ -44,6 +57,18 @@ def _digest(payload: object) -> str:
 def _require_hex(value: str, *, length: int, field: str) -> None:
     if not isinstance(value, str) or len(value) != length or any(ch not in _HEX for ch in value):
         raise ValueError(f"{field} must be exactly {length} lowercase hexadecimal characters")
+
+
+def _git(repo_root: Path, *args: str) -> str:
+    result = subprocess.run(
+        ("git", *args),
+        cwd=repo_root,
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    return result.stdout.strip()
 
 
 def source_tree_digest_from_git_tree_sha(git_tree_sha: str) -> str:
@@ -197,6 +222,29 @@ def build_freeze_identity_from_components(
         compute_ledger_version=COMPUTE_LEDGER_VERSION,
         analysis_digest=analysis_contract_digest(analysis_blob_shas),
         workflow_digest=workflow_contract_digest(workflow_blob_sha),
+    )
+
+
+def build_freeze_identity_from_git(
+    repo_root: str | Path,
+    source_commit_sha: str = "HEAD",
+) -> FrozenImplementationIdentity:
+    root = Path(repo_root).resolve()
+    commit_sha = _git(root, "rev-parse", source_commit_sha)
+    _require_hex(commit_sha, length=40, field="source commit")
+    tree_sha = _git(root, "rev-parse", f"{commit_sha}^{{tree}}")
+    worlds_blob = _git(root, "rev-parse", f"{commit_sha}:{EXP301_WORLD_PATH}")
+    analysis_blobs = tuple(
+        _git(root, "rev-parse", f"{commit_sha}:{path}")
+        for path in EXP301_ANALYSIS_PATHS
+    )
+    workflow_blob = _git(root, "rev-parse", f"{commit_sha}:{EXP301_WORKFLOW_PATH}")
+    return build_freeze_identity_from_components(
+        source_commit_sha=commit_sha,
+        git_tree_sha=tree_sha,
+        worlds_blob_sha=worlds_blob,
+        analysis_blob_shas=analysis_blobs,
+        workflow_blob_sha=workflow_blob,
     )
 
 
