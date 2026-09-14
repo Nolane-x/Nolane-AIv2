@@ -16,6 +16,7 @@ from nolane_ai.experiments.exp301_scientific import (
     greedy_generate,
     model_state_digest,
     run_scientific_trial,
+    scientific_challenge_generate,
     scientific_train_step,
     select_development_trial,
 )
@@ -153,6 +154,38 @@ def test_greedy_generation_never_requires_canonical_answer() -> None:
     result = greedy_generate(StubCompiled(), prompt="Q", effort=1, max_new_tokens=8)
     assert result.candidate_answer == "7"
     assert result.generated_token_count == 2
+
+
+def test_scientific_challenge_generation_runs_full_96_decode_budget_after_early_eos() -> None:
+    class StubCompiled:
+        arm_id = type("Arm", (), {"value": "C_NRS_CORE"})()
+
+        class Model(torch.nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.anchor = torch.nn.Parameter(torch.zeros(()))
+                self.forward_calls = 0
+
+            def forward(self, tokens: torch.Tensor, *, loops: int) -> torch.Tensor:
+                self.forward_calls += 1
+                logits = torch.full((*tokens.shape, 4_608), -1000.0, device=tokens.device)
+                if self.forward_calls == 1:
+                    next_id = 4 + ord("7")
+                elif self.forward_calls == 2:
+                    next_id = 3
+                else:
+                    next_id = 4 + ord("x")
+                logits[:, -1, next_id] = 1000.0 + self.anchor
+                return logits
+
+        model = Model()
+
+    compiled = StubCompiled()
+    result = scientific_challenge_generate(compiled, prompt="Q", effort=1)
+    assert result.candidate_answer == "7"
+    assert result.stopped_on_eos is True
+    assert result.generated_token_count == 96
+    assert compiled.model.forward_calls == 96
 
 
 def test_model_state_digest_changes_when_parameter_changes() -> None:
