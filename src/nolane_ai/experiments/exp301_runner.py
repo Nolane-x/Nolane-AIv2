@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import asdict, fields
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,7 @@ from .exp301_identity import (
     FrozenImplementationIdentity,
     build_frozen_implementation_identity,
 )
+from .exp301_scientific_executor import run_scientific_root
 from .exp301_training import Exp301ByteTokenizer, compute_answer_only_loss
 from .exp301_worlds import materialize_world_set
 
@@ -141,6 +143,26 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _workflow_root_from_environment() -> int:
+    raw = os.environ.get("EXP301_ROOT")
+    if raw is None:
+        raise SystemExit("scientific execution requires workflow-bound EXP301_ROOT")
+    try:
+        root = int(raw)
+    except ValueError as exc:
+        raise SystemExit("EXP301_ROOT must be an integer root id") from exc
+    if root not in EXP301_ROOTS:
+        raise SystemExit(f"EXP301_ROOT must be one of {EXP301_ROOTS}")
+    return root
+
+
+def _required_environment(name: str) -> str:
+    value = os.environ.get(name)
+    if value is None or not value.strip():
+        raise SystemExit(f"scientific execution requires workflow-bound {name}")
+    return value
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.test_only:
@@ -150,10 +172,15 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(
             "scientific execution requires --frozen-implementation-identity after pre-data freeze"
         )
-    load_frozen_implementation_identity(args.frozen_implementation_identity)
-    raise SystemExit(
-        "scientific EXP-301 execution is fail-closed until the scientific trainer and challenge boundary are frozen"
+    frozen_identity = load_frozen_implementation_identity(args.frozen_implementation_identity)
+    run_scientific_root(
+        root=_workflow_root_from_environment(),
+        device=_required_environment("EXP301_DEVICE"),
+        output_dir=Path(args.output_dir),
+        frozen_implementation_identity=frozen_identity,
+        challenge_beacon=_required_environment("EXP301_CHALLENGE_BEACON"),
     )
+    return 0
 
 
 if __name__ == "__main__":
