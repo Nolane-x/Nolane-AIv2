@@ -190,6 +190,69 @@ def greedy_generate(
     return GenerationResult(tokenizer.decode(answer_ids), len(generated), stopped_on_eos)
 
 
+def scientific_challenge_generate(
+    compiled: object,
+    *,
+    prompt: str,
+    effort: int,
+) -> GenerationResult:
+    """Run the frozen scientific decode budget while sealing semantics at first EOS.
+
+    Challenge accounting is only comparable if every arm performs the same
+    number of autoregressive forwards.  Therefore scientific challenge
+    generation always executes exactly EXP301_MAX_GENERATION_TOKENS forwards.
+    The candidate answer, however, is sealed at the first EOS.  Invalid output
+    before that boundary remains invalid and cannot be repaired by later
+    budget-filling tokens.
+    """
+
+    tokenizer = Exp301ByteTokenizer()
+    prompt_ids = (tokenizer.bos_id, *tokenizer.encode_text(prompt), tokenizer.separator_id)
+    if len(prompt_ids) + EXP301_MAX_GENERATION_TOKENS > EXP301_MAX_SEQUENCE_TOKENS:
+        raise ValueError("prompt plus frozen scientific decode budget exceeds max sequence tokens")
+
+    model = getattr(compiled, "model")
+    try:
+        device = next(model.parameters()).device
+    except StopIteration:
+        device = torch.device("cpu")
+    tokens = torch.tensor([prompt_ids], dtype=torch.long, device=device)
+    answer_ids: list[int] = []
+    semantic_closed = False
+    invalid_output = False
+    stopped_on_eos = False
+
+    model.eval()
+    with torch.inference_mode():
+        for _ in range(EXP301_MAX_GENERATION_TOKENS):
+            logits = forward_scientific_arm(compiled, tokens, effort=effort)
+            next_id = int(torch.argmax(logits[0, -1]).item())
+            tokens = torch.cat(
+                (tokens, torch.tensor([[next_id]], dtype=torch.long, device=device)),
+                dim=1,
+            )
+
+            if semantic_closed:
+                continue
+            if next_id == tokenizer.eos_id:
+                stopped_on_eos = True
+                semantic_closed = True
+                continue
+            if tokenizer.byte_offset <= next_id < tokenizer.byte_offset + 256:
+                answer_ids.append(next_id)
+                continue
+
+            invalid_output = True
+            semantic_closed = True
+
+    candidate = "" if invalid_output else tokenizer.decode(answer_ids)
+    return GenerationResult(
+        candidate_answer=candidate,
+        generated_token_count=EXP301_MAX_GENERATION_TOKENS,
+        stopped_on_eos=stopped_on_eos,
+    )
+
+
 def family_balanced_development_score(
     success_counts: dict[str, tuple[int, int]],
 ) -> tuple[float, tuple[tuple[str, float], ...]]:
