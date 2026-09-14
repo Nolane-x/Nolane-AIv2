@@ -115,3 +115,34 @@ def test_cli_exposes_only_rootless_frozen_identity_and_no_scientific_tuning_flag
     assert "--execution-identity" not in help_text
     for forbidden in ("--lr", "--loops", "--root", "--threshold", "--bootstrap-seed", "--task-weight", "--sample-count"):
         assert forbidden not in help_text
+
+
+def test_scientific_cli_uses_only_frozen_identity_and_workflow_bound_root(monkeypatch, tmp_path: Path) -> None:
+    frozen = _frozen()
+    identity_path = tmp_path / "frozen.json"
+    runner.write_once_json(identity_path, asdict(frozen))
+    monkeypatch.setenv("EXP301_ROOT", "2")
+    monkeypatch.setenv("EXP301_CHALLENGE_BEACON", "workflow-run-123")
+    monkeypatch.setenv("EXP301_DEVICE", "cpu")
+    captured = {}
+
+    def fake_run_scientific_root(**kwargs):
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(runner, "run_scientific_root", fake_run_scientific_root, raising=False)
+    assert runner.main(
+        [
+            "--output-dir",
+            str(tmp_path / "scientific"),
+            "--frozen-implementation-identity",
+            str(identity_path),
+        ]
+    ) == 0
+    assert captured == {
+        "root": 2,
+        "device": "cpu",
+        "output_dir": tmp_path / "scientific",
+        "frozen_implementation_identity": frozen,
+        "challenge_beacon": "workflow-run-123",
+    }
