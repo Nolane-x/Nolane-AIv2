@@ -11,6 +11,9 @@ on:
       - "tests/test_v017_*.py"
       - "tests/test_exp301_*.py"
       - "scripts/run_exp301.py"
+      - "scripts/reduce_exp301.py"
+      - "scripts/freeze_exp301.py"
+      - "scripts/verify_exp301_freeze.py"
       - ".github/workflows/v017-exp301-contract.yml"
       - ".github/workflows/exp301-scientific-court.yml"
   workflow_dispatch:
@@ -50,6 +53,7 @@ jobs:
           tests/test_exp301_selected_checkpoint.py
           tests/test_exp301_evidence.py
           tests/test_exp301_cross_root.py
+          tests/test_exp301_freeze.py
           tests/test_exp301_workflows.py
       - name: Run EXP-301 TEST-ONLY end-to-end smoke
         run: >-
