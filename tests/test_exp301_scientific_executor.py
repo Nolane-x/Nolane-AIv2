@@ -111,6 +111,63 @@ def test_commit_phase_covers_all_arms_and_efforts_without_verifier() -> None:
     assert all(item.content_id == world.content_id for item in commitments)
 
 
+def test_default_commit_phase_executes_fixed_96_decode_budget_for_every_arm_and_effort() -> None:
+    world = generate_world_instance(
+        family="algorithmic-sequence-transform",
+        root=0,
+        split="challenge",
+        index=1,
+        challenge_nonce="z" * 64,
+    )
+    challenge = ChallengeMaterialization(
+        schema="EXP301-ROOT-CHALLENGE-MATERIALIZATION-V1",
+        root=0,
+        challenge_nonce="z" * 64,
+        worlds=(world,),
+        materialization_digest="3" * 64,
+    )
+
+    class FixedModel(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.anchor = torch.nn.Parameter(torch.zeros(()))
+            self.forward_calls = 0
+
+        def forward(self, tokens: torch.Tensor, *, restarts: int) -> torch.Tensor:
+            self.forward_calls += 1
+            logits = torch.full((*tokens.shape, 4_608), -1000.0, device=tokens.device)
+            logits[:, -1, 3] = 1000.0 + self.anchor
+            return logits
+
+    class RecurrentModel(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.anchor = torch.nn.Parameter(torch.zeros(()))
+            self.forward_calls = 0
+
+        def forward(self, tokens: torch.Tensor, *, loops: int) -> torch.Tensor:
+            self.forward_calls += 1
+            logits = torch.full((*tokens.shape, 4_608), -1000.0, device=tokens.device)
+            logits[:, -1, 3] = 1000.0 + self.anchor
+            return logits
+
+    def compiled(arm: str, model: torch.nn.Module):
+        return type("Compiled", (), {"arm_id": type("Arm", (), {"value": arm})(), "model": model})()
+
+    selected_models = {
+        "A_FIXED": compiled("A_FIXED", FixedModel()),
+        "B_LOOP_SIMPLE": compiled("B_LOOP_SIMPLE", RecurrentModel()),
+        "C_NRS_CORE": compiled("C_NRS_CORE", RecurrentModel()),
+    }
+    commitments = commit_challenge_predictions(challenge, selected_models=selected_models)
+
+    assert len(commitments) == 18
+    assert {item.generation_token_count for item in commitments} == {96}
+    assert all(item.compute_match_status == "VALID_COMPUTE_MATCH" for item in commitments)
+    for compiled_model in selected_models.values():
+        assert compiled_model.model.forward_calls == 6 * 96
+
+
 def test_score_phase_requires_complete_commitment_grid() -> None:
     world = generate_world_instance(
         family="language-sequence-control",
