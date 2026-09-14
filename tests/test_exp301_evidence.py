@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import asdict, replace
+from dataclasses import asdict, dataclass, replace
+import json
 from pathlib import Path
 
 import pytest
@@ -22,11 +23,23 @@ from nolane_ai.experiments.exp301_evidence import (
     load_and_audit_root_evidence,
     write_root_evidence_artifact,
 )
-from nolane_ai.experiments.exp301_scientific import ScientificTrialResult
 
 
 FROZEN = "a" * 64
 BEACON = "workflow-run-12345"
+
+
+@dataclass(frozen=True, slots=True)
+class TrialEvidence:
+    arm_id: str
+    root: int
+    learning_rate: float
+    model_init_seed: int
+    training_steps: int
+    development_family_balanced_score: float
+    development_family_scores: tuple[tuple[str, float], ...]
+    checkpoint_digest: str
+    trial_receipt_digest: str
 
 
 def _selection(root: int):
@@ -36,7 +49,7 @@ def _selection(root: int):
         for trial_index, lr in enumerate((1e-4, 3e-4)):
             marker = format(1 + arm_index * 2 + trial_index, "x")
             trials.append(
-                ScientificTrialResult(
+                TrialEvidence(
                     arm_id=arm,
                     root=root,
                     learning_rate=lr,
@@ -136,7 +149,6 @@ def test_root_evidence_audit_rejects_row_or_commitment_tampering(tmp_path: Path)
     tampered = asdict(artifact)
     tampered["commitments"][0]["candidate_answer"] = "tampered"
     path = tmp_path / "tampered.json"
-    import json
     path.write_text(json.dumps(tampered, sort_keys=True), encoding="utf-8")
     with pytest.raises(ValueError, match="digest|commitment|artifact"):
         load_and_audit_root_evidence(path)
