@@ -16,7 +16,7 @@ def test_normal_ci_runs_only_test_only_exp301_smoke() -> None:
     assert "tests/test_exp301_workflows.py" in text
     assert "python scripts/run_exp301.py" in text
     assert "--test-only" in text
-    assert "--execution-identity" not in text
+    assert "--frozen-implementation-identity" not in text
     assert "scientific court" not in text.lower()
 
 
@@ -28,7 +28,8 @@ def test_scientific_workflow_is_manual_only_and_freeze_gated() -> None:
     assert "schedule:" not in text
     assert "protocols/v017/exp301_execution_identity_v1.json" in text
     assert "protocols/v017/exp301_execution_identity_v1.sha256" in text
-    assert "--execution-identity" in text
+    assert "--frozen-implementation-identity" in text
+    assert "--execution-identity" not in text
     assert "--test-only" not in text
 
 
@@ -41,6 +42,25 @@ def test_scientific_workflow_freezes_all_four_roots_and_no_tuning_surface() -> N
     assert "root-${{ matrix.root }}" in text
     for forbidden in ("--lr", "--loops", "--threshold", "--bootstrap-seed", "--task-weight", "--sample-count"):
         assert forbidden not in text
+
+
+def test_scientific_root_jobs_bind_post_freeze_beacon_device_and_single_root_output() -> None:
+    text = SCIENTIFIC.read_text(encoding="utf-8")
+    assert "EXP301_DEVICE:" in text
+    assert "EXP301_CHALLENGE_BEACON:" in text
+    assert "github.run_id" in text
+    assert "github.run_attempt" in text
+    assert "--output-dir artifacts" in text
+    assert "--output-dir artifacts/root-${{ matrix.root }}" not in text
+
+
+def test_cross_root_reducer_is_live_and_uploads_write_once_evidence() -> None:
+    text = SCIENTIFIC.read_text(encoding="utf-8")
+    assert "scripts/reduce_exp301.py" in text
+    assert "cross-root-evidence.json" in text
+    assert "Freeze-gated reducer boundary" not in text
+    assert "exp301-cross-root" in text
+    assert "if-no-files-found: error" in text
 
 
 def test_scientific_workflow_uses_write_once_artifact_names_and_concurrency_guard() -> None:
