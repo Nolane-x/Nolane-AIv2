@@ -20,6 +20,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Require both marker files
+        run: >-
+          test -f protocols/v017/exp301_execution_identity_v1.json &&
+          test -f protocols/v017/exp301_execution_identity_v1.sha256
       - name: Reproduce and verify frozen execution identity from Git history
         env:
           PYTHONPATH: src
