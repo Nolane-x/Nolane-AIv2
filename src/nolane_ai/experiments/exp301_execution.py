@@ -24,6 +24,7 @@ EXP301_CHALLENGE_PER_FAMILY = 128
 EXP301_TRAIN_EPOCHS = 1
 EXP301_MAX_SEQUENCE_TOKENS = 512
 EXP301_MAX_GENERATION_TOKENS = 96
+EXP301_BOOTSTRAP_SAMPLES = 10_000
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,6 +39,7 @@ class Exp301ScientificExecutionContract:
     training_epochs: int
     optimizer_steps_per_trial: int
     search_trials_per_arm: int
+    bootstrap_samples: int
     primary_efforts: tuple[int, ...]
     challenge_efforts: tuple[int, ...]
     max_sequence_tokens: int
@@ -70,6 +72,7 @@ def build_scientific_execution_contract() -> Exp301ScientificExecutionContract:
         training_epochs=EXP301_TRAIN_EPOCHS,
         optimizer_steps_per_trial=training_examples * EXP301_TRAIN_EPOCHS,
         search_trials_per_arm=len(EXP301_LR_CANDIDATES),
+        bootstrap_samples=EXP301_BOOTSTRAP_SAMPLES,
         primary_efforts=EXP301_TRAINING_LOOPS,
         challenge_efforts=EXP301_CHALLENGE_LOOPS,
         max_sequence_tokens=EXP301_MAX_SEQUENCE_TOKENS,
