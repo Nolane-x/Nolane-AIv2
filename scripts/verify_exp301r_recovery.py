@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import subprocess
 
+from nolane_ai.experiments.exp301r_freeze import EXP301R_MARKER_PATHS
 from nolane_ai.experiments.exp301r_recovery import validate_recovery_changed_paths
 
 EXP301_MARKER_SHA = "bac51c29c46e4c1fb3db5445a299da4674fdb6d8"
@@ -33,7 +34,11 @@ def verify_recovery_isolation(repo_root: Path) -> None:
         for line in _git(repo_root, "diff", "--name-only", EXP301_MARKER_SHA, "HEAD").splitlines()
         if line
     )
-    validate_recovery_changed_paths(changed)
+    recovery_source_paths = tuple(path for path in changed if path not in EXP301R_MARKER_PATHS)
+    validate_recovery_changed_paths(recovery_source_paths)
+    marker_paths = tuple(path for path in changed if path in EXP301R_MARKER_PATHS)
+    if marker_paths and set(marker_paths) != set(EXP301R_MARKER_PATHS):
+        raise ValueError("EXP-301R recovery marker paths must appear together")
 
 
 def main() -> int:
