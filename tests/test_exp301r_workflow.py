@@ -15,6 +15,15 @@ def test_exp301r_workflow_is_manual_cpu_standard_runner_only() -> None:
         assert forbidden not in text
 
 
+def test_exp301r_workflow_requires_both_original_and_recovery_freezes() -> None:
+    text = WORKFLOW.read_text(encoding="utf-8")
+    assert "python scripts/verify_exp301_freeze.py" in text
+    assert "python scripts/verify_exp301r_recovery.py" in text
+    assert "python scripts/verify_exp301r_freeze.py" in text
+    assert "tests/test_exp301r_identity.py" in text
+    assert "tests/test_exp301r_freeze.py" in text
+
+
 def test_exp301r_workflow_has_exact_sharded_topology_and_frozen_reducer() -> None:
     text = WORKFLOW.read_text(encoding="utf-8")
     assert "root: [0, 1, 2, 3]" in text
