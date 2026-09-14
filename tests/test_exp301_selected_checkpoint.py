@@ -15,6 +15,7 @@ from nolane_ai.experiments.exp301_scientific import (
     ScientificTrialResult,
     frozen_trial_plan,
     model_state_digest,
+    trial_result_digest_payload,
 )
 from nolane_ai.experiments.exp301_scientific_executor import (
     checkpoint_path_for_plan,
@@ -50,7 +51,6 @@ def _trial(
     lr: float,
     score: float,
     checkpoint_digest: str,
-    receipt_marker: str,
 ) -> ScientificTrialResult:
     trial_index = (1e-4, 3e-4).index(lr)
     plan = next(
@@ -58,7 +58,7 @@ def _trial(
         for item in frozen_trial_plan(root=root)
         if item.arm_id == arm and item.trial_index == trial_index
     )
-    return ScientificTrialResult(
+    provisional = ScientificTrialResult(
         arm_id=arm,
         root=root,
         learning_rate=lr,
@@ -67,7 +67,13 @@ def _trial(
         development_family_balanced_score=score,
         development_family_scores=(("family", score),),
         checkpoint_digest=checkpoint_digest,
-        trial_receipt_digest=receipt_marker * 64,
+        trial_receipt_digest="",
+    )
+    return ScientificTrialResult(
+        **{
+            **asdict(provisional),
+            "trial_receipt_digest": trial_result_digest_payload(provisional),
+        }
     )
 
 
@@ -85,7 +91,6 @@ def _materialize_selected_checkpoints(tmp_path: Path, *, root: int = 1):
             lr=1e-4,
             score=0.8,
             checkpoint_digest=digest,
-            receipt_marker=chr(ord("a") + index * 2),
         )
         high = _trial(
             arm,
@@ -93,7 +98,6 @@ def _materialize_selected_checkpoints(tmp_path: Path, *, root: int = 1):
             lr=3e-4,
             score=0.7,
             checkpoint_digest=(chr(ord("4") + index) * 64),
-            receipt_marker=chr(ord("b") + index * 2),
         )
         receipts.append(build_arm_selection_receipt((low, high)))
         selected_results[arm] = low
