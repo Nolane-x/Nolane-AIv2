@@ -33,8 +33,10 @@ jobs:
           (cd /tmp/exp301-marker && PYTHONPATH=src python scripts/verify_exp301_freeze.py)
       - name: Verify recovery semantic isolation
         run: python scripts/verify_exp301r_recovery.py
+      - name: Verify sealed recovery execution identity
+        run: python scripts/verify_exp301r_freeze.py
       - name: Verify recovery contracts
-        run: pytest tests/test_exp301r_recovery.py tests/test_exp301r_workflow.py -q
+        run: pytest tests/test_exp301r_recovery.py tests/test_exp301r_identity.py tests/test_exp301r_freeze.py tests/test_exp301r_workflow.py -q
 
   trial:
     needs: preflight
