@@ -203,7 +203,19 @@ def _selection_from_raw(raw: object) -> RootSelectionManifest:
     if not isinstance(arm_items, (list, tuple)):
         raise ValueError("root evidence arm selections must be a sequence")
     try:
-        receipts = tuple(ArmSelectionReceipt(**item) for item in arm_items)
+        receipts = tuple(
+            ArmSelectionReceipt(
+                schema=item["schema"],
+                arm_id=item["arm_id"],
+                root=item["root"],
+                selected_learning_rate=item["selected_learning_rate"],
+                selected_checkpoint_digest=item["selected_checkpoint_digest"],
+                selected_trial_receipt_digest=item["selected_trial_receipt_digest"],
+                trial_receipt_digests=tuple(item["trial_receipt_digests"]),
+                selection_digest=item["selection_digest"],
+            )
+            for item in arm_items
+        )
         selection = RootSelectionManifest(
             schema=raw["schema"],
             root=raw["root"],
