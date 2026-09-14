@@ -17,11 +17,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Require frozen execution identity
-        run: >-
-          test -f protocols/v017/exp301_execution_identity_v1.json &&
-          test -f protocols/v017/exp301_execution_identity_v1.sha256 &&
-          sha256sum -c protocols/v017/exp301_execution_identity_v1.sha256
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Reproduce and verify frozen execution identity from Git history
+        env:
+          PYTHONPATH: src
+        run: python scripts/verify_exp301_freeze.py
 
   root-court:
     needs: preflight
