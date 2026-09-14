@@ -1,0 +1,261 @@
+name: EXP-301R standard-runner sharded recovery
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exp301r-${{ github.ref }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+env:
+  EXP301_DEVICE: cpu
+  EXP301R_RUN_ID: ${{ github.run_id }}
+  EXP301R_SHARD_COUNT: "16"
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - name: Verify original EXP-301 marker in an isolated detached worktree
+        run: |
+          git worktree add --detach /tmp/exp301-marker bac51c29c46e4c1fb3db5445a299da4674fdb6d8
+          (cd /tmp/exp301-marker && PYTHONPATH=src python scripts/verify_exp301_freeze.py)
+      - name: Verify recovery semantic isolation
+        run: python scripts/verify_exp301r_recovery.py
+      - name: Verify sealed recovery execution identity
+        run: python scripts/verify_exp301r_freeze.py
+      - name: Verify recovery contracts
+        run: pytest tests/test_exp301r_recovery.py tests/test_exp301r_identity.py tests/test_exp301r_freeze.py tests/test_exp301r_workflow.py -q
+
+  trial:
+    needs: preflight
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        root: [0, 1, 2, 3]
+        arm: [A_FIXED, B_LOOP_SIMPLE, C_NRS_CORE]
+        trial: [0, 1]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,model]'
+      - name: Bind exact recovery workflow digest
+        run: echo "EXP301R_WORKFLOW_DIGEST=$(sha256sum .github/workflows/exp301r-standard-runner-sharded-recovery.yml | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      - name: Execute one frozen trial
+        env:
+          EXP301R_ROOT: ${{ matrix.root }}
+          EXP301R_ARM: ${{ matrix.arm }}
+          EXP301R_TRIAL_INDEX: ${{ matrix.trial }}
+        run: >-
+          python scripts/exp301r_train_trial.py
+          --output-dir artifacts
+          --frozen-implementation-identity protocols/v017/exp301_execution_identity_v1.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp301r-trial-r${{ matrix.root }}-${{ matrix.arm }}-t${{ matrix.trial }}
+          path: artifacts
+          if-no-files-found: error
+
+  select-root:
+    needs: trial
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        root: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,model]'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: exp301r-trial-r${{ matrix.root }}-*
+          path: trial-artifacts
+          merge-multiple: true
+      - name: Bind exact recovery workflow digest
+        run: echo "EXP301R_WORKFLOW_DIGEST=$(sha256sum .github/workflows/exp301r-standard-runner-sharded-recovery.yml | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      - name: Audit six trials and seal root selection
+        env:
+          EXP301R_ROOT: ${{ matrix.root }}
+        run: >-
+          python scripts/exp301r_select_root.py
+          --input-dir trial-artifacts
+          --output-dir selected
+          --frozen-implementation-identity protocols/v017/exp301_execution_identity_v1.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp301r-selected-r${{ matrix.root }}
+          path: selected
+          if-no-files-found: error
+
+  challenge-manifest:
+    needs: select-root
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        root: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,model]'
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp301r-selected-r${{ matrix.root }}
+          path: selected
+      - name: Bind exact recovery workflow digest
+        run: echo "EXP301R_WORKFLOW_DIGEST=$(sha256sum .github/workflows/exp301r-standard-runner-sharded-recovery.yml | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      - name: Materialize post-selection challenge identity
+        env:
+          EXP301R_ROOT: ${{ matrix.root }}
+        run: >-
+          python scripts/exp301r_materialize_challenge.py
+          --selection-manifest selected/root-${{ matrix.root }}/selection-manifest.json
+          --output-dir challenge
+          --frozen-implementation-identity protocols/v017/exp301_execution_identity_v1.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp301r-challenge-r${{ matrix.root }}
+          path: challenge
+          if-no-files-found: error
+
+  prediction-shard:
+    needs: challenge-manifest
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        root: [0, 1, 2, 3]
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,model]'
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp301r-selected-r${{ matrix.root }}
+          path: selected
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp301r-challenge-r${{ matrix.root }}
+          path: challenge
+      - name: Bind exact recovery workflow digest
+        run: echo "EXP301R_WORKFLOW_DIGEST=$(sha256sum .github/workflows/exp301r-standard-runner-sharded-recovery.yml | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      - name: Execute prediction-only challenge shard
+        env:
+          EXP301R_ROOT: ${{ matrix.root }}
+          EXP301R_SHARD_INDEX: ${{ matrix.shard }}
+        run: >-
+          python scripts/exp301r_predict_shard.py
+          --selected-dir selected
+          --challenge-manifest challenge/root-${{ matrix.root }}/challenge-manifest.json
+          --output-dir shards
+          --frozen-implementation-identity protocols/v017/exp301_execution_identity_v1.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp301r-shard-r${{ matrix.root }}-s${{ matrix.shard }}
+          path: shards
+          if-no-files-found: error
+
+  seal-root:
+    needs: prediction-shard
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        root: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,model]'
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp301r-selected-r${{ matrix.root }}
+          path: selected
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp301r-challenge-r${{ matrix.root }}
+          path: challenge
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: exp301r-shard-r${{ matrix.root }}-*
+          path: shards
+          merge-multiple: true
+      - name: Bind exact recovery workflow digest
+        run: echo "EXP301R_WORKFLOW_DIGEST=$(sha256sum .github/workflows/exp301r-standard-runner-sharded-recovery.yml | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      - name: Require complete shard set before scoring and seal root evidence
+        env:
+          EXP301R_ROOT: ${{ matrix.root }}
+        run: >-
+          python scripts/exp301r_seal_root.py
+          --selection-manifest selected/root-${{ matrix.root }}/selection-manifest.json
+          --challenge-manifest challenge/root-${{ matrix.root }}/challenge-manifest.json
+          --shards-dir shards
+          --output-dir root-evidence
+          --frozen-implementation-identity protocols/v017/exp301_execution_identity_v1.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp301r-root-r${{ matrix.root }}
+          path: root-evidence
+          if-no-files-found: error
+
+  cross-root:
+    needs: seal-root
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: exp301r-root-r*
+          path: roots
+          merge-multiple: true
+      - name: Bind exact recovery workflow digest
+        run: echo "EXP301R_WORKFLOW_DIGEST=$(sha256sum .github/workflows/exp301r-standard-runner-sharded-recovery.yml | cut -d' ' -f1)" >> "$GITHUB_ENV"
+      - name: Execute unchanged frozen cross-root reducer
+        run: >-
+          python scripts/reduce_exp301.py
+          --root-artifacts-dir roots
+          --output-dir cross-root
+      - name: Bind reducer outcome to recovery provenance envelope
+        run: >-
+          python scripts/exp301r_finalize.py
+          --cross-root-evidence cross-root/cross-root-evidence.json
+          --root-receipts-dir roots
+          --output-dir cross-root
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp301r-cross-root
+          path: cross-root
+          if-no-files-found: error
