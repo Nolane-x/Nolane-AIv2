@@ -1,0 +1,84 @@
+name: EXP-301 scientific court
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: exp301-scientific-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Require both marker files
+        run: >-
+          test -f protocols/v017/exp301_execution_identity_v1.json &&
+          test -f protocols/v017/exp301_execution_identity_v1.sha256
+      - name: Reproduce and verify frozen execution identity from Git history
+        env:
+          PYTHONPATH: src
+        run: python scripts/verify_exp301_freeze.py
+
+  root-court:
+    needs: preflight
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        root: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,model]'
+      - name: Execute frozen root court
+        env:
+          EXP301_ROOT: ${{ matrix.root }}
+          EXP301_DEVICE: cpu
+          EXP301_CHALLENGE_BEACON: github-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
+        run: >-
+          python scripts/run_exp301.py
+          --output-dir artifacts
+          --frozen-implementation-identity protocols/v017/exp301_execution_identity_v1.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp301-root-${{ matrix.root }}
+          path: artifacts/root-${{ matrix.root }}
+          if-no-files-found: error
+
+  cross-root-reducer:
+    needs: root-court
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: exp301-root-*
+          path: artifacts/roots
+      - name: Audit and reduce all four frozen roots
+        run: >-
+          python scripts/reduce_exp301.py
+          --root-artifacts-dir artifacts/roots
+          --output-dir artifacts/cross-root
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp301-cross-root
+          path: artifacts/cross-root/cross-root-evidence.json
+          if-no-files-found: error
