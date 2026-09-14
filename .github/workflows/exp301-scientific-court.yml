@@ -40,10 +40,12 @@ jobs:
       - name: Execute frozen root court
         env:
           EXP301_ROOT: ${{ matrix.root }}
+          EXP301_DEVICE: cpu
+          EXP301_CHALLENGE_BEACON: github-run-${{ github.run_id }}-attempt-${{ github.run_attempt }}
         run: >-
           python scripts/run_exp301.py
-          --output-dir artifacts/root-${{ matrix.root }}
-          --execution-identity protocols/v017/exp301_execution_identity_v1.json
+          --output-dir artifacts
+          --frozen-implementation-identity protocols/v017/exp301_execution_identity_v1.json
       - uses: actions/upload-artifact@v4
         with:
           name: exp301-root-${{ matrix.root }}
@@ -55,11 +57,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
       - uses: actions/download-artifact@v4
         with:
           pattern: exp301-root-*
           path: artifacts/roots
-          merge-multiple: true
-      - name: Freeze-gated reducer boundary
+      - name: Audit and reduce all four frozen roots
         run: >-
-          python -c 'raise SystemExit("EXP-301 cross-root reducer remains freeze-gated until the Task 11 execution identity is sealed")'
+          python scripts/reduce_exp301.py
+          --root-artifacts-dir artifacts/roots
+          --output-dir artifacts/cross-root
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp301-cross-root
+          path: artifacts/cross-root/cross-root-evidence.json
+          if-no-files-found: error
