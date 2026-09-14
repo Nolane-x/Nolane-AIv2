@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Iterable, Mapping
 
+import torch
+
 from .exp301_ceremony import (
     ChallengeMaterialization,
     RootSelectionManifest,
@@ -21,9 +23,13 @@ from .exp301_scientific import (
     GenerationResult,
     ScientificTrialPlan,
     ScientificTrialResult,
+    build_scientific_arm,
     frozen_trial_plan,
+    model_state_digest,
     run_scientific_trial,
     scientific_challenge_generate,
+    trial_result_digest_payload,
+    validate_trial_result,
 )
 
 
@@ -68,6 +74,98 @@ def run_root_training_selection(
         output_dir=output_dir,
         trial_runner=run_scientific_trial,
     )
+
+
+def _load_checkpoint_payload(
+    path: Path,
+    *,
+    arm_id: str,
+    root: int,
+    learning_rate: float,
+    device: str,
+    arm_builder: Callable[..., object],
+) -> tuple[object, ScientificTrialResult]:
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    payload = torch.load(path, map_location="cpu", weights_only=False)
+    if not isinstance(payload, dict) or payload.get("schema") != "EXP301-SCIENTIFIC-CHECKPOINT-V1":
+        raise ValueError("scientific checkpoint schema mismatch")
+    raw_result = payload.get("trial_result")
+    state_dict = payload.get("state_dict")
+    if not isinstance(raw_result, dict) or not isinstance(state_dict, dict):
+        raise ValueError("scientific checkpoint payload is incomplete")
+    try:
+        result = ScientificTrialResult(**raw_result)
+    except TypeError as exc:
+        raise ValueError("scientific checkpoint trial result schema mismatch") from exc
+    validate_trial_result(result)
+    if result.trial_receipt_digest != trial_result_digest_payload(result):
+        raise ValueError("scientific checkpoint trial receipt digest mismatch")
+    if (
+        result.arm_id != arm_id
+        or result.root != root
+        or result.learning_rate != learning_rate
+    ):
+        raise ValueError("scientific checkpoint selection identity mismatch")
+
+    compiled = arm_builder(arm_id, device=device)
+    model = getattr(compiled, "model")
+    try:
+        model.load_state_dict(state_dict, strict=True)
+    except RuntimeError as exc:
+        raise ValueError("scientific checkpoint state_dict mismatch") from exc
+    actual_digest = model_state_digest(model)
+    if actual_digest != result.checkpoint_digest:
+        raise ValueError(
+            "scientific checkpoint digest mismatch: "
+            f"expected {result.checkpoint_digest}, got {actual_digest}"
+        )
+    return compiled, result
+
+
+def load_selected_models(
+    selection_manifest: RootSelectionManifest,
+    *,
+    output_dir: str | Path,
+    device: str,
+    arm_builder: Callable[..., object] = build_scientific_arm,
+) -> dict[str, object]:
+    rebuilt = build_root_selection_manifest(selection_manifest.arm_selections)
+    if rebuilt != selection_manifest:
+        raise ValueError("root selection manifest digest mismatch")
+
+    output_dir = Path(output_dir)
+    selected_by_arm = {item.arm_id: item for item in selection_manifest.arm_selections}
+    loaded: dict[str, object] = {}
+    for arm_id in EXP301_ARMS:
+        selection = selected_by_arm[arm_id]
+        plan = next(
+            (
+                item
+                for item in frozen_trial_plan(root=selection_manifest.root)
+                if item.arm_id == arm_id
+                and item.learning_rate == selection.selected_learning_rate
+            ),
+            None,
+        )
+        if plan is None:
+            raise ValueError("selected learning rate is outside frozen trial plan")
+        compiled, result = _load_checkpoint_payload(
+            checkpoint_path_for_plan(output_dir, plan),
+            arm_id=arm_id,
+            root=selection_manifest.root,
+            learning_rate=selection.selected_learning_rate,
+            device=device,
+            arm_builder=arm_builder,
+        )
+        if result.model_init_seed != plan.model_init_seed or result.training_steps != 512:
+            raise ValueError("selected checkpoint frozen training identity mismatch")
+        if result.trial_receipt_digest != selection.selected_trial_receipt_digest:
+            raise ValueError("selected checkpoint trial receipt mismatch")
+        if result.checkpoint_digest != selection.selected_checkpoint_digest:
+            raise ValueError("selected checkpoint digest does not match selection manifest")
+        loaded[arm_id] = compiled
+    return loaded
 
 
 def commit_challenge_predictions(
