@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import asdict
+import json
 from pathlib import Path
 from typing import Callable, Iterable, Mapping
 
@@ -10,6 +12,8 @@ from .exp301_ceremony import (
     RootSelectionManifest,
     build_arm_selection_receipt,
     build_root_selection_manifest,
+    build_runtime_identity_for_root,
+    materialize_root_challenge,
 )
 from .exp301_evaluation import (
     EXP301_ARMS,
@@ -19,6 +23,12 @@ from .exp301_evaluation import (
     commit_prediction,
     score_committed_prediction,
 )
+from .exp301_evidence import (
+    build_root_evidence_artifact,
+    write_root_evidence_artifact,
+)
+from .exp301_execution import scientific_execution_contract_digest
+from .exp301_identity import EXP301_PREREG_V2_DIGEST
 from .exp301_scientific import (
     GenerationResult,
     ScientificTrialPlan,
@@ -74,6 +84,20 @@ def run_root_training_selection(
         output_dir=output_dir,
         trial_runner=run_scientific_trial,
     )
+
+
+def write_root_selection_manifest(
+    path: str | Path,
+    selection_manifest: RootSelectionManifest,
+) -> None:
+    rebuilt = build_root_selection_manifest(selection_manifest.arm_selections)
+    if rebuilt != selection_manifest:
+        raise ValueError("root selection manifest digest mismatch")
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("x", encoding="utf-8") as handle:
+        json.dump(asdict(selection_manifest), handle, sort_keys=True, separators=(",", ":"))
+        handle.write("\n")
 
 
 def _load_checkpoint_payload(
@@ -219,3 +243,60 @@ def score_challenge_commitments(
         score_committed_prediction(commitment, worlds_by_id[commitment.content_id])
         for commitment in materialized
     )
+
+
+def run_scientific_root(
+    *,
+    root: int,
+    device: str,
+    output_dir: str | Path,
+    frozen_implementation_identity,
+    challenge_beacon: str,
+):
+    if frozen_implementation_identity.prereg_semantic_digest != EXP301_PREREG_V2_DIGEST:
+        raise ValueError("frozen prereg semantic digest drift")
+    current_execution_digest = scientific_execution_contract_digest()
+    if frozen_implementation_identity.scientific_execution_contract_digest != current_execution_digest:
+        raise ValueError("frozen scientific execution contract digest drift")
+
+    output_dir = Path(output_dir)
+    selection_manifest = run_root_training_selection(
+        root=root,
+        device=device,
+        output_dir=output_dir,
+    )
+    root_dir = output_dir / f"root-{root}"
+    write_root_selection_manifest(root_dir / "selection-manifest.json", selection_manifest)
+
+    selected_models = load_selected_models(
+        selection_manifest,
+        output_dir=output_dir,
+        device=device,
+    )
+    challenge = materialize_root_challenge(
+        root=root,
+        beacon=challenge_beacon,
+        frozen_implementation_digest=frozen_implementation_identity.frozen_implementation_digest,
+    )
+    runtime_identity = build_runtime_identity_for_root(
+        frozen_implementation_digest=frozen_implementation_identity.frozen_implementation_digest,
+        selection_manifest=selection_manifest,
+        challenge=challenge,
+        beacon=challenge_beacon,
+    )
+    commitments = commit_challenge_predictions(
+        challenge,
+        selected_models=selected_models,
+    )
+    evaluation_rows = score_challenge_commitments(challenge, commitments)
+    artifact = build_root_evidence_artifact(
+        frozen_implementation_digest=frozen_implementation_identity.frozen_implementation_digest,
+        selection_manifest=selection_manifest,
+        challenge=challenge,
+        runtime_identity=runtime_identity,
+        challenge_beacon=challenge_beacon,
+        commitments=commitments,
+        evaluation_rows=evaluation_rows,
+    )
+    write_root_evidence_artifact(root_dir / "root-evidence.json", artifact)
+    return artifact
