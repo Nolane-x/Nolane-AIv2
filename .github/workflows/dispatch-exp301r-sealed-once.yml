@@ -21,4 +21,4 @@ jobs:
           gh api
           --method POST
           repos/${{ github.repository }}/actions/workflows/exp301r-standard-runner-sharded-recovery.yml/dispatches
-          -f ref=exp301r-standard-runner-sharded-recovery-sealed
+          -f ref=exp301r-standard-runner-sharded-recovery-sealed-v2
