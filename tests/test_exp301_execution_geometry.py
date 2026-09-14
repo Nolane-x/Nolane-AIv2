@@ -24,11 +24,13 @@ def test_scientific_execution_geometry_is_explicit_and_bounded() -> None:
     assert execution.EXP301_TRAIN_EPOCHS == 1
     assert execution.EXP301_MAX_SEQUENCE_TOKENS == 512
     assert execution.EXP301_MAX_GENERATION_TOKENS == 96
+    assert execution.EXP301_BOOTSTRAP_SAMPLES == 10_000
     assert contract.training_examples_per_root == 128 * len(EXP301_TASK_FAMILIES)
     assert contract.development_examples_per_root == 64 * len(EXP301_TASK_FAMILIES)
     assert contract.challenge_examples_per_root == 128 * len(EXP301_TASK_FAMILIES)
     assert contract.optimizer_steps_per_trial == contract.training_examples_per_root
     assert contract.search_trials_per_arm == 2
+    assert contract.bootstrap_samples == 10_000
     assert contract.primary_efforts == (1, 2, 4, 8)
     assert contract.challenge_efforts == (1, 2, 4, 8, 12, 16)
     assert "family-balanced" in contract.development_selection_rule
