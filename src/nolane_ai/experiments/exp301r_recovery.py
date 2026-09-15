@@ -273,7 +273,7 @@ def build_challenge_manifest(
     worlds = tuple(getattr(challenge, "worlds", ()))
     if len(worlds) != WORLDS_PER_ROOT:
         raise ValueError(f"challenge manifest requires exactly {WORLDS_PER_ROOT} worlds")
-    content_ids = tuple(getattr(world, "content_id", None) for world in worlds)
+    content_ids = [getattr(world, "content_id", None) for world in worlds]
     if any(not isinstance(item, str) or not item for item in content_ids):
         raise ValueError("challenge worlds require non-empty content ids")
     if len(set(content_ids)) != WORLDS_PER_ROOT:
