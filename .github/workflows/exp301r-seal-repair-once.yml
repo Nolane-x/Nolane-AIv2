@@ -1,0 +1,282 @@
+name: EXP-301R seal-only repair for source run 34908691022
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/exp301r-seal-repair-once.yml"
+
+permissions:
+  actions: read
+  contents: read
+
+env:
+  EXP301_DEVICE: cpu
+  EXP301R_SOURCE_RUN_ID: "34908691022"
+  EXP301R_SOURCE_HEAD: "6189772b46fb046cdb08a9c0b871352468822f8b"
+  EXP301R_SOURCE_WORKFLOW_DIGEST: "363f539974160a322bd95f2d1149961e01377c7761b93c4b0712383f59f39515"
+  EXP301R_REPAIR_HEAD: "cf994bc3cd95d581fb575815615fd99a2e5f3b01"
+  EXP301R_REPAIR_RED_COMMIT: "46ad2138148b503bdb353b9c2dbe324ed6f735a7"
+  EXP301R_REPAIR_CI_RUN_ID: "35035323820"
+  EXP301R_RUN_ID: "34908691022"
+  EXP301R_WORKFLOW_DIGEST: "363f539974160a322bd95f2d1149961e01377c7761b93c4b0712383f59f39515"
+  EXP301R_SHARD_COUNT: "16"
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact repair head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXP301R_REPAIR_HEAD }}
+          fetch-depth: 0
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install recovery test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Verify repair lineage is procedural-only
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXP301R_REPAIR_HEAD"
+          test "$(sha256sum .github/workflows/exp301r-standard-runner-sharded-recovery.yml | cut -d' ' -f1)" = "$EXP301R_SOURCE_WORKFLOW_DIGEST"
+          git diff --name-only "$EXP301R_SOURCE_HEAD" "$EXP301R_REPAIR_HEAD" | sort > /tmp/repair-paths.txt
+          printf '%s\n' \
+            'src/nolane_ai/experiments/exp301r_recovery.py' \
+            'tests/test_exp301r_json_roundtrip.py' | sort > /tmp/expected-repair-paths.txt
+          diff -u /tmp/expected-repair-paths.txt /tmp/repair-paths.txt
+          python -m pytest -q tests/test_exp301r_json_roundtrip.py
+
+      - name: Verify immutable source run identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          base="repos/${GITHUB_REPOSITORY}/actions/runs/${EXP301R_SOURCE_RUN_ID}"
+          test "$(gh api "$base" --jq '.status')" = "completed"
+          test "$(gh api "$base" --jq '.conclusion')" = "failure"
+          test "$(gh api "$base" --jq '.head_sha')" = "$EXP301R_SOURCE_HEAD"
+          test "$(gh api "$base" --jq '.head_branch')" = "exp301r-standard-runner-sharded-recovery-sealed-v2"
+          test "$(gh api "$base" --jq '.run_attempt')" = "1"
+
+      - name: Verify exact 96 source artifacts are present
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${EXP301R_SOURCE_RUN_ID}/artifacts?per_page=100" \
+            --jq '.artifacts[].name' | sort > /tmp/source-artifacts.txt
+          python - <<'PY'
+          from pathlib import Path
+
+          actual = set(Path('/tmp/source-artifacts.txt').read_text().splitlines())
+          arms = ('A_FIXED', 'B_LOOP_SIMPLE', 'C_NRS_CORE')
+          expected = {
+              f'exp301r-trial-r{root}-{arm}-t{trial}'
+              for root in range(4)
+              for arm in arms
+              for trial in range(2)
+          }
+          expected |= {f'exp301r-selected-r{root}' for root in range(4)}
+          expected |= {f'exp301r-challenge-r{root}' for root in range(4)}
+          expected |= {
+              f'exp301r-shard-r{root}-s{shard}'
+              for root in range(4)
+              for shard in range(16)
+          }
+          if actual != expected:
+              missing = sorted(expected - actual)
+              extra = sorted(actual - expected)
+              raise SystemExit(f'source artifact set mismatch: missing={missing}, extra={extra}')
+          if len(actual) != 96:
+              raise SystemExit(f'expected exactly 96 source artifacts, found {len(actual)}')
+          print('source artifact inventory verified: 96/96')
+          PY
+
+  seal-root:
+    needs: preflight
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        root: [0, 1, 2, 3]
+    steps:
+      - name: Checkout exact repair head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXP301R_REPAIR_HEAD }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install frozen model dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev,model]'
+
+      - name: Verify source workflow digest binding
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXP301R_REPAIR_HEAD"
+          test "$(sha256sum .github/workflows/exp301r-standard-runner-sharded-recovery.yml | cut -d' ' -f1)" = "$EXP301R_SOURCE_WORKFLOW_DIGEST"
+
+      - name: Download source selection
+        uses: actions/download-artifact@v4
+        with:
+          name: exp301r-selected-r${{ matrix.root }}
+          path: selected
+          repository: ${{ github.repository }}
+          run-id: ${{ env.EXP301R_SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Download source challenge manifest
+        uses: actions/download-artifact@v4
+        with:
+          name: exp301r-challenge-r${{ matrix.root }}
+          path: challenge
+          repository: ${{ github.repository }}
+          run-id: ${{ env.EXP301R_SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Download all sixteen immutable source shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: exp301r-shard-r${{ matrix.root }}-*
+          path: shards
+          merge-multiple: true
+          repository: ${{ github.repository }}
+          run-id: ${{ env.EXP301R_SOURCE_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: Seal root from immutable source artifacts
+        env:
+          EXP301R_ROOT: ${{ matrix.root }}
+        run: >-
+          python scripts/exp301r_seal_root.py
+          --selection-manifest selected/root-${{ matrix.root }}/selection-manifest.json
+          --challenge-manifest challenge/root-${{ matrix.root }}/challenge-manifest.json
+          --shards-dir shards
+          --output-dir root-evidence
+          --frozen-implementation-identity protocols/v017/exp301_execution_identity_v1.json
+
+      - name: Upload repaired root evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp301r-repair-root-r${{ matrix.root }}-source-34908691022
+          path: root-evidence
+          if-no-files-found: error
+          retention-days: 90
+
+  cross-root:
+    needs: seal-root
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact repair head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.EXP301R_REPAIR_HEAD }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install reducer dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Download all four repaired root artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: exp301r-repair-root-r*-source-34908691022
+          path: roots
+          merge-multiple: true
+
+      - name: Run unchanged frozen cross-root reducer
+        run: >-
+          python scripts/reduce_exp301.py
+          --root-artifacts-dir roots
+          --output-dir cross-root
+
+      - name: Seal recovery envelope against original source run
+        run: >-
+          python scripts/exp301r_finalize.py
+          --cross-root-evidence cross-root/cross-root-evidence.json
+          --root-receipts-dir roots
+          --output-dir cross-root
+
+      - name: Verify final authorization boundary and write repair provenance
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          def canonical(value):
+              return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode()
+
+          cross_path = Path('cross-root/cross-root-evidence.json')
+          envelope_path = Path('cross-root/exp301r-cross-root-recovery-envelope.json')
+          cross = json.loads(cross_path.read_text())
+          envelope = json.loads(envelope_path.read_text())
+          analysis = cross.get('analysis', {})
+
+          if cross.get('schema') != 'EXP301-CROSS-ROOT-SCIENTIFIC-EVIDENCE-V1':
+              raise SystemExit('cross-root schema mismatch')
+          if tuple(cross.get('roots', ())) != (0, 1, 2, 3):
+              raise SystemExit('cross-root roots mismatch')
+          if cross.get('scientific_evidence_eligible') is not True:
+              raise SystemExit('cross-root evidence is not eligible')
+          if analysis.get('exp302_implementation_authorized') is not False:
+              raise SystemExit('EXP-302 implementation authorization boundary violated')
+          if analysis.get('scale_authorized') is not False:
+              raise SystemExit('scale authorization boundary violated')
+          if envelope.get('run_id') != os.environ['EXP301R_SOURCE_RUN_ID']:
+              raise SystemExit('recovery envelope source run mismatch')
+          if envelope.get('workflow_digest') != os.environ['EXP301R_SOURCE_WORKFLOW_DIGEST']:
+              raise SystemExit('recovery envelope workflow digest mismatch')
+          if envelope.get('decision') != analysis.get('decision'):
+              raise SystemExit('decision mismatch between reducer and recovery envelope')
+          if envelope.get('exp302_implementation_authorized') is not False:
+              raise SystemExit('recovery envelope implementation authorization boundary violated')
+          if envelope.get('scale_authorized') is not False:
+              raise SystemExit('recovery envelope scale authorization boundary violated')
+
+          payload = {
+              'schema': 'EXP301R-SEAL-REPAIR-PROVENANCE-V1',
+              'source_run_id': os.environ['EXP301R_SOURCE_RUN_ID'],
+              'source_head_sha': os.environ['EXP301R_SOURCE_HEAD'],
+              'source_workflow_digest': os.environ['EXP301R_SOURCE_WORKFLOW_DIGEST'],
+              'repair_red_commit': os.environ['EXP301R_REPAIR_RED_COMMIT'],
+              'repair_head_sha': os.environ['EXP301R_REPAIR_HEAD'],
+              'repair_ci_run_id': os.environ['EXP301R_REPAIR_CI_RUN_ID'],
+              'repair_execution_run_id': os.environ['GITHUB_RUN_ID'],
+              'repair_execution_commit': os.environ['GITHUB_SHA'],
+              'cross_root_artifact_digest': cross['artifact_digest'],
+              'recovery_envelope_digest': envelope['envelope_digest'],
+              'decision': analysis['decision'],
+              'scientific_evidence_eligible': True,
+              'exp302_implementation_authorized': False,
+              'scale_authorized': False,
+          }
+          payload['receipt_digest'] = hashlib.sha256(canonical(payload)).hexdigest()
+          Path('cross-root/exp301r-seal-repair-provenance.json').write_text(
+              canonical(payload).decode() + '\n', encoding='utf-8'
+          )
+          print('final scientific/provenance invariants verified')
+          PY
+
+      - name: Upload final repaired EXP-301R evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp301r-seal-repair-final-source-34908691022
+          path: cross-root
+          if-no-files-found: error
+          retention-days: 90
