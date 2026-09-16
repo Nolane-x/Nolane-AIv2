@@ -1,0 +1,187 @@
+{
+  "arms": {
+    "architecture_geometry_may_change": false,
+    "diagnostic": [
+      "A_FIXED",
+      "B_LOOP_SIMPLE",
+      "C_NRS_CORE"
+    ],
+    "primary": [
+      "A_FIXED",
+      "C_NRS_CORE"
+    ],
+    "resident_trainable_parameter_ceiling": 10000000
+  },
+  "authorizations": {
+    "100m_authorized": false,
+    "30m_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false
+  },
+  "common_evaluation": {
+    "answer_token_accuracy_includes_eos": true,
+    "decoding": "greedy",
+    "exact_answer_verifier": "deterministic_task_semantics",
+    "gating_effort": 4,
+    "max_generation_tokens": 96
+  },
+  "decision_tree": {
+    "architecture_ranking_authorized": false,
+    "causal_order": [
+      "INVALID_DIAGNOSTIC",
+      "TRAINING_STACK_NOT_LEARNABLE",
+      "NRS_LOCAL_TRAINABILITY_FAIL",
+      "SUPERVISED_FOUNDATION_UNDERTRAINED",
+      "NRS_IID_GENERALIZATION_FLOOR_FAIL",
+      "SUPERVISED_HELDOUT_FOUNDATION_FAIL",
+      "NRS_HELDOUT_GENERALIZATION_FLOOR_FAIL",
+      "FOUNDATION_READY_FOR_EXP320_DESIGN_ONLY"
+    ],
+    "stage_c_control_first": true
+  },
+  "execution": {
+    "device": "cpu",
+    "immutable_continuations_required": true,
+    "larger_runner_required": false,
+    "rerun_second_accepted_artifact_for_same_chain_position_allowed": false,
+    "runner": "ubuntu-latest",
+    "stage_a_max_chunk_steps": 256,
+    "stage_b_max_chunk_steps": 512
+  },
+  "experiment_id": "EXP-319",
+  "program": "NLM V0.17 10M Native Recursive Substrate",
+  "schema_version": "EXP319-LEARNABILITY-FOUNDATION-DIAGNOSTIC-V1",
+  "scientific_boundary": {
+    "exp301_disposition": "KILL_H_RD_01",
+    "exp301_outcome_reinterpreted": false,
+    "lineage_role": "scientifically_distinct_post_exp301_learnability_diagnostic",
+    "rescues_exp301_h_rd_01": false
+  },
+  "stage_a": {
+    "checkpoints": [
+      128,
+      512,
+      1024
+    ],
+    "confirmatory_evidence": false,
+    "examples_per_family": 8,
+    "families": 4,
+    "floor": {
+      "answer_token_accuracy": 0.99,
+      "eos_correctness": 0.95,
+      "exact_match": 0.9,
+      "final_loss_fraction_of_initial": 0.25,
+      "invalid_output_rate_max": 0.01,
+      "nan_inf_events_max": 0
+    },
+    "learning_rates": [
+      0.0001,
+      0.0003
+    ],
+    "lr_tie_break": [
+      "higher_step_1024_exact_match",
+      "higher_step_1024_answer_token_accuracy",
+      "lower_step_1024_answer_only_loss",
+      "lower_learning_rate"
+    ],
+    "max_chunk_steps": 256,
+    "population_role": "tuning_sanity_only",
+    "root": 0,
+    "total_examples": 32
+  },
+  "stage_b": {
+    "checkpoint_rule": [
+      "earliest_checkpoint_passing_all_floors",
+      "otherwise_higher_iid_family_balanced_exact_match",
+      "then_higher_iid_answer_token_accuracy",
+      "then_lower_iid_answer_only_loss",
+      "then_earlier_checkpoint"
+    ],
+    "checkpoints": [
+      512,
+      1024,
+      2048
+    ],
+    "cross_root_min_passes": 3,
+    "floor": {
+      "eos_correctness": 0.95,
+      "iid_answer_token_accuracy": 0.95,
+      "iid_family_balanced_exact_match": 0.25,
+      "invalid_output_rate_max": 0.01,
+      "min_families_exact_at_least": 3,
+      "per_family_exact_min": 0.1,
+      "train_exact_match": 0.9
+    },
+    "iid_examples_per_family": 64,
+    "learning_rate_source": "frozen_stage_a_per_arm_selection",
+    "max_chunk_steps": 512,
+    "may_reuse_stage_a_weights": false,
+    "population_role": "confirmatory_iid_capability_floor",
+    "primary_arms": [
+      "A_FIXED",
+      "C_NRS_CORE"
+    ],
+    "roots": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "starts_from_fresh_initialization": true,
+    "total_iid_examples": 256,
+    "total_train_examples": 512,
+    "train_examples_per_family": 128
+  },
+  "stage_c": {
+    "cross_root_min_passes": 3,
+    "decision_order": [
+      "A_FIXED",
+      "C_NRS_CORE"
+    ],
+    "floor": {
+      "eos_correctness": 0.9,
+      "heldout_answer_token_accuracy": 0.85,
+      "heldout_family_balanced_exact_match": 0.05,
+      "invalid_output_rate_max": 0.01,
+      "min_families_nonzero_exact": 2
+    },
+    "gating_effort": 4,
+    "gradient_updates": 0,
+    "heldout_examples_per_family": 128,
+    "heldout_generator_template_shift_required": true,
+    "heldout_materialized_after_stage_b_selection": true,
+    "population_role": "confirmatory_generator_heldout_transfer",
+    "primary_arms": [
+      "A_FIXED",
+      "C_NRS_CORE"
+    ],
+    "roots": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "run_bound_challenge_beacon_required": true,
+    "total_heldout_examples": 512
+  },
+  "task_families": [
+    "iterative-grid-and-maze",
+    "algorithmic-sequence-transform",
+    "generator-heldout-abstract-transformation",
+    "language-sequence-control"
+  ],
+  "training": {
+    "answer_only_loss_unchanged": true,
+    "byte_tokenizer_unchanged": true,
+    "gradient_clip": 1.0,
+    "optimizer": "AdamW",
+    "training_effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "weight_decay": 0.01
+  }
+}
