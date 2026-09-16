@@ -60,7 +60,29 @@ The byte tokenizer, answer-only loss, AdamW optimizer family, weight decay `0.01
 
 `B_LOOP_SIMPLE` is diagnostic-only in the main decision tree. The minimum foundation gate is decided by `A_FIXED` and `C_NRS_CORE`; this avoids spending a third full confirmatory budget merely to rank recurrence variants.
 
-## 5. Three-stage diagnostic geometry
+## 5. Common evaluation contract
+
+All gating metrics in Stages A, B, and C use one fixed diagnostic inference setting:
+
+- `effort = 4` for every arm;
+- the inherited EXP-301 maximum generation cap of 96 new tokens;
+- greedy decoding;
+- the inherited deterministic exact-answer verifier for the corresponding task semantics;
+- the same byte tokenizer and EOS semantics as the training stack.
+
+No stage may select an inference effort by looking at results. Efforts `1`, `2`, and `8` are not part of the gating decision. If they are later logged for engineering diagnostics, they must be clearly marked secondary and cannot change a disposition.
+
+`initial measured loss` in Stage A means answer-only cross-entropy evaluated on the frozen 32-example Stage A sanity set **before the first optimizer update**, with the common `effort = 4` forward contract. The same 32 examples are used for the step-1024 final-loss comparison.
+
+`parameter-update norm ratio` for one optimizer step is defined as:
+
+`||theta_after - theta_before||_2 / max(||theta_before||_2, 1e-12)`
+
+computed over all trainable parameters concatenated conceptually into one vector. The implementation may calculate this without materializing one giant vector, but it must be numerically equivalent. This metric is diagnostic only; no threshold on it is used to promote an architecture.
+
+Answer-token accuracy is computed only over the answer target span, including EOS as an answer target exactly as in the frozen answer-only training objective. Exact-match, EOS correctness, and invalid-output rate are evaluated from greedy generations under the common inference contract.
+
+## 6. Three-stage diagnostic geometry
 
 EXP-319 has three sequential stages. Later stages cannot be used to retune earlier choices.
 
@@ -120,7 +142,7 @@ Geometry:
 - deterministic cycling over the 512 training examples after the first pass;
 - no augmentation selected from development outcomes.
 
-At each checkpoint, record the full Stage A metric set plus train exact-match and IID-development metrics.
+At each checkpoint, record the full Stage A metric set plus train exact-match and IID-development metrics using the common `effort = 4` evaluation contract.
 
 A root meets the Stage B capability floor for an arm only if, at one checkpoint selected by the frozen rule below:
 
@@ -151,7 +173,7 @@ Geometry:
 - heldout generator/template identities must differ from Stage B train and IID-development identities;
 - heldout materialization happens only after Stage B checkpoint selections are sealed;
 - a run-bound challenge beacon deterministically fixes the heldout content;
-- no model, optimizer, learning-rate, step-budget, tokenizer, prompt format, or scoring change is permitted after heldout materialization.
+- no model, optimizer, learning-rate, step-budget, tokenizer, prompt format, inference effort, or scoring change is permitted after heldout materialization.
 
 A root meets the Stage C transfer floor for an arm only if:
 
@@ -163,9 +185,11 @@ A root meets the Stage C transfer floor for an arm only if:
 
 An arm passes Stage C cross-root only if at least 3 of 4 confirmatory roots meet this floor.
 
+Decision order at Stage C is control-first. If `A_FIXED` fails the Stage C cross-root floor, EXP-319 returns `SUPERVISED_HELDOUT_FOUNDATION_FAIL` regardless of the NRS score because the common supervised foundation has not demonstrated heldout transfer. Only if `A_FIXED` passes Stage C is `C_NRS_CORE` evaluated for the NRS-specific heldout gate. If the control passes and NRS fails, EXP-319 returns `NRS_HELDOUT_GENERALIZATION_FLOOR_FAIL`.
+
 The threshold is intentionally a **foundation floor**, not a claim of useful general intelligence. Five-percent exact verified success on fresh heldout generators is sufficient only to show that the stack has moved materially beyond the all-zero regime that made EXP-301 uninformative about learnability.
 
-## 6. Task-family complexity ladder
+## 7. Task-family complexity ladder
 
 EXP-319 retains the four broad task families so the diagnostic remains relevant to the earlier court, but introduces an explicit complexity ladder.
 
@@ -195,7 +219,7 @@ EXP-319 retains the four broad task families so the diagnostic remains relevant 
 
 The implementation plan must freeze the exact generator parameters, complexity ranges, prompt grammar, and verifier before any scientific Stage B/C run.
 
-## 7. Fresh-data and leakage rules
+## 8. Fresh-data and leakage rules
 
 EXP-319 must not reuse EXP-301 challenge worlds, challenge nonces, prediction commitments, or scientific outcomes as training examples.
 
@@ -214,7 +238,7 @@ Required freshness:
 - Stage C heldout templates are inaccessible to training and are materialized only after Stage B selections;
 - all Stage C content IDs bind the run beacon, generator identity, root, family, and index.
 
-## 8. Why token metrics are mandatory
+## 9. Why token metrics are mandatory
 
 EXP-301's primary verifier was exact success, and all arms ended at zero verified success. Exact-match alone cannot distinguish at least four failure modes:
 
@@ -225,16 +249,17 @@ EXP-301's primary verifier was exact success, and all arms ended at zero verifie
 
 EXP-319 therefore records token accuracy, loss, EOS behavior, and exact-match at every diagnostic rung. These metrics are diagnostic evidence only; they are not retroactively substituted for EXP-301's frozen success criterion.
 
-## 9. Decision tree
+## 10. Decision tree
 
-The EXP-319 final reducer may return only one of these dispositions:
+The EXP-319 final reducer may return only one of these dispositions, evaluated in causal order:
 
 - `INVALID_DIAGNOSTIC` — provenance, generator, execution, artifact, or scoring contract is invalid;
 - `TRAINING_STACK_NOT_LEARNABLE` — `A_FIXED` cannot pass Stage A under either preregistered LR;
 - `NRS_LOCAL_TRAINABILITY_FAIL` — control can memorize but `C_NRS_CORE` cannot;
 - `SUPERVISED_FOUNDATION_UNDERTRAINED` — Stage A is valid but `A_FIXED` fails the Stage B cross-root capability floor;
 - `NRS_IID_GENERALIZATION_FLOOR_FAIL` — `A_FIXED` passes Stage B while `C_NRS_CORE` does not;
-- `NRS_HELDOUT_GENERALIZATION_FLOOR_FAIL` — `C_NRS_CORE` passes Stage B but fails Stage C cross-root;
+- `SUPERVISED_HELDOUT_FOUNDATION_FAIL` — both primary arms reached Stage C, but `A_FIXED` fails the heldout cross-root floor;
+- `NRS_HELDOUT_GENERALIZATION_FLOOR_FAIL` — `A_FIXED` passes Stage C but `C_NRS_CORE` does not;
 - `FOUNDATION_READY_FOR_EXP320_DESIGN_ONLY` — both `A_FIXED` and `C_NRS_CORE` pass Stages A, B, and C under the frozen rules.
 
 No disposition ranks the architectures. `FOUNDATION_READY_FOR_EXP320_DESIGN_ONLY` means only that the NRS core is sufficiently trainable to justify designing a separate always-active persistent-state experiment.
@@ -247,7 +272,7 @@ Every disposition must include:
 - `30m_authorized=false`;
 - `100m_authorized=false`.
 
-## 10. Standard-runner execution constitution
+## 11. Standard-runner execution constitution
 
 All initial execution remains on standard GitHub-hosted `ubuntu-latest` CPU runners. No larger-runner or Enterprise-specific compute is required by the design.
 
@@ -263,15 +288,15 @@ To avoid repeating the monolithic timeout failure, training must be resumable in
 
 These are procedural requirements, not implementation authorization.
 
-## 11. Stage-gating and human visibility
+## 12. Stage-gating and human visibility
 
 Stage A is explicitly inspectable because it is a tuning/sanity stage.
 
-Once Stage B begins, only operational metadata may be inspected before Stage C materialization. Human inspection of Stage B development scores may not be used to alter thresholds, generators, budgets, LRs, or prompts.
+Once Stage B begins, only operational metadata may be inspected before Stage C materialization. Human inspection of Stage B development scores may not be used to alter thresholds, generators, budgets, LRs, prompts, or the common evaluation effort.
 
 Once Stage C is materialized, its predictions and partial scores may not be inspected for tuning. The reducer consumes all required root evidence before the scientific disposition is treated as final.
 
-## 12. Provenance requirements
+## 13. Provenance requirements
 
 The implementation must create a new EXP-319 identity namespace. It must never reuse an EXP-301 execution-identity schema as though this were the same court.
 
@@ -291,7 +316,7 @@ Required bindings include:
 
 A provenance failure invalidates the diagnostic rather than becoming a negative capability result.
 
-## 13. Relationship to the always-active roadmap
+## 14. Relationship to the always-active roadmap
 
 A positive EXP-319 authorizes only a written design/preregistration for `EXP-320 Always-Active Persistent-State Microcourt`.
 
@@ -301,11 +326,11 @@ That future court should ask a different question:
 
 EXP-320 should test persistent state before any online weight plasticity. If persistent-state evidence survives, a later separate experiment may introduce bounded plastic weights. Only after persistent state and plasticity each have independent evidence should a communication/action router for `THINK`, `HUMAN.STATUS`, `HUMAN.FINAL`, and `TOOL.ACTION` be tested.
 
-This sequencing keeps the user's intended architecture intact while preserving causal interpretability:
+This sequencing keeps the intended architecture intact while preserving causal interpretability:
 
 `LEARNABILITY -> PERSISTENT ALWAYS-ACTIVE STATE -> BOUNDED ONLINE PLASTICITY -> HUMAN/TOOL EMISSION ROUTING -> INTEGRATED AGENT`.
 
-## 14. Kill rules and anti-rescue rules
+## 15. Kill rules and anti-rescue rules
 
 The following are forbidden after Stage B scientific execution begins:
 
@@ -314,6 +339,7 @@ The following are forbidden after Stage B scientific execution begins:
 - changing tokenizer vocabulary or output grammar;
 - changing exact-match normalization;
 - relaxing EOS/invalid-output rules;
+- changing the common gating effort from `4`;
 - swapping task-family weights;
 - dropping a failing root or family;
 - changing the Stage B/C floors;
@@ -323,13 +349,13 @@ The following are forbidden after Stage B scientific execution begins:
 
 A failed disposition can motivate a **new materially different hypothesis**, but it cannot be rescued by local threshold or budget edits after outcome.
 
-## 15. Success criteria for this design phase
+## 16. Success criteria for this design phase
 
 The design phase is complete when human review agrees that EXP-319 correctly asks the foundational question and preserves the scientific boundary around the negative EXP-301 result.
 
 Only after that review may an implementation plan be written. The implementation plan must enumerate exact files, tests, generator manifests, JSON schemas, chunk/continuation contracts, CLI surfaces, workflow stages, freeze ceremony, and reducer verification. No EXP-319 scientific code should be implemented before that plan is reviewed.
 
-## 16. Current authorization state
+## 17. Current authorization state
 
 At this document's creation:
 
