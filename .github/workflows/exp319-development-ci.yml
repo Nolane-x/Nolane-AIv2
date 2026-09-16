@@ -1,0 +1,28 @@
+name: exp319-development-ci
+
+on:
+  pull_request:
+
+concurrency:
+  group: exp319-development-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract-and-model:
+    if: github.event.pull_request.head.ref == 'exp319-learnability-foundation-design'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,model]'
+      - name: Verify EXP-319 development contracts through metrics
+        run: >-
+          pytest -q
+          tests/test_exp319_contract.py
+          tests/test_exp319_worlds.py
+          tests/test_exp319_metrics.py
+          tests/test_exp301_training.py
+      - run: python -m compileall -q src scripts

@@ -4,7 +4,8 @@ import importlib
 from types import SimpleNamespace
 
 import pytest
-import torch
+
+torch = pytest.importorskip("torch")
 from torch import nn
 
 
