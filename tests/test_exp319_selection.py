@@ -40,15 +40,35 @@ def _stage_b(selection, **overrides):
         "iid_answer_token_accuracy": 0.96,
         "iid_family_balanced_exact_match": 0.30,
         "iid_family_exact": (
-            ("algorithmic-sequence-transform", 0.20),
-            ("generator-heldout-abstract-transformation", 0.20),
-            ("iterative-grid-and-maze", 0.20),
-            ("language-sequence-control", 0.0),
+            ("algorithmic-sequence-transform", 0.30),
+            ("generator-heldout-abstract-transformation", 0.30),
+            ("iterative-grid-and-maze", 0.30),
+            ("language-sequence-control", 0.30),
         ),
         "eos_correctness": 0.96,
         "invalid_output_rate": 0.0,
     }
     values.update(overrides)
+
+    balanced_overridden = "iid_family_balanced_exact_match" in overrides
+    families_overridden = "iid_family_exact" in overrides
+    if balanced_overridden and not families_overridden:
+        balanced = float(values["iid_family_balanced_exact_match"])
+        values["iid_family_exact"] = tuple(
+            (family, balanced)
+            for family in (
+                "algorithmic-sequence-transform",
+                "generator-heldout-abstract-transformation",
+                "iterative-grid-and-maze",
+                "language-sequence-control",
+            )
+        )
+    elif families_overridden and not balanced_overridden:
+        family_exact = tuple(values["iid_family_exact"])
+        values["iid_family_balanced_exact_match"] = sum(score for _, score in family_exact) / len(
+            family_exact
+        )
+
     return selection.StageBSelectionRecord(**values)
 
 
