@@ -7,6 +7,11 @@ from . import exp319_training_base as _base
 from .exp319_training_base import *  # noqa: F401,F403
 from .exp319_worlds import verify_world_answer
 
+# Explicitly re-export the private generation primitive used by the diagnostic
+# measurement. Star imports intentionally skip private names; binding it here
+# keeps the public wrapper testable without changing the frozen base logic.
+_diagnostic_generate = _base._diagnostic_generate
+
 
 @dataclass(frozen=True, slots=True)
 class SnapshotMetrics:
