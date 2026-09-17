@@ -6,6 +6,8 @@ import importlib
 
 import pytest
 
+torch = pytest.importorskip("torch")
+
 from nolane_ai.experiments.exp301_training import Exp301ByteTokenizer
 from nolane_ai.experiments.exp319_contract import COMMON_GATING_EFFORT, PRIMARY_ARMS
 from nolane_ai.experiments.exp319_worlds import materialize_stage_c
