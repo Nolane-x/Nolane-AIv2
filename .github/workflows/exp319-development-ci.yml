@@ -18,7 +18,7 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[dev,model]'
-      - name: Verify EXP-319 development contracts through selection
+      - name: Verify EXP-319 development contracts through Stage C challenge
         run: >-
           pytest -q
           tests/test_exp319_contract.py
@@ -26,5 +26,6 @@ jobs:
           tests/test_exp319_metrics.py
           tests/test_exp319_training.py
           tests/test_exp319_selection.py
+          tests/test_exp319_challenge.py
           tests/test_exp301_training.py
       - run: python -m compileall -q src scripts
