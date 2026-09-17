@@ -18,15 +18,19 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[dev,model]'
-      - name: Verify EXP-319 development contracts through closed reducer
+      - name: Verify EXP-319 implementation contracts through CLI surface
         run: >-
           pytest -q
           tests/test_exp319_contract.py
           tests/test_exp319_worlds.py
           tests/test_exp319_metrics.py
           tests/test_exp319_training.py
+          tests/test_exp319_stage_b_train_metric.py
           tests/test_exp319_selection.py
           tests/test_exp319_challenge.py
           tests/test_exp319_evidence.py
+          tests/test_exp319_identity.py
+          tests/test_exp319_freeze.py
+          tests/test_exp319_cli.py
           tests/test_exp301_training.py
       - run: python -m compileall -q src scripts
