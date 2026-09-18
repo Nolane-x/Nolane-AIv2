@@ -1,0 +1,138 @@
+{
+  "schema_version": "EXP323-AFIXED-SECOND-DECAY-CONVERGENCE-INTERVENTION-V1",
+  "experiment_id": "EXP-323",
+  "role": "post_exp322_second_decay_convergence_intervention",
+  "scientific_boundary": {
+    "parent_exp322_run_id": 35339004168,
+    "parent_exp322_disposition": "PARTIAL_CONTINUATION_PROGRESS",
+    "parent_exp322_final_artifact_id": 10544985252,
+    "parent_exp322_final_artifact_zip_digest": "18eb23aa09086aea89bf9ab96e07c52270069b75e8dc276f7610148b46b2e4cc",
+    "parent_exp322_evidence_digest": "1e3ea213718d1612a6370c0fb4124c869733747dc9992ca58345d16dcfb5aee2",
+    "parent_exp322_execution_digest": "551d41405e26a12947869a9aaa94e09c19239a0de1da49571051873e51afe1ed",
+    "parent_exp322_decay_arm_evidence_digest": "78c4c44ae168a4a186ceb8040e239501804263e9b45737afdee25fb465c038ce",
+    "parent_exp322_decay_model_state_digest": "4d3b848d193e6e465473dab7346edaafa3ee0ffc870eac600c6c46952ca880fc",
+    "parent_exp322_decay_optimizer_state_digest": "9b32588f0bc63881aa974df54829c4cda1d9e4913aa0fcc40cff5d5f2cddeb79",
+    "parent_exp322_decay_rng_state_digest": "e293380e9776eb9e373bd0c3d3ab6a8aa4d0ab3b6764dc582bc859efc12fca07",
+    "parent_exp322_marker_commit_sha": "4a7f079a97f2efeeb4682abe05246e893d30c4ad",
+    "parent_exp322_source_commit_sha": "270a33508d72fa753318a891127d50677f7c4b98",
+    "architecture_change": false,
+    "tokenizer_change": false,
+    "dataset_change": false,
+    "objective_change": false,
+    "scale_change": false
+  },
+  "reconstruction_authority": {
+    "source_checkpoint_run_id": 35311529822,
+    "source_checkpoint_artifact_id": 10534351390,
+    "source_checkpoint_name": "exp319-stage-a-A_FIXED-0.0001-c3",
+    "source_checkpoint_zip_digest": "ee07280fee8379f39ccea16d38f1ff31482975cb39780a75a0592916e8d154c3",
+    "source_receipt_artifact_digest": "d874545fa677569e30849128df337e27823d8aa4c5335adb9cb422968096a280",
+    "source_model_state_digest": "18d738a3845a470f80cbfcb39662f630a73195fd383da7f71c9e54474115c7fb",
+    "replay_arm": "DECAY_5E5",
+    "replay_start_step": 1024,
+    "replay_end_step": 2048,
+    "replay_learning_rate_decimal": "0.00005",
+    "exact_replay_required": true
+  },
+  "population": {
+    "root": 0,
+    "families": 4,
+    "examples_per_family": 8,
+    "total_examples": 32,
+    "population_role": "tuning_sanity_only"
+  },
+  "model": {
+    "arm": "A_FIXED",
+    "resident_trainable_parameters": 10000000,
+    "starting_cumulative_step": 2048,
+    "device": "cpu"
+  },
+  "training_invariants": {
+    "optimizer": "AdamW",
+    "optimizer_state_reused": true,
+    "rng_state_reused": true,
+    "weight_decay_decimal": "0.01",
+    "gradient_clip_norm_decimal": "1.0",
+    "training_effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "byte_tokenizer_unchanged": true,
+    "answer_only_loss_unchanged": true,
+    "world_order_unchanged": true
+  },
+  "intervention_arms": {
+    "HOLD_5E5": {
+      "learning_rate_decimal": "0.00005",
+      "description": "continue the exactly reconstructed EXP-322 DECAY state at the inherited reduced learning rate"
+    },
+    "DECAY_2P5E5": {
+      "learning_rate_decimal": "0.000025",
+      "description": "clone the same reconstructed state and halve every AdamW param-group learning rate to 2.5e-5 before the first post-2048 update"
+    }
+  },
+  "checkpoints": [
+    2304,
+    2560,
+    3072
+  ],
+  "max_additional_optimizer_steps_per_arm": 1024,
+  "primary_measurements": [
+    "teacher_forced_answer_token_accuracy",
+    "teacher_forced_full_answer_exact"
+  ],
+  "secondary_measurements": [
+    "greedy_exact",
+    "eos_correctness",
+    "invalid_output_rate",
+    "answer_only_loss",
+    "gradient_norm_preclip",
+    "parameter_update_norm_ratio",
+    "nonfinite_events",
+    "family_teacher_forced_token_accuracy",
+    "family_teacher_forced_full_answer_exact"
+  ],
+  "baseline": {
+    "teacher_forced_answer_token_accuracy": 0.9577464788732394,
+    "teacher_forced_full_answer_exact": 0.6875,
+    "greedy_exact": 0.6875,
+    "answer_only_loss": 0.4435557168891316
+  },
+  "thresholds": {
+    "teacher_forced_token_accuracy_floor": 0.99,
+    "teacher_forced_full_answer_exact_floor": 0.9,
+    "partial_token_accuracy_gain_min": 0.02,
+    "partial_full_answer_exact_gain_min": 0.125,
+    "nonfinite_events_max": 0
+  },
+  "dispositions": [
+    "INVALID_INTERVENTION",
+    "REDUCED_LR_BUDGET_SUFFICIENT",
+    "SECOND_DECAY_SUFFICIENT",
+    "CONTINUATION_PROGRESS",
+    "NO_REGISTERED_RESCUE"
+  ],
+  "decision_order": [
+    "INVALID_INTERVENTION",
+    "REDUCED_LR_BUDGET_SUFFICIENT",
+    "SECOND_DECAY_SUFFICIENT",
+    "CONTINUATION_PROGRESS",
+    "NO_REGISTERED_RESCUE"
+  ],
+  "authorization": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  },
+  "nonclaims": [
+    "EXP-323 does not reinterpret EXP-301 EXP-319 EXP-321 or EXP-322",
+    "EXP-323 cannot establish architectural capacity limits",
+    "EXP-323 cannot establish scaling benefit",
+    "EXP-323 cannot authorize EXP-320 or larger model sizes",
+    "failure of both registered continuation arms only means no registered post-2048 continuation rescue was demonstrated"
+  ]
+}
