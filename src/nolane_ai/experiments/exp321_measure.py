@@ -43,6 +43,10 @@ from .exp321_identity import (
 from .exp321_localization import (
     EffortSummary,
     reduce_localization,
+    validate_authorization_boundary,
+    validate_checkpoint_receipt_authority,
+    validate_model_state_authority,
+    validate_tokenizer_geometry,
     validate_world_population,
 )
 
@@ -382,22 +386,14 @@ def run_localization(
 ) -> dict[str, Any]:
     bundle = load_checkpoint_bundle(checkpoint_path, receipt_path)
     receipt = bundle.receipt
-    if (
-        receipt.stage != "A_SANITY"
-        or receipt.arm_id != SELECTED_ARM
-        or receipt.root != 0
-        or receipt.learning_rate != SELECTED_LEARNING_RATE
-        or receipt.cumulative_step != SELECTED_STEP
-        or receipt.artifact_digest != SELECTED_RECEIPT_ARTIFACT_DIGEST
-    ):
-        raise ValueError("checkpoint receipt does not match frozen EXP-321 authority")
+    validate_checkpoint_receipt_authority(receipt)
+    validate_tokenizer_geometry(Exp301ByteTokenizer())
 
     torch.manual_seed(receipt.model_init_seed)
     compiled = build_scientific_arm(SELECTED_ARM, device="cpu")
     getattr(compiled, "model").load_state_dict(bundle.model_state_dict)
     actual_model_digest = model_state_digest(getattr(compiled, "model"))
-    if actual_model_digest != SELECTED_MODEL_STATE_DIGEST:
-        raise ValueError("checkpoint model-state digest does not match EXP-321 authority")
+    validate_model_state_authority(actual_model_digest)
 
     worlds = tuple(materialize_stage_a())
     validate_world_population(
@@ -443,5 +439,6 @@ def run_localization(
         validate_exp321_execution_identity(execution_identity)
         payload["execution_identity"] = asdict(execution_identity)
 
+    validate_authorization_boundary(payload)
     payload["evidence_digest"] = _digest(payload)
     return payload
