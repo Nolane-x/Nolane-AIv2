@@ -122,7 +122,7 @@ jobs:
         run: |
           set -euo pipefail
           export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
-          python frozen/scripts/exp321_localize_checkpoint.py             --checkpoint input/checkpoint.pt             --receipt input/receipt.json             --output evidence/exp321-final.json
+          python frozen/scripts/exp321_localize_checkpoint.py             --checkpoint input/checkpoint.pt             --receipt input/receipt.json             --execution-identity marker/protocols/v017/exp321_execution_identity_v1.json             --output evidence/exp321-final.json
 
       - name: Fail closed on reproduction or authorization drift
         shell: bash
@@ -137,6 +137,11 @@ jobs:
               raise SystemExit("EXP-321 did not reproduce sealed EXP-319 anchors")
           if len(p.get("records", [])) != 128:
               raise SystemExit("EXP-321 measurement geometry mismatch")
+          identity = p.get("execution_identity")
+          if not isinstance(identity, dict):
+              raise SystemExit("EXP-321 sealed evidence lacks execution identity")
+          if identity.get("exp321_execution_digest") != "${{ steps.identity.outputs.execution_digest }}":
+              raise SystemExit("EXP-321 execution identity digest drift")
           for key in (
               "exp302_implementation_authorized",
               "exp320_implementation_authorized",
