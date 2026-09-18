@@ -8,9 +8,11 @@ on:
       - "protocols/v017/exp323_preregistration_v1.sha256"
       - "src/nolane_ai/experiments/exp323_*.py"
       - "scripts/verify_exp323_contract.py"
+      - "scripts/verify_exp323_replay.py"
       - "scripts/exp323_*.py"
       - "tests/test_exp323_*.py"
       - ".github/workflows/v017-exp323-contract.yml"
+      - ".github/workflows/v017-exp323-replay-authority.yml"
       - ".github/workflows/exp323-second-decay-convergence.yml"
 
 permissions:
