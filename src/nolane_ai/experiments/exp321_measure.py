@@ -18,8 +18,13 @@ from .exp321_contract import (
     BYTE_ID_START,
     EFFORT_GRID,
     EOS_ID,
+    EXP319_MARKER_SHA,
+    EXP319_RUN_ID,
+    EXP319_SOURCE_SHA,
     REPRODUCTION_ANCHORS,
     SELECTED_ARM,
+    SELECTED_CHECKPOINT_ARTIFACT_ID,
+    SELECTED_CHECKPOINT_ZIP_DIGEST,
     SELECTED_LEARNING_RATE,
     SELECTED_MODEL_STATE_DIGEST,
     SELECTED_RECEIPT_ARTIFACT_DIGEST,
@@ -27,9 +32,11 @@ from .exp321_contract import (
     UNUSED_ID_END_INCLUSIVE,
     UNUSED_ID_START,
     VOCAB_SIZE,
+    THRESHOLDS,
     canonical_json_bytes,
     preregistration_digest,
 )
+from .exp321_identity import Exp321ExecutionIdentity, canonical_exp321_execution_digest
 from .exp321_localization import EffortSummary, reduce_localization
 
 
@@ -272,6 +279,51 @@ def _aggregate(records: tuple[WorldMeasurement, ...], effort: int) -> EffortSumm
     )
 
 
+def _family_summaries(
+    records: tuple[WorldMeasurement, ...],
+    effort: int,
+) -> dict[str, dict[str, Any]]:
+    chosen = tuple(item for item in records if item.effort == effort)
+    families = sorted({item.family for item in chosen})
+    result: dict[str, dict[str, Any]] = {}
+    for family in families:
+        rows = tuple(item for item in chosen if item.family == family)
+        total_targets = sum(item.teacher_forced_total_tokens for item in rows)
+        correct_targets = sum(item.teacher_forced_correct_tokens for item in rows)
+        teacher_exact = sum(item.teacher_forced_full_answer_exact for item in rows) / len(rows)
+        greedy_exact = sum(item.greedy_exact for item in rows) / len(rows)
+        masked_exact = sum(item.masked_greedy_exact for item in rows) / len(rows)
+        prefix_fraction = sum(
+            item.greedy_correct_prefix / item.answer_length_tokens for item in rows
+        ) / len(rows)
+        unused_mass = sum(
+            item.mean_unused_probability_mass * item.teacher_forced_total_tokens
+            for item in rows
+        ) / total_targets
+
+        if (
+            teacher_exact < THRESHOLDS.severe_family_teacher_forced_exact
+            and greedy_exact < THRESHOLDS.severe_family_greedy_exact
+        ):
+            annotation = "SEVERE"
+        elif teacher_exact - greedy_exact >= THRESHOLDS.rollout_gap_min:
+            annotation = "ROLLOUT_GAP"
+        else:
+            annotation = "NO_SEVERE_LOCALIZATION"
+
+        result[family] = {
+            "world_count": len(rows),
+            "teacher_forced_token_accuracy": correct_targets / total_targets,
+            "teacher_forced_full_answer_exact": teacher_exact,
+            "greedy_exact": greedy_exact,
+            "masked_greedy_exact": masked_exact,
+            "mean_correct_prefix_fraction": prefix_fraction,
+            "mean_unused_probability_mass": unused_mass,
+            "annotation": annotation,
+        }
+    return result
+
+
 def _family_exact(records: tuple[WorldMeasurement, ...], effort: int) -> dict[str, float]:
     chosen = tuple(item for item in records if item.effort == effort)
     families = sorted({item.family for item in chosen})
@@ -319,6 +371,7 @@ def run_localization(
     *,
     checkpoint_path: str | Path,
     receipt_path: str | Path,
+    execution_identity: Exp321ExecutionIdentity | None = None,
 ) -> dict[str, Any]:
     bundle = load_checkpoint_bundle(checkpoint_path, receipt_path)
     receipt = bundle.receipt
@@ -351,16 +404,38 @@ def run_localization(
     payload: dict[str, Any] = {
         "schema": "EXP321-AFIXED-FAILURE-LOCALIZATION-EVIDENCE-V1",
         "preregistration_digest": preregistration_digest(),
-        "source_receipt_artifact_digest": receipt.artifact_digest,
-        "model_state_digest": actual_model_digest,
+        "parent_exp319": {
+            "run_id": EXP319_RUN_ID,
+            "marker_sha": EXP319_MARKER_SHA,
+            "source_sha": EXP319_SOURCE_SHA,
+        },
+        "selected_checkpoint": {
+            "artifact_id": SELECTED_CHECKPOINT_ARTIFACT_ID,
+            "zip_digest": SELECTED_CHECKPOINT_ZIP_DIGEST,
+            "receipt_artifact_digest": receipt.artifact_digest,
+            "model_state_digest": actual_model_digest,
+        },
         "reproduction_valid": reproduction_valid,
         "effort_summaries": {
             str(effort): asdict(summary) for effort, summary in summaries.items()
         },
         "family_exact_effort_4": _family_exact(records, 4),
+        "family_summaries_effort_4": _family_summaries(records, 4),
         "records": [asdict(item) for item in records],
         "decision": decision,
         **AUTHORIZATION_FLAGS,
     }
+    if execution_identity is not None:
+        if (
+            execution_identity.exp321_execution_digest
+            != canonical_exp321_execution_digest(execution_identity)
+        ):
+            raise ValueError("EXP-321 execution identity digest mismatch")
+        if execution_identity.approved_preregistration_digest != preregistration_digest():
+            raise ValueError("EXP-321 execution identity preregistration mismatch")
+        if execution_identity.selected_checkpoint_artifact_id != SELECTED_CHECKPOINT_ARTIFACT_ID:
+            raise ValueError("EXP-321 execution identity checkpoint mismatch")
+        payload["execution_identity"] = asdict(execution_identity)
+
     payload["evidence_digest"] = _digest(payload)
     return payload
