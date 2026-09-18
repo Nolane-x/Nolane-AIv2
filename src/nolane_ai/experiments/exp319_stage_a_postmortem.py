@@ -60,7 +60,7 @@ class StageAEffortPostmortem:
     run_identity: str
     arm_id: str
     selected_learning_rate: float
-    checkpoint_artifact_digest: str
+    checkpoint_model_state_digest: str
     receipt_artifact_digest: str
     training_contract_digest: str
     model_state_digest_before: str
@@ -358,7 +358,7 @@ def seal_postmortem(
         "run_identity": receipt.run_identity,
         "arm_id": receipt.arm_id,
         "selected_learning_rate": receipt.learning_rate,
-        "checkpoint_artifact_digest": receipt.model_state_digest,
+        "checkpoint_model_state_digest": receipt.model_state_digest,
         "receipt_artifact_digest": receipt.artifact_digest,
         "training_contract_digest": receipt.training_contract_digest,
         "model_state_digest_before": model_state_digest_before,
@@ -378,7 +378,7 @@ def seal_postmortem(
         run_identity=receipt.run_identity,
         arm_id=receipt.arm_id,
         selected_learning_rate=receipt.learning_rate,
-        checkpoint_artifact_digest=receipt.model_state_digest,
+        checkpoint_model_state_digest=receipt.model_state_digest,
         receipt_artifact_digest=receipt.artifact_digest,
         training_contract_digest=receipt.training_contract_digest,
         model_state_digest_before=model_state_digest_before,
