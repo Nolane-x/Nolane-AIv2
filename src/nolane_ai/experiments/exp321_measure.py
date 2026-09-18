@@ -40,6 +40,8 @@ class WorldMeasurement:
     content_id: str
     answer_length_tokens: int
     teacher_forced_token_accuracy: float
+    teacher_forced_correct_tokens: int
+    teacher_forced_total_tokens: int
     teacher_forced_full_answer_exact: bool
     mean_correct_token_probability: float
     mean_correct_token_rank_full: float
@@ -47,6 +49,8 @@ class WorldMeasurement:
     mean_legal_probability_mass: float
     mean_unused_probability_mass: float
     masked_wrong_target_recovery: float
+    masked_wrong_target_recoveries: int
+    masked_wrong_target_total: int
     greedy_exact: bool
     greedy_eos_correct: bool
     greedy_invalid: bool
@@ -213,7 +217,11 @@ def _measure_world(compiled: object, world: object, effort: int) -> WorldMeasure
         family=str(getattr(world, "family")),
         content_id=str(getattr(world, "content_id")),
         answer_length_tokens=len(expected),
-        teacher_forced_token_accuracy=float(correct.float().mean().item()),
+        teacher_forced_token_accuracy=(
+            int(correct.sum().item()) / int(correct.numel())
+        ),
+        teacher_forced_correct_tokens=int(correct.sum().item()),
+        teacher_forced_total_tokens=int(correct.numel()),
         teacher_forced_full_answer_exact=bool(correct.all().item()),
         mean_correct_token_probability=float(
             probs.gather(1, answer_targets.unsqueeze(1)).mean().item()
@@ -223,6 +231,8 @@ def _measure_world(compiled: object, world: object, effort: int) -> WorldMeasure
         mean_legal_probability_mass=float(legal_mass.mean().item()),
         mean_unused_probability_mass=float(unused_mass.mean().item()),
         masked_wrong_target_recovery=recovery,
+        masked_wrong_target_recoveries=int(recoveries.sum().item()),
+        masked_wrong_target_total=int(wrong.sum().item()),
         greedy_exact=bool(verify_world_answer(world, candidate)),
         greedy_eos_correct=stopped and bool(generated) and generated[-1] == EOS_ID,
         greedy_invalid=invalid,
@@ -244,21 +254,10 @@ def _aggregate(records: tuple[WorldMeasurement, ...], effort: int) -> EffortSumm
     selected = tuple(item for item in records if item.effort == effort)
     if len(selected) != 32:
         raise ValueError("EXP-321 requires exactly 32 measurements per effort")
-    total_targets = sum(item.answer_length_tokens for item in selected)
-    token_correct = sum(
-        item.teacher_forced_token_accuracy * item.answer_length_tokens
-        for item in selected
-    )
-    wrong_targets = sum(
-        (1.0 - item.teacher_forced_token_accuracy) * item.answer_length_tokens
-        for item in selected
-    )
-    recovered = sum(
-        item.masked_wrong_target_recovery
-        * (1.0 - item.teacher_forced_token_accuracy)
-        * item.answer_length_tokens
-        for item in selected
-    )
+    total_targets = sum(item.teacher_forced_total_tokens for item in selected)
+    token_correct = sum(item.teacher_forced_correct_tokens for item in selected)
+    wrong_targets = sum(item.masked_wrong_target_total for item in selected)
+    recovered = sum(item.masked_wrong_target_recoveries for item in selected)
     return EffortSummary(
         effort=effort,
         teacher_forced_token_accuracy=token_correct / total_targets,
