@@ -320,9 +320,16 @@ jobs:
                   encoding="utf-8",
               )
           PY
-          if [[ "${{ steps.gate.outputs.continue_stage_b }}" == "false" ]]; then
-            python scripts/exp319_finalize.py --root-evidence stage-a-stop/root-1.json stage-a-stop/root-2.json stage-a-stop/root-3.json stage-a-stop/root-4.json --output stage-a-stop/final.json
-          fi
+      - name: Finalize frozen Stage A negative after gate output materializes
+        if: steps.gate.outputs.continue_stage_b == 'false'
+        run: >-
+          python scripts/exp319_finalize.py
+          --root-evidence
+          stage-a-stop/root-1.json
+          stage-a-stop/root-2.json
+          stage-a-stop/root-3.json
+          stage-a-stop/root-4.json
+          --output stage-a-stop/final.json
       - uses: actions/upload-artifact@v4
         if: steps.gate.outputs.continue_stage_b == 'false'
         with:
@@ -641,9 +648,16 @@ jobs:
                   encoding="utf-8",
               )
           PY
-          if [[ "${{ steps.gate.outputs.continue_stage_c }}" == "false" ]]; then
-            python scripts/exp319_finalize.py --root-evidence stage-b-stop/root-1.json stage-b-stop/root-2.json stage-b-stop/root-3.json stage-b-stop/root-4.json --output stage-b-stop/final.json
-          fi
+      - name: Finalize frozen Stage B negative after gate output materializes
+        if: steps.gate.outputs.continue_stage_c == 'false'
+        run: >-
+          python scripts/exp319_finalize.py
+          --root-evidence
+          stage-b-stop/root-1.json
+          stage-b-stop/root-2.json
+          stage-b-stop/root-3.json
+          stage-b-stop/root-4.json
+          --output stage-b-stop/final.json
       - uses: actions/upload-artifact@v4
         if: steps.gate.outputs.continue_stage_c == 'true'
         with:
