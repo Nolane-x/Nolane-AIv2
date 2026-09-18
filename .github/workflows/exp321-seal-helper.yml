@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
   materialize:
@@ -87,3 +88,24 @@ jobs:
             --marker-json /tmp/exp321-marker/protocols/v017/exp321_execution_identity_v1.json \
             --marker-sha256 /tmp/exp321-marker/protocols/v017/exp321_execution_identity_v1.sha256
           echo "EXP321_MARKER_VERIFIED=$MARKER_SHA"
+
+      - name: Dispatch authoritative sealed EXP-321 workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(
+            curl --silent --show-error \
+              --output /tmp/dispatch-body \
+              --write-out '%{http_code}' \
+              --request POST \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header "Accept: application/vnd.github+json" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/Nolane-x/Nolane-AIv2/actions/workflows/exp321-afixed-failure-localization.yml/dispatches" \
+              --data '{"ref":"exp321-afixed-failure-localization-design"}'
+          )"
+          cat /tmp/dispatch-body || true
+          test "$status" = "204"
+          echo "EXP321_WORKFLOW_DISPATCHED=1"
