@@ -5,6 +5,7 @@ import hashlib
 import pytest
 
 from nolane_ai.experiments.exp321_freeze import (
+    EXP321_BASE_SHA,
     EXP321_FROZEN_PATHS,
     EXP321_MARKER_PATHS,
     canonical_marker_json_bytes,
@@ -64,3 +65,7 @@ def test_marker_commit_is_exactly_two_identity_files() -> None:
         validate_marker_changed_paths((EXP321_MARKER_PATHS[0],))
     with pytest.raises(ValueError, match="exactly the two"):
         validate_marker_changed_paths((*EXP321_MARKER_PATHS, "README.md"))
+
+def test_freeze_is_bound_to_exact_exp319r_recovery_parent() -> None:
+    assert EXP321_BASE_SHA == "9aec137b915ed1238223bcc75d7c9f0c0ad1af2c"
+
