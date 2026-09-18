@@ -3,6 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 import pytest
 
+pytest.importorskip("torch")
+
 from nolane_ai.experiments.exp324_contract import AUTHORIZATION_FLAGS,FAMILIES,FamilySnapshot,LOCAL_CHECKPOINTS
 from nolane_ai.experiments.exp324_identity import build_execution_identity
 from nolane_ai.experiments.exp324_runtime import _build_arm_evidence,build_final_evidence
