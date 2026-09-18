@@ -1,0 +1,188 @@
+{
+  "schema_version": "EXP326-BALANCED-MULTIWORLD-BREAKPOINT-V1",
+  "experiment_id": "EXP-326",
+  "role": "post_exp325_balanced_multiworld_interference_breakpoint",
+  "authority": {
+    "parent_exp325_marker_sha": "b24830c842258258f42ffb92e5f00277f8db8e9b",
+    "parent_exp325_source_sha": "3d1432e78fe85341f45f3de39ddefacdf7fd92bd",
+    "parent_exp325_run_id": 35406123945,
+    "parent_exp325_disposition": "ALL_WORLDS_SINGLE_FIT",
+    "parent_exp325_final_artifact_id": 10572536792,
+    "parent_exp325_final_artifact_zip_digest": "e6b1cda21aa84351ec0d61fd4e8a0bfab84177fc5faa5c8ea169030f5badcd32",
+    "parent_exp325_final_json_sha256": "bbf4aca8cae39ff424ad2fa4cea0c122a60b405162198413fb921dd891dcaf3c",
+    "parent_exp325_final_evidence_digest": "0ce6a8bd4f96864bf754b22fc7c9b95552f6081225a4c305394d92ed39e7cbc2",
+    "parent_exp325_execution_digest": "5c3ebd63682b7678cfd40545ef2c2bd6f98de539a7d931f6e47faa8ed21e7f5e",
+    "reconstruction_run_id": 35345351869,
+    "reconstruction_artifact_id": 10547681681,
+    "reconstruction_artifact_name": "exp323r-reconstruction-candidate-35345351869-0",
+    "reconstruction_artifact_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+    "reconstruction_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+    "reconstruction_receipt_digest": "f8153c9f88d7d28b7e0240d994991c8d232b1d192b1688b901982610e266e03f"
+  },
+  "historical_context": {
+    "exp324_run_id": 35362450626,
+    "exp324_disposition": "NO_FAMILIES_ISOLATED_FIT",
+    "exp324_evidence_digest": "10a493d2f4de15131706b933af4170f39f55e802f069e740f9f98846713ac2ad",
+    "confound_note": "EXP-324 round-robin used global-step effort assignment; with eight worlds, a world can repeatedly occupy the same effort residue. EXP-326 does not treat EXP-324 k=8 as a clean balanced-effort endpoint."
+  },
+  "model": {
+    "arm": "A_FIXED",
+    "resident_trainable_parameters": 10000000,
+    "starting_cumulative_step": 2048,
+    "device": "cpu",
+    "architecture_change": false,
+    "tokenizer_change": false,
+    "objective_change": false,
+    "scale_change": false
+  },
+  "population": {
+    "stage": "A_SANITY",
+    "root": 0,
+    "families": [
+      "iterative-grid-and-maze",
+      "algorithmic-sequence-transform",
+      "generator-heldout-abstract-transformation",
+      "language-sequence-control"
+    ],
+    "indices_per_family": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "total_worlds": 32,
+    "grouping": {
+      "pairs": [
+        [
+          0,
+          1
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          6,
+          7
+        ]
+      ],
+      "quartets": [
+        [
+          0,
+          1,
+          2,
+          3
+        ],
+        [
+          4,
+          5,
+          6,
+          7
+        ]
+      ],
+      "octet": [
+        [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ]
+      ]
+    },
+    "independent_clone_per_group": true
+  },
+  "training": {
+    "optimizer": "AdamW",
+    "inherited_optimizer_state": true,
+    "inherited_rng_state": true,
+    "learning_rate_decimal": "0.00005",
+    "weight_decay_decimal": "0.01",
+    "gradient_clip_norm_decimal": "1.0",
+    "exposures_per_world": 32,
+    "exposure_checkpoints_per_world": [
+      8,
+      16,
+      32
+    ],
+    "effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "effort_assignment": "world-local exposure index; exposure j uses effort_cycle[j mod 4] for every world",
+    "updates_per_pair": 64,
+    "updates_per_quartet": 128,
+    "updates_per_octet": 256,
+    "within_exposure_order": "ascending world index within the registered group",
+    "rationale": "hold per-world exposure count and per-world effort trace equal to EXP-325 while increasing only the number of simultaneously shared worlds"
+  },
+  "primary_measurements": [
+    "per_world_teacher_forced_answer_token_accuracy",
+    "per_world_teacher_forced_full_answer_exact",
+    "group_all_worlds_floor_pass"
+  ],
+  "secondary_measurements": [
+    "per_world_greedy_exact",
+    "group_teacher_forced_answer_token_accuracy",
+    "group_teacher_forced_full_answer_exact",
+    "group_answer_only_loss",
+    "gradient_norm_preclip",
+    "parameter_update_norm_ratio",
+    "nonfinite_events"
+  ],
+  "thresholds": {
+    "teacher_forced_token_accuracy_floor": 0.99,
+    "teacher_forced_full_answer_exact_floor": 0.9,
+    "nonfinite_events_max": 0
+  },
+  "dispositions": [
+    "INVALID_BREAKPOINT_COURT",
+    "NONMONOTONIC_GROUP_FIT",
+    "PAIR_LEVEL_BREAK_PRESENT",
+    "QUARTET_LEVEL_BREAK_PRESENT",
+    "OCTET_LEVEL_BREAK_PRESENT",
+    "NO_BREAK_THROUGH_EIGHT"
+  ],
+  "decision_order": [
+    "INVALID_BREAKPOINT_COURT",
+    "NONMONOTONIC_GROUP_FIT",
+    "PAIR_LEVEL_BREAK_PRESENT",
+    "QUARTET_LEVEL_BREAK_PRESENT",
+    "OCTET_LEVEL_BREAK_PRESENT",
+    "NO_BREAK_THROUGH_EIGHT"
+  ],
+  "interpretation": {
+    "NONMONOTONIC_GROUP_FIT": "a registered larger nested group fits while at least one of its registered child groups fails; group identity/order effects dominate a simple monotonic breakpoint interpretation",
+    "PAIR_LEVEL_BREAK_PRESENT": "at least one registered two-world group fails despite balanced per-world effort/exposure; interference can emerge with only two shared worlds",
+    "QUARTET_LEVEL_BREAK_PRESENT": "all registered pairs fit, but at least one registered four-world group fails; the earliest registered monotonic break lies between two and four worlds",
+    "OCTET_LEVEL_BREAK_PRESENT": "all registered pairs and quartets fit, but at least one registered eight-world group fails; the earliest registered monotonic break lies between four and eight worlds",
+    "NO_BREAK_THROUGH_EIGHT": "all registered balanced-effort groups through eight worlds fit; the earlier family-isolation failure cannot be attributed to group size alone under this corrected schedule"
+  },
+  "nonclaims": [
+    "EXP-326 does not establish a universal interference threshold outside the frozen 32 Stage-A worlds",
+    "EXP-326 does not establish a 10M architectural capacity ceiling",
+    "EXP-326 does not establish that scaling would help",
+    "EXP-326 does not identify a unique mechanism if interference is observed",
+    "EXP-326 does not authorize EXP-320 or larger model sizes"
+  ],
+  "authorization": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
