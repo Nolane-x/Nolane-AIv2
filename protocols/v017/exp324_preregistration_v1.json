@@ -1,0 +1,145 @@
+{
+  "schema_version": "EXP324-FAMILY-ISOLATED-LEARNABILITY-V1",
+  "experiment_id": "EXP-324",
+  "role": "post_exp323r_family_isolated_learnability_diagnostic",
+  "authority": {
+    "parent_exp323r_repaired_run_id": 35354410137,
+    "parent_exp323r_recovery_run_id": 35356470634,
+    "parent_exp323r_final_artifact_id": 10552276255,
+    "parent_exp323r_final_artifact_zip_digest": "7155d72ab05b57f8b66284f83ed41e63057824a3288adcd27e2d5429f3e0a19c",
+    "parent_exp323r_final_evidence_digest": "a92d56a45151411a8fa4e0799949d72aed701f52ad9adae5fdb90983be09f051",
+    "parent_exp323r_disposition": "NO_REGISTERED_RESCUE",
+    "parent_exp323r_execution_digest": "70ebb1bda4c91f457aae1007df0d939f2f2a144257dfebf5481ee6dc55b10cd9",
+    "parent_exp323r_marker_sha": "217477a911aabbb764741e76cca38e54013e7da6",
+    "reconstruction_artifact_id": 10547681681,
+    "reconstruction_artifact_name": "exp323r-reconstruction-candidate-35345351869-0",
+    "reconstruction_artifact_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+    "reconstruction_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+    "reconstruction_receipt_digest": "f8153c9f88d7d28b7e0240d994991c8d232b1d192b1688b901982610e266e03f",
+    "reconstruction_model_state_digest": "4d3b848d193e6e465473dab7346edaafa3ee0ffc870eac600c6c46952ca880fc",
+    "reconstruction_optimizer_state_digest": "9b32588f0bc63881aa974df54829c4cda1d9e4913aa0fcc40cff5d5f2cddeb79",
+    "reconstruction_rng_state_digest": "e293380e9776eb9e373bd0c3d3ab6a8aa4d0ab3b6764dc582bc859efc12fca07"
+  },
+  "model": {
+    "arm": "A_FIXED",
+    "resident_trainable_parameters": 10000000,
+    "device": "cpu",
+    "starting_cumulative_step": 2048,
+    "architecture_change": false,
+    "tokenizer_change": false,
+    "objective_change": false,
+    "scale_change": false
+  },
+  "population": {
+    "root": 0,
+    "family_count": 4,
+    "worlds_per_family": 8,
+    "total_worlds": 32,
+    "families": [
+      "algorithmic-sequence-transform",
+      "generator-heldout-abstract-transformation",
+      "iterative-grid-and-maze",
+      "language-sequence-control"
+    ],
+    "world_order_rule": "filter_original_stage_a_order_to_selected_family_then_cycle"
+  },
+  "training": {
+    "learning_rate_decimal": "0.00005",
+    "optimizer": "AdamW",
+    "inherited_optimizer_state": true,
+    "inherited_rng_state": true,
+    "weight_decay_decimal": "0.01",
+    "gradient_clip_norm_decimal": "1.0",
+    "training_effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "isolated_optimizer_updates_per_family": 256,
+    "rationale": "256 isolated updates equals the number of updates allocated to each family across the 1024-step joint HOLD_5E5 control",
+    "local_checkpoints": [
+      64,
+      128,
+      256
+    ],
+    "cumulative_checkpoints": [
+      2112,
+      2176,
+      2304
+    ]
+  },
+  "historical_joint_control": {
+    "source": "EXP-323R HOLD_5E5 at cumulative step 3072",
+    "total_joint_updates": 1024,
+    "implied_updates_per_family": 256,
+    "family_metrics": {
+      "algorithmic-sequence-transform": {
+        "teacher_forced_answer_token_accuracy": "0.9487179487179487",
+        "teacher_forced_full_answer_exact": "0.625"
+      },
+      "generator-heldout-abstract-transformation": {
+        "teacher_forced_answer_token_accuracy": "0.9375",
+        "teacher_forced_full_answer_exact": "0.875"
+      },
+      "iterative-grid-and-maze": {
+        "teacher_forced_answer_token_accuracy": "0.75",
+        "teacher_forced_full_answer_exact": "0.5"
+      },
+      "language-sequence-control": {
+        "teacher_forced_answer_token_accuracy": "0.9827586206896551",
+        "teacher_forced_full_answer_exact": "0.75"
+      }
+    }
+  },
+  "primary_measurements": [
+    "isolated_family_teacher_forced_answer_token_accuracy",
+    "isolated_family_teacher_forced_full_answer_exact"
+  ],
+  "secondary_measurements": [
+    "isolated_family_greedy_exact",
+    "isolated_family_answer_only_loss",
+    "all32_teacher_forced_answer_token_accuracy",
+    "all32_teacher_forced_full_answer_exact",
+    "all32_greedy_exact",
+    "gradient_norm_preclip",
+    "parameter_update_norm_ratio",
+    "nonfinite_events"
+  ],
+  "thresholds": {
+    "teacher_forced_token_accuracy_floor": 0.99,
+    "teacher_forced_full_answer_exact_floor": 0.9,
+    "nonfinite_events_max": 0
+  },
+  "dispositions": [
+    "INVALID_FAMILY_ISOLATION",
+    "ALL_FAMILIES_ISOLATED_FIT",
+    "SOME_FAMILIES_ISOLATED_FIT",
+    "NO_FAMILIES_ISOLATED_FIT"
+  ],
+  "decision_order": [
+    "INVALID_FAMILY_ISOLATION",
+    "ALL_FAMILIES_ISOLATED_FIT",
+    "SOME_FAMILIES_ISOLATED_FIT",
+    "NO_FAMILIES_ISOLATED_FIT"
+  ],
+  "interpretation": {
+    "ALL_FAMILIES_ISOLATED_FIT": "supports cross-family optimization competition/interference as a contributor; does not uniquely identify its mechanism",
+    "SOME_FAMILIES_ISOLATED_FIT": "localizes learnability difficulty to one or more families while allowing additional cross-family interference",
+    "NO_FAMILIES_ISOLATED_FIT": "shows no registered family can reach the floor under the isolated 256-update court; does not prove an architectural capacity ceiling"
+  },
+  "authorization": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  },
+  "nonclaims": [
+    "EXP-324 does not establish a 10M architectural capacity ceiling",
+    "EXP-324 does not establish that scaling would help",
+    "EXP-324 does not authorize EXP-320 or larger model sizes",
+    "isolated-family success does not uniquely prove a specific interference mechanism",
+    "historical joint control is immutable EXP-323R evidence and is not rerun or reselected"
+  ]
+}
