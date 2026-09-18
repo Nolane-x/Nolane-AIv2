@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from types import SimpleNamespace
 
 from nolane_ai.experiments.exp321_contract import (
     AUTHORIZATION_FLAGS,
@@ -21,6 +22,10 @@ from nolane_ai.experiments.exp321_contract import (
 from nolane_ai.experiments.exp321_localization import (
     EffortSummary,
     reduce_localization,
+    validate_authorization_boundary,
+    validate_checkpoint_receipt_authority,
+    validate_model_state_authority,
+    validate_tokenizer_geometry,
     validate_world_population,
 )
 
@@ -261,4 +266,82 @@ def test_family_population_drift_fails_closed() -> None:
     identities[-1] = ("algorithmic-sequence-transform", "extra-unique")
     with pytest.raises(ValueError, match="family population"):
         validate_world_population(tuple(identities))
+
+def _valid_tokenizer() -> SimpleNamespace:
+    return SimpleNamespace(
+        pad_id=0,
+        bos_id=1,
+        separator_id=2,
+        eos_id=3,
+        byte_offset=4,
+        vocab_size=4608,
+    )
+
+
+def _valid_checkpoint_receipt() -> SimpleNamespace:
+    return SimpleNamespace(
+        stage="A_SANITY",
+        arm_id="A_FIXED",
+        root=0,
+        learning_rate=1e-4,
+        cumulative_step=1024,
+        artifact_digest=(
+            "d874545fa677569e30849128df337e27823d8aa4c5335adb9cb422968096a280"
+        ),
+    )
+
+
+def test_runtime_tokenizer_geometry_is_fail_closed() -> None:
+    validate_tokenizer_geometry(_valid_tokenizer())
+    forged = _valid_tokenizer()
+    forged.vocab_size = 260
+    with pytest.raises(ValueError, match="vocab_size"):
+        validate_tokenizer_geometry(forged)
+    forged = _valid_tokenizer()
+    forged.eos_id = 2
+    with pytest.raises(ValueError, match="eos_id"):
+        validate_tokenizer_geometry(forged)
+
+
+def test_checkpoint_receipt_substitution_is_fail_closed() -> None:
+    validate_checkpoint_receipt_authority(_valid_checkpoint_receipt())
+    forged = _valid_checkpoint_receipt()
+    forged.arm_id = "A_NRS"
+    with pytest.raises(ValueError, match="arm_id"):
+        validate_checkpoint_receipt_authority(forged)
+    forged = _valid_checkpoint_receipt()
+    forged.cumulative_step = 512
+    with pytest.raises(ValueError, match="cumulative_step"):
+        validate_checkpoint_receipt_authority(forged)
+
+
+def test_model_state_substitution_is_fail_closed() -> None:
+    validate_model_state_authority(
+        "18d738a3845a470f80cbfcb39662f630a73195fd383da7f71c9e54474115c7fb"
+    )
+    with pytest.raises(ValueError, match="model-state"):
+        validate_model_state_authority("0" * 64)
+
+
+def test_authorization_forgery_is_fail_closed() -> None:
+    payload = dict(AUTHORIZATION_FLAGS)
+    validate_authorization_boundary(payload)
+    payload["scale_authorized"] = True
+    with pytest.raises(ValueError, match="scale_authorized"):
+        validate_authorization_boundary(payload)
+
+
+def test_registered_thresholds_are_bound_into_preregistration() -> None:
+    payload = preregistration_payload()
+    assert payload["thresholds"] == {
+        "teacher_forced_token_accuracy": 0.99,
+        "teacher_forced_full_answer_exact": 0.90,
+        "greedy_exact": 0.90,
+        "effort_effect_min": 0.25,
+        "masked_exact_gain_min": 0.25,
+        "masked_wrong_target_recovery_min": 0.25,
+        "severe_family_teacher_forced_exact": 0.50,
+        "severe_family_greedy_exact": 0.25,
+        "rollout_gap_min": 0.50,
+    }
 
