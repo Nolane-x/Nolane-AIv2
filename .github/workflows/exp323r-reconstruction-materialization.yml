@@ -1,13 +1,7 @@
-name: EXP-323R reconstruction materialization
+name: EXP-323R reconstruction materialization (locked historical helper)
 
 on:
-  pull_request:
-    paths:
-      - "docs/superpowers/specs/2026-09-18-exp323r-materialized-reconstruction-repair.md"
-      - "src/nolane_ai/experiments/exp323r_reconstruction.py"
-      - "scripts/exp323r_materialize_reconstruction.py"
-      - "tests/test_exp323r_reconstruction.py"
-      - ".github/workflows/exp323r-reconstruction-materialization.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
