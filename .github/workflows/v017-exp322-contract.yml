@@ -30,10 +30,6 @@ jobs:
           python scripts/verify_exp322_contract.py
           --json protocols/v017/exp322_preregistration_v1.json
           --sha256 protocols/v017/exp322_preregistration_v1.sha256
-      - name: Run EXP-322 contract and runtime courts
-        run: >-
-          pytest -q
-          tests/test_exp322_contract.py
-          tests/test_exp322_evidence.py
-          tests/test_exp322_runtime.py
+      - name: Run complete EXP-322 contract runtime identity freeze and workflow courts
+        run: pytest -q tests/test_exp322_*.py
       - run: python -m compileall -q src scripts
