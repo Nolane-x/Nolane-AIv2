@@ -78,6 +78,7 @@ def reduce_localization(
     rollout_exposure = (
         not teacher_forced_insufficient
         and baseline.greedy_exact < THRESHOLDS.greedy_exact
+        and not effort_mismatch
         and not unused_vocab
     )
 
