@@ -150,3 +150,73 @@ def test_invalid_reproduction_fail_closes() -> None:
         _grid(_summary(4)),
         reproduction_valid=False,
     ) == "INVALID_LOCALIZATION"
+
+def test_effort_plus_unused_vocab_is_mixed_not_rollout_double_count() -> None:
+    summaries = _grid(
+        _summary(
+            4,
+            token=0.995,
+            teacher_exact=0.95,
+            greedy=0.30,
+            masked=0.60,
+            recovery=0.30,
+        )
+    )
+    summaries[8] = _summary(
+        8,
+        token=0.995,
+        teacher_exact=0.95,
+        greedy=0.70,
+        masked=0.70,
+        recovery=0.0,
+    )
+    assert reduce_localization(summaries, reproduction_valid=True) == (
+        "MIXED_TRAINING_STACK_FAILURE"
+    )
+
+
+def test_nonfinite_summary_fails_closed() -> None:
+    summaries = _grid(_summary(4))
+    summaries[4] = _summary(4, token=float("nan"))
+    assert reduce_localization(summaries, reproduction_valid=True) == (
+        "INVALID_LOCALIZATION"
+    )
+    summaries = _grid(_summary(4))
+    summaries[4] = _summary(4, greedy=float("inf"))
+    assert reduce_localization(summaries, reproduction_valid=True) == (
+        "INVALID_LOCALIZATION"
+    )
+
+
+def test_missing_effort_fails_closed() -> None:
+    summaries = _grid(_summary(4))
+    summaries.pop(8)
+    assert reduce_localization(summaries, reproduction_valid=True) == (
+        "INVALID_LOCALIZATION"
+    )
+
+
+def test_mismatched_effort_identity_fails_closed() -> None:
+    summaries = _grid(_summary(4))
+    summaries[8] = _summary(2)
+    assert reduce_localization(summaries, reproduction_valid=True) == (
+        "INVALID_LOCALIZATION"
+    )
+
+
+def test_teacher_forced_plus_unused_vocab_is_mixed() -> None:
+    decision = reduce_localization(
+        _grid(
+            _summary(
+                4,
+                token=0.77,
+                teacher_exact=0.28,
+                greedy=0.28,
+                masked=0.60,
+                recovery=0.30,
+            )
+        ),
+        reproduction_valid=True,
+    )
+    assert decision == "MIXED_TRAINING_STACK_FAILURE"
+
