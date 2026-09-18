@@ -36,7 +36,10 @@ from .exp321_contract import (
     canonical_json_bytes,
     preregistration_digest,
 )
-from .exp321_identity import Exp321ExecutionIdentity, canonical_exp321_execution_digest
+from .exp321_identity import (
+    Exp321ExecutionIdentity,
+    validate_exp321_execution_identity,
+)
 from .exp321_localization import (
     EffortSummary,
     reduce_localization,
@@ -437,15 +440,7 @@ def run_localization(
         **AUTHORIZATION_FLAGS,
     }
     if execution_identity is not None:
-        if (
-            execution_identity.exp321_execution_digest
-            != canonical_exp321_execution_digest(execution_identity)
-        ):
-            raise ValueError("EXP-321 execution identity digest mismatch")
-        if execution_identity.approved_preregistration_digest != preregistration_digest():
-            raise ValueError("EXP-321 execution identity preregistration mismatch")
-        if execution_identity.selected_checkpoint_artifact_id != SELECTED_CHECKPOINT_ARTIFACT_ID:
-            raise ValueError("EXP-321 execution identity checkpoint mismatch")
+        validate_exp321_execution_identity(execution_identity)
         payload["execution_identity"] = asdict(execution_identity)
 
     payload["evidence_digest"] = _digest(payload)
