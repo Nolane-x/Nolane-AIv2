@@ -1,0 +1,24 @@
+name: Dispatch sealed EXP-323 once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/dispatch-exp323-sealed-once.yml"
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch exact sealed EXP-323 branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh api
+          --method POST
+          repos/${{ github.repository }}/actions/workflows/exp323-second-decay-convergence.yml/dispatches
+          -f ref=exp323-second-decay-convergence-intervention
