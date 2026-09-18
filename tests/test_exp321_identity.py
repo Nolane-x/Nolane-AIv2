@@ -15,6 +15,7 @@ from nolane_ai.experiments.exp321_contract import (
 from nolane_ai.experiments.exp321_identity import (
     EXP321_IDENTITY_SCHEMA,
     build_exp321_execution_identity,
+    canonical_exp321_execution_digest,
     canonical_exp321_identity_json_bytes,
     source_tree_digest_from_git_tree_sha,
 )
@@ -86,3 +87,54 @@ def test_canonical_identity_is_digest_checked() -> None:
         canonical_exp321_identity_json_bytes(
             replace(identity, exp321_execution_digest="0" * 64)
         )
+
+def _reseal(identity):
+    provisional = replace(identity, exp321_execution_digest="")
+    return replace(
+        provisional,
+        exp321_execution_digest=canonical_exp321_execution_digest(provisional),
+    )
+
+
+def test_recomputed_digest_cannot_authorize_checkpoint_substitution() -> None:
+    forged = _reseal(
+        replace(
+            _identity(),
+            selected_checkpoint_artifact_id=1,
+        )
+    )
+    with pytest.raises(ValueError, match="checkpoint artifact"):
+        canonical_exp321_identity_json_bytes(forged)
+
+
+def test_recomputed_digest_cannot_authorize_parent_evidence_substitution() -> None:
+    forged = _reseal(
+        replace(
+            _identity(),
+            parent_exp319_final_evidence_digest="0" * 64,
+        )
+    )
+    with pytest.raises(ValueError, match="parent EXP-319"):
+        canonical_exp321_identity_json_bytes(forged)
+
+
+def test_recomputed_digest_cannot_authorize_gradient_or_device_drift() -> None:
+    gradient = _reseal(replace(_identity(), gradient_updates=1))
+    with pytest.raises(ValueError, match="zero-gradient"):
+        canonical_exp321_identity_json_bytes(gradient)
+
+    device = _reseal(replace(_identity(), device="cuda"))
+    with pytest.raises(ValueError, match="cpu"):
+        canonical_exp321_identity_json_bytes(device)
+
+
+def test_recomputed_digest_cannot_authorize_model_digest_substitution() -> None:
+    forged = _reseal(
+        replace(
+            _identity(),
+            selected_model_state_digest="0" * 64,
+        )
+    )
+    with pytest.raises(ValueError, match="model-state"):
+        canonical_exp321_identity_json_bytes(forged)
+
