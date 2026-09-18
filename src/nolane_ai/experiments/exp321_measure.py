@@ -37,7 +37,11 @@ from .exp321_contract import (
     preregistration_digest,
 )
 from .exp321_identity import Exp321ExecutionIdentity, canonical_exp321_execution_digest
-from .exp321_localization import EffortSummary, reduce_localization
+from .exp321_localization import (
+    EffortSummary,
+    reduce_localization,
+    validate_world_population,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -392,10 +396,17 @@ def run_localization(
     if actual_model_digest != SELECTED_MODEL_STATE_DIGEST:
         raise ValueError("checkpoint model-state digest does not match EXP-321 authority")
 
+    worlds = tuple(materialize_stage_a())
+    validate_world_population(
+        tuple(
+            (str(getattr(world, "family")), str(getattr(world, "content_id")))
+            for world in worlds
+        )
+    )
     records = tuple(
         _measure_world(compiled, world, effort)
         for effort in EFFORT_GRID
-        for world in materialize_stage_a()
+        for world in worlds
     )
     summaries = {effort: _aggregate(records, effort) for effort in EFFORT_GRID}
     reproduction_valid = _reproduction_valid(records, summaries)
