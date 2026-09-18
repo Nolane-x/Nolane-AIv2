@@ -6,6 +6,7 @@ import pytest
 
 pytest.importorskip("torch")
 
+from nolane_ai.experiments.exp323_evidence import expected_reconstruction_payload
 from nolane_ai.experiments.exp325_contract import FAMILIES, LOCAL_CHECKPOINTS, WORLD_INDICES
 from nolane_ai.experiments.exp325_identity import build_execution_identity
 from nolane_ai.experiments.exp325_runtime import (
@@ -48,7 +49,7 @@ def family_arm(family,passed_indices=()):
     return build_family_evidence(
         family=family,
         identity=identity(),
-        reconstruction={"verified":True,"completed_step":2048,"model_state_digest":"4"*64,"optimizer_state_digest":"5"*64,"rng_state_digest":"6"*64,"nonfinite_events":0},
+        reconstruction=expected_reconstruction_payload(),
         worlds=[record(family,i,i in set(passed_indices)) for i in WORLD_INDICES],
     )
 
