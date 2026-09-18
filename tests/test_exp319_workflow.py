@@ -113,3 +113,12 @@ def test_contract_workflow_is_fast_pr_gate_for_full_exp319_contract_surface() ->
         "scripts/verify_exp319_contract.py",
     ):
         assert token in text
+
+
+def test_scientific_workflow_installs_numpy_for_checkpoint_digest_runtime() -> None:
+    text = _scientific_text()
+    model_install = "python -m pip install -e '.[dev,model]'"
+    numpy_install = "python -m pip install numpy"
+    model_jobs = text.count(model_install)
+    assert model_jobs > 0
+    assert text.count(numpy_install) == model_jobs
