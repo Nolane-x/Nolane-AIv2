@@ -8,7 +8,6 @@ from pathlib import Path
 import subprocess
 import sys
 import urllib.request
-import zipfile
 
 
 REPO = "Nolane-x/Nolane-AIv2"
@@ -115,21 +114,9 @@ def _download_selection(root: Path, token: str) -> tuple[Path, dict[str, object]
         encoding="utf-8",
     )
 
-    archive = inp / "stage-a-selection.zip"
-    archive_url = f"https://api.github.com/repos/{REPO}/actions/artifacts/{SOURCE_ARTIFACT_ID}/zip"
-    with urllib.request.urlopen(_request(archive_url, token=token)) as response:
-        archive.write_bytes(response.read())
-
-    if f"sha256:{_sha256_file(archive)}" != SOURCE_ARTIFACT_DIGEST:
-        raise SystemExit("downloaded artifact archive digest mismatch")
-
-    with zipfile.ZipFile(archive) as bundle:
-        names = bundle.namelist()
-        if names != ["stage-a-selection.json"]:
-            raise SystemExit(f"unexpected artifact contents: {names!r}")
-        bundle.extractall(inp)
-
     selection_path = inp / "stage-a-selection.json"
+    if not selection_path.is_file():
+        raise SystemExit("actions/download-artifact did not materialize stage-a-selection.json")
     if _sha256_file(selection_path) != SOURCE_SELECTION_FILE_SHA256:
         raise SystemExit("Stage-A selection file SHA-256 mismatch")
     return selection_path, metadata
