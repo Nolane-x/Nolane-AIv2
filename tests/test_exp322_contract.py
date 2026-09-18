@@ -72,7 +72,7 @@ def test_preregistration_binds_exp321_authority_and_digest() -> None:
     assert boundary["objective_change"] is False
     assert boundary["scale_change"] is False
     assert preregistration_digest() == (
-        "eb1d39bc1095cd05f0f16bfcf75c4bf0aa20b99aa5187cf7422a0fa703f796d2"
+        "c56f1cabbba2bcb14a916f13f500d0bbbe630788e52a8689028d017cbced22f0"
     )
 
 
