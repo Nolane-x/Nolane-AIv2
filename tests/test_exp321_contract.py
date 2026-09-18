@@ -39,11 +39,21 @@ def _summary(
 
 
 def _grid(baseline: EffortSummary) -> dict[int, EffortSummary]:
+    def matched(effort: int) -> EffortSummary:
+        return EffortSummary(
+            effort=effort,
+            teacher_forced_token_accuracy=baseline.teacher_forced_token_accuracy,
+            teacher_forced_full_answer_exact=baseline.teacher_forced_full_answer_exact,
+            greedy_exact=baseline.greedy_exact,
+            masked_greedy_exact=baseline.masked_greedy_exact,
+            masked_wrong_target_recovery=baseline.masked_wrong_target_recovery,
+        )
+
     return {
-        1: _summary(1),
-        2: _summary(2),
+        1: matched(1),
+        2: matched(2),
         4: baseline,
-        8: _summary(8),
+        8: matched(8),
     }
 
 
