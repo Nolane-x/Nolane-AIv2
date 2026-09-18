@@ -35,7 +35,7 @@
     "optimizer_state_reused": true,
     "rng_state_reused": true,
     "weight_decay": 0.01,
-    "gradient_clip_norm": 1,
+    "gradient_clip_norm": 1.0,
     "training_effort_cycle": [
       1,
       2,
