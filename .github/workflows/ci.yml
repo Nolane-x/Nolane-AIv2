@@ -259,3 +259,36 @@ jobs:
           --registry /tmp/nlm-neural-arm-registry.json
           --output /tmp/nlm-exp282-confirmatory-prep.json
       - run: python -m compileall -q src scripts
+
+
+  exp319r-stage-a-finalization-recovery:
+    if: github.head_ref == 'exp319r-stage-a-finalization-seal-helper'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout exact frozen scientific source
+        uses: actions/checkout@v4
+        with:
+          ref: 2002a42322c7b919c3c9dc3da7d9cb0f546d4431
+          path: frozen
+          fetch-depth: 1
+      - name: Checkout sealed repaired marker
+        uses: actions/checkout@v4
+        with:
+          ref: 124584061616ab0864355219645ed00c1298c575
+          path: marker
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Recover and independently verify Stage-A finalization
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/exp319r_stage_a_finalize_recovery.py
+      - name: Upload recovered sealed final artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp319-final-recovered-run-35311529822
+          path: recovery-out
+          if-no-files-found: error
+          retention-days: 90
