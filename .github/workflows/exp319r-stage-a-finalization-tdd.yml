@@ -1,0 +1,21 @@
+name: exp319r-stage-a-finalization-tdd
+
+on:
+  push:
+    branches:
+      - exp319r-stage-a-finalization-tdd-helper
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip pytest
+      - name: Run exact EXP-319 workflow regression surface
+        run: python -m pytest -q tests/test_exp319_workflow.py
