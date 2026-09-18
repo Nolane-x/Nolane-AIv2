@@ -1,0 +1,24 @@
+name: Dispatch sealed EXP-325 once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/dispatch-exp325-sealed-once.yml"
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch exact sealed EXP-325 branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh api
+          --method POST
+          repos/${{ github.repository }}/actions/workflows/exp325-single-world-memorization.yml/dispatches
+          -f ref=exp325-single-world-memorization
