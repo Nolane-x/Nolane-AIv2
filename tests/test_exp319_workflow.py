@@ -122,3 +122,11 @@ def test_scientific_workflow_installs_numpy_for_checkpoint_digest_runtime() -> N
     model_jobs = text.count(model_install)
     assert model_jobs > 0
     assert text.count(numpy_install) == model_jobs
+
+
+def test_gate_outputs_are_not_consumed_inside_the_same_gate_run_step() -> None:
+    text = _scientific_text()
+    for output_name in ("continue_stage_b", "continue_stage_c"):
+        illegal = f'if [[ "${{{{ steps.gate.outputs.{output_name} }}}}" == "false" ]]; then'
+        assert illegal not in text
+        assert f"if: steps.gate.outputs.{output_name} == 'false'" in text
