@@ -63,7 +63,7 @@ def test_scientific_workflow_fail_closes_authorization_and_reproduction() -> Non
         "authorized_100m",
     ):
         assert token in text
-    assert "len(p.get("records", [])) != 128" in text
+    assert 'len(p.get("records", [])) != 128' in text
 
 
 def test_contract_workflow_is_fast_pr_gate() -> None:
