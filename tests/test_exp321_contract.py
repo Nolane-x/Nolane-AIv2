@@ -68,7 +68,9 @@ def test_preregistration_is_bound_to_exp319_negative_control_evidence() -> None:
     assert SELECTED_ARM == "A_FIXED"
     assert SELECTED_LEARNING_RATE == 1e-4
     assert SELECTED_STEP == 1024
-    assert len(preregistration_digest()) == 64
+    assert preregistration_digest() == (
+        "b99f74880848dca1332114cd0ca99292c53fba5ef991eedaace126c68835fc90"
+    )
 
 
 def test_tokenizer_geometry_is_frozen_without_head_resize() -> None:
