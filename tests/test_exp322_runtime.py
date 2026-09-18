@@ -57,7 +57,15 @@ def test_hold_arm_does_not_mutate_inherited_learning_rate() -> None:
     apply_intervention_learning_rate(optimizer, arm="HOLD_1E4")
     after = optimizer.state_dict()
     assert all(group["lr"] == pytest.approx(1e-4) for group in after["param_groups"])
-    assert before == after
+    assert before["param_groups"] == after["param_groups"]
+    assert before["state"].keys() == after["state"].keys()
+    for key in before["state"]:
+        for state_key, before_value in before["state"][key].items():
+            after_value = after["state"][key][state_key]
+            if torch.is_tensor(before_value):
+                assert torch.equal(before_value, after_value)
+            else:
+                assert before_value == after_value
 
 
 def test_decay_arm_changes_only_param_group_learning_rate() -> None:
