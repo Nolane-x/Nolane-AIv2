@@ -263,7 +263,10 @@ All calculations use effort `4` unless the rule explicitly references the effort
    - teacher-forced token accuracy >= `0.99`;
    - teacher-forced full-answer exact >= `0.90`;
    - unmasked greedy exact < `0.90`;
+   - no effort in `(1,2,8)` improves greedy exact or teacher-forced full-answer exact by >= `0.25`;
    - masked greedy does not improve exact by >= `0.25`.
+
+   This exclusion is required for causal identifiability: when the frozen effort intervention itself clears the registered effect threshold, the failure is classified as effort-sensitive rather than simultaneously counting the same low effort-4 rollout as a second independent exposure cause.
 
 3. `EFFORT_MISMATCH_EVIDENT`
    - at least one effort in `(1,2,8)` exceeds effort-4 greedy exact by >= `0.25`,
