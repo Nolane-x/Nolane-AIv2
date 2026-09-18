@@ -1,0 +1,120 @@
+{
+  "schema_version": "EXP322-AFIXED-TEACHER-FORCED-LEARNABILITY-INTERVENTION-V1",
+  "experiment_id": "EXP-322",
+  "role": "post_exp321_teacher_forced_learnability_intervention",
+  "scientific_boundary": {
+    "parent_exp321_run_id": 35331243762,
+    "parent_exp321_disposition": "TEACHER_FORCED_FOUNDATION_INSUFFICIENT",
+    "parent_exp321_evidence_digest": "5f3bd6cbacef0af4883e33f14bafd56b49a307df88641e837bb9ecdf004d5091",
+    "parent_exp321_artifact_id": 10541366011,
+    "parent_exp319_checkpoint_artifact_id": 10534351390,
+    "parent_exp319_checkpoint_zip_digest": "ee07280fee8379f39ccea16d38f1ff31482975cb39780a75a0592916e8d154c3",
+    "parent_exp319_receipt_artifact_digest": "d874545fa677569e30849128df337e27823d8aa4c5335adb9cb422968096a280",
+    "parent_exp319_model_state_digest": "18d738a3845a470f80cbfcb39662f630a73195fd383da7f71c9e54474115c7fb",
+    "architecture_change": false,
+    "tokenizer_change": false,
+    "dataset_change": false,
+    "objective_change": false,
+    "scale_change": false
+  },
+  "population": {
+    "root": 0,
+    "families": 4,
+    "examples_per_family": 8,
+    "total_examples": 32,
+    "population_role": "tuning_sanity_only"
+  },
+  "model": {
+    "arm": "A_FIXED",
+    "resident_trainable_parameters": 10000000,
+    "starting_cumulative_step": 1024,
+    "device": "cpu"
+  },
+  "training_invariants": {
+    "optimizer": "AdamW",
+    "optimizer_state_reused": true,
+    "rng_state_reused": true,
+    "weight_decay": 0.01,
+    "gradient_clip_norm": 1,
+    "training_effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "byte_tokenizer_unchanged": true,
+    "answer_only_loss_unchanged": true,
+    "world_order_unchanged": true
+  },
+  "intervention_arms": {
+    "HOLD_1E4": {
+      "learning_rate": 0.0001,
+      "description": "continue exact selected checkpoint with inherited constant learning rate"
+    },
+    "DECAY_5E5": {
+      "learning_rate": 0.00005,
+      "description": "continue same checkpoint and optimizer moments after setting all AdamW param-group learning rates to 5e-5"
+    }
+  },
+  "checkpoints": [
+    1280,
+    1536,
+    2048
+  ],
+  "max_additional_optimizer_steps_per_arm": 1024,
+  "primary_measurements": [
+    "teacher_forced_answer_token_accuracy",
+    "teacher_forced_full_answer_exact"
+  ],
+  "secondary_measurements": [
+    "greedy_exact",
+    "eos_correctness",
+    "invalid_output_rate",
+    "answer_only_loss",
+    "gradient_norm_preclip",
+    "parameter_update_norm_ratio",
+    "nonfinite_events",
+    "family_teacher_forced_token_accuracy",
+    "family_teacher_forced_full_answer_exact"
+  ],
+  "baseline": {
+    "teacher_forced_answer_token_accuracy": 0.7711267605633803,
+    "teacher_forced_full_answer_exact": 0.28125,
+    "greedy_exact": 0.28125
+  },
+  "thresholds": {
+    "teacher_forced_token_accuracy_floor": 0.99,
+    "teacher_forced_full_answer_exact_floor": 0.9,
+    "partial_token_accuracy_gain_min": 0.1,
+    "partial_full_answer_exact_gain_min": 0.25,
+    "nonfinite_events_max": 0
+  },
+  "dispositions": [
+    "INVALID_INTERVENTION",
+    "BUDGET_INSUFFICIENCY_EVIDENT",
+    "LR_SCHEDULE_INSUFFICIENCY_EVIDENT",
+    "PARTIAL_CONTINUATION_PROGRESS",
+    "NO_REGISTERED_RESCUE"
+  ],
+  "decision_order": [
+    "INVALID_INTERVENTION",
+    "BUDGET_INSUFFICIENCY_EVIDENT",
+    "LR_SCHEDULE_INSUFFICIENCY_EVIDENT",
+    "PARTIAL_CONTINUATION_PROGRESS",
+    "NO_REGISTERED_RESCUE"
+  ],
+  "authorization": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  },
+  "nonclaims": [
+    "EXP-322 does not rescue or reinterpret EXP-301 or EXP-319",
+    "EXP-322 cannot establish architectural capacity limits",
+    "EXP-322 cannot establish scaling benefit",
+    "EXP-322 cannot authorize EXP-320 or larger model sizes",
+    "failure of both registered continuation arms only means no registered continuation rescue was demonstrated"
+  ]
+}
