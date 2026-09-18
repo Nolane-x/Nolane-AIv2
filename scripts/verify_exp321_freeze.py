@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import fields
+import hashlib
 import json
 from pathlib import Path
 import subprocess
 
 from nolane_ai.experiments.exp321_freeze import (
     EXP321_BASE_SHA,
+    EXP321_WORKFLOW_PATH,
     canonical_marker_json_bytes,
     marker_sidecar_bytes,
     validate_frozen_changed_paths,
@@ -16,6 +18,7 @@ from nolane_ai.experiments.exp321_freeze import (
 from nolane_ai.experiments.exp321_identity import (
     Exp321ExecutionIdentity,
     source_tree_digest_from_git_tree_sha,
+    validate_exp321_execution_identity,
 )
 
 
@@ -32,6 +35,10 @@ def _git(repo: Path, *args: str) -> str:
     return subprocess.check_output(["git", "-C", str(repo), *args], text=True).strip()
 
 
+def _git_bytes(repo: Path, *args: str) -> bytes:
+    return subprocess.check_output(["git", "-C", str(repo), *args])
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     repo = Path(args.repo_root).resolve()
@@ -40,6 +47,10 @@ def main(argv: list[str] | None = None) -> int:
     if set(payload) != expected_fields:
         raise SystemExit("EXP-321 marker identity field mismatch")
     identity = Exp321ExecutionIdentity(**payload)
+    try:
+        validate_exp321_execution_identity(identity)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     if identity.source_commit_sha != args.source_commit_sha:
         raise SystemExit("EXP-321 marker source commit mismatch")
     if Path(args.marker_json).read_bytes() != canonical_marker_json_bytes(identity):
@@ -49,6 +60,14 @@ def main(argv: list[str] | None = None) -> int:
     tree_sha = _git(repo, "rev-parse", f"{args.source_commit_sha}^{{tree}}")
     if identity.source_tree_digest != source_tree_digest_from_git_tree_sha(tree_sha):
         raise SystemExit("EXP-321 source tree digest mismatch")
+    workflow_bytes = _git_bytes(
+        repo,
+        "show",
+        f"{args.source_commit_sha}:{EXP321_WORKFLOW_PATH}",
+    )
+    workflow_sha256 = hashlib.sha256(workflow_bytes).hexdigest()
+    if identity.workflow_sha256 != workflow_sha256:
+        raise SystemExit("EXP-321 sealed workflow digest mismatch")
 
     merge_base = _git(repo, "merge-base", EXP321_BASE_SHA, args.source_commit_sha)
     if merge_base != EXP321_BASE_SHA:
