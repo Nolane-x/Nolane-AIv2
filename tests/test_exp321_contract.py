@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from nolane_ai.experiments.exp321_contract import (
     AUTHORIZATION_FLAGS,
     BYTE_ID_END_INCLUSIVE,
@@ -16,7 +18,11 @@ from nolane_ai.experiments.exp321_contract import (
     preregistration_digest,
     preregistration_payload,
 )
-from nolane_ai.experiments.exp321_localization import EffortSummary, reduce_localization
+from nolane_ai.experiments.exp321_localization import (
+    EffortSummary,
+    reduce_localization,
+    validate_world_population,
+)
 
 
 def _summary(
@@ -219,4 +225,40 @@ def test_teacher_forced_plus_unused_vocab_is_mixed() -> None:
         reproduction_valid=True,
     )
     assert decision == "MIXED_TRAINING_STACK_FAILURE"
+
+def _valid_population() -> tuple[tuple[str, str], ...]:
+    families = (
+        "algorithmic-sequence-transform",
+        "generator-heldout-abstract-transformation",
+        "iterative-grid-and-maze",
+        "language-sequence-control",
+    )
+    return tuple(
+        (family, f"{family}-{index}")
+        for family in families
+        for index in range(8)
+    )
+
+
+def test_frozen_world_population_accepts_exact_unique_geometry() -> None:
+    validate_world_population(_valid_population())
+
+
+def test_duplicate_world_population_fails_closed() -> None:
+    identities = list(_valid_population())
+    identities[-1] = identities[0]
+    with pytest.raises(ValueError, match="unique|family population"):
+        validate_world_population(tuple(identities))
+
+
+def test_missing_world_population_fails_closed() -> None:
+    with pytest.raises(ValueError, match="exactly 32"):
+        validate_world_population(_valid_population()[:-1])
+
+
+def test_family_population_drift_fails_closed() -> None:
+    identities = list(_valid_population())
+    identities[-1] = ("algorithmic-sequence-transform", "extra-unique")
+    with pytest.raises(ValueError, match="family population"):
+        validate_world_population(tuple(identities))
 
