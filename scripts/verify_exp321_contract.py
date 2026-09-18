@@ -21,17 +21,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    json_path = Path(args.json)
-    sha_path = Path(args.sha256)
-    expected = canonical_json_bytes(preregistration_payload()) + b"\n"
-    if json_path.read_bytes() != expected:
-        raise SystemExit("EXP-321 preregistration JSON mismatch")
-    digest = hashlib.sha256(expected).hexdigest()
+    payload = json.loads(Path(args.json).read_text(encoding="utf-8"))
+    expected = preregistration_payload()
+    if payload != expected:
+        raise SystemExit("EXP-321 preregistration payload does not match frozen contract")
+    digest = hashlib.sha256(canonical_json_bytes(payload)).hexdigest()
     if digest != preregistration_digest():
+        raise SystemExit("EXP-321 preregistration implementation digest mismatch")
+    sidecar = Path(args.sha256).read_text(encoding="ascii").strip().split()[0]
+    if sidecar != digest:
         raise SystemExit("EXP-321 preregistration digest mismatch")
-    expected_sidecar = f"{digest}  {json_path.as_posix()}\n".encode("ascii")
-    if sha_path.read_bytes() != expected_sidecar:
-        raise SystemExit("EXP-321 preregistration sidecar mismatch")
     return 0
 
 
