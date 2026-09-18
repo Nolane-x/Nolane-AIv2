@@ -1,0 +1,122 @@
+{
+  "schema_version": "EXP325-SINGLE-WORLD-MEMORIZATION-V1",
+  "experiment_id": "EXP-325",
+  "role": "post_exp324_single_world_memorization_diagnostic",
+  "authority": {
+    "parent_exp324_run_id": 35362450626,
+    "parent_exp324_disposition": "NO_FAMILIES_ISOLATED_FIT",
+    "parent_exp324_final_artifact_id": 10554724648,
+    "parent_exp324_final_artifact_zip_digest": "70fae1e9d8b54df17f2a46740630cbb1861662a5ec3d2df756193e3cd6991965",
+    "parent_exp324_final_evidence_digest": "10a493d2f4de15131706b933af4170f39f55e802f069e740f9f98846713ac2ad",
+    "parent_exp324_execution_digest": "fbf1e416f3d195a44ca901ed8e2c7377c6850e4e32ec0116bb59d7657513f2f0",
+    "parent_exp324_marker_sha": "3bc060f1d3656dbae1de2265a32b145d9cff0dbc",
+    "reconstruction_run_id": 35345351869,
+    "reconstruction_artifact_id": 10547681681,
+    "reconstruction_artifact_name": "exp323r-reconstruction-candidate-35345351869-0",
+    "reconstruction_artifact_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+    "reconstruction_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+    "reconstruction_receipt_digest": "f8153c9f88d7d28b7e0240d994991c8d232b1d192b1688b901982610e266e03f"
+  },
+  "model": {
+    "arm": "A_FIXED",
+    "resident_trainable_parameters": 10000000,
+    "device": "cpu",
+    "starting_cumulative_step": 2048,
+    "architecture_change": false,
+    "tokenizer_change": false,
+    "objective_change": false,
+    "scale_change": false
+  },
+  "population": {
+    "stage": "A_SANITY",
+    "root": 0,
+    "generator_version": "exp319-worlds-v1",
+    "families": [
+      "iterative-grid-and-maze",
+      "algorithmic-sequence-transform",
+      "generator-heldout-abstract-transformation",
+      "language-sequence-control"
+    ],
+    "indices_per_family": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "total_worlds": 32,
+    "identity_rule": "exact tuple (family, stage=A_SANITY, root=0, index) materialized by exp319-worlds-v1"
+  },
+  "training": {
+    "learning_rate_decimal": "0.00005",
+    "optimizer": "AdamW",
+    "inherited_optimizer_state": true,
+    "inherited_rng_state": true,
+    "weight_decay_decimal": "0.01",
+    "gradient_clip_norm_decimal": "1.0",
+    "training_effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "independent_clone_per_world": true,
+    "optimizer_updates_per_world": 32,
+    "local_checkpoints": [
+      8,
+      16,
+      32
+    ],
+    "rationale": "32 updates per world exactly matches each world's exposure count in EXP-324 family isolation and the 1024-step joint control; only within-family/world interference is removed"
+  },
+  "primary_measurements": [
+    "single_world_teacher_forced_answer_token_accuracy",
+    "single_world_teacher_forced_full_answer_exact"
+  ],
+  "secondary_measurements": [
+    "single_world_greedy_exact",
+    "single_world_answer_only_loss",
+    "gradient_norm_preclip",
+    "parameter_update_norm_ratio",
+    "nonfinite_events"
+  ],
+  "thresholds": {
+    "teacher_forced_token_accuracy_floor": 0.99,
+    "teacher_forced_full_answer_exact_floor": 0.9,
+    "nonfinite_events_max": 0
+  },
+  "dispositions": [
+    "INVALID_WORLD_ISOLATION",
+    "ALL_WORLDS_SINGLE_FIT",
+    "SOME_WORLDS_SINGLE_FIT",
+    "NO_WORLDS_SINGLE_FIT"
+  ],
+  "decision_order": [
+    "INVALID_WORLD_ISOLATION",
+    "ALL_WORLDS_SINGLE_FIT",
+    "SOME_WORLDS_SINGLE_FIT",
+    "NO_WORLDS_SINGLE_FIT"
+  ],
+  "interpretation": {
+    "ALL_WORLDS_SINGLE_FIT": "supports within-family multi-world optimization interference as a contributor under matched exposure; does not identify a unique mechanism",
+    "SOME_WORLDS_SINGLE_FIT": "localizes failure to a subset of worlds and leaves both per-world difficulty and residual within-family interference viable",
+    "NO_WORLDS_SINGLE_FIT": "shows no registered single world reaches the floor under matched 32-update isolation; cross-world interference is not required for the observed failure"
+  },
+  "authorization": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  },
+  "nonclaims": [
+    "EXP-325 does not establish a 10M architectural capacity ceiling",
+    "EXP-325 does not establish that scaling would help",
+    "EXP-325 does not authorize EXP-320 or larger model sizes",
+    "single-world success does not uniquely prove a specific interference mechanism",
+    "single-world failure at 32 matched updates does not establish failure at larger per-world budgets"
+  ]
+}
