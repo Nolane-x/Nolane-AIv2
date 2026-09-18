@@ -44,8 +44,8 @@ def test_scientific_workflow_contains_no_training_or_scale_surface() -> None:
         "run_training_chunk",
         "scientific_train_step",
         "--learning-rate",
-        "30m",
-        "100m",
+        "run_scientific_trial",
+        "stage-b-chunk",
     )
     for token in forbidden:
         assert token not in text.lower()
