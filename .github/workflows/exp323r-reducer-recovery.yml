@@ -32,6 +32,14 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install exact frozen reducer runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+
       - name: Verify sealed source and marker
         shell: bash
         run: |
@@ -107,14 +115,6 @@ jobs:
           github-token: ${{ github.token }}
           repository: Nolane-x/Nolane-AIv2
           run-id: 35354410137
-
-      - name: Install exact frozen reducer runtime
-        shell: bash
-        run: |
-          set -euo pipefail
-          python -m pip install --upgrade pip
-          python -m pip install numpy
-          python -m pip install -e './frozen[dev,model]'
 
       - name: Run unchanged frozen reducer
         shell: bash
