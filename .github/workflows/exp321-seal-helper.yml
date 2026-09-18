@@ -70,3 +70,20 @@ jobs:
           print(f"EXP321_WORKFLOW_SHA256={identity.workflow_sha256}")
           print(f"EXP321_EXECUTION_DIGEST={identity.exp321_execution_digest}")
           PY
+
+      - name: Verify exact marker-only commit
+        env:
+          SOURCE_SHA: 05918dee112e5672837fc94b04a0ad8fd7c920b7
+          MARKER_SHA: a2f1004206aeffb37c327fcd909f0c1564e67045
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$MARKER_SHA" --depth=100
+          rm -rf /tmp/exp321-marker
+          git worktree add --detach /tmp/exp321-marker "$MARKER_SHA"
+          python /tmp/exp321-marker/scripts/verify_exp321_freeze.py \
+            --repo-root /tmp/exp321-marker \
+            --source-commit-sha "$SOURCE_SHA" \
+            --marker-json /tmp/exp321-marker/protocols/v017/exp321_execution_identity_v1.json \
+            --marker-sha256 /tmp/exp321-marker/protocols/v017/exp321_execution_identity_v1.sha256
+          echo "EXP321_MARKER_VERIFIED=$MARKER_SHA"
