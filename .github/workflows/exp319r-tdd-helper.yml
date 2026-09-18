@@ -11,7 +11,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      TARGET_SHA: d6a04b54ba6ae53fb149947e3aa44629a865bfbd
+      TARGET_SHA: eb0574ed4504779c5c917b51fe4c51a74df5061f
     steps:
       - uses: actions/checkout@v4
         with:
