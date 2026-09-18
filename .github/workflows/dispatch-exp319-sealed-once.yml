@@ -1,0 +1,29 @@
+name: dispatch-exp319-sealed-once
+
+on:
+  push:
+    branches: [exp319-authoritative-dispatch-helper]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: exp319-learnability-foundation-design
+      EXPECTED_HEAD: 13efbe9312374f5d64d530c22e4bb58111f3edd1
+      WORKFLOW_FILE: exp319-learnability-foundation-diagnostic.yml
+    steps:
+      - name: Verify target branch still points to sealed marker
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          actual="$(gh api "repos/${GITHUB_REPOSITORY}/branches/${TARGET_BRANCH}" --jq '.commit.sha')"
+          test "$actual" = "$EXPECTED_HEAD"
+      - name: Dispatch exactly one authoritative EXP-319 run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST             "repos/${GITHUB_REPOSITORY}/actions/workflows/${WORKFLOW_FILE}/dispatches"             -f ref="${TARGET_BRANCH}"
