@@ -1,0 +1,37 @@
+name: dispatch-exp319r-sealed-once
+
+on:
+  push:
+    branches: [exp319r-authoritative-dispatch-helper]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: exp319r-runtime-numpy-digest-repair
+      EXPECTED_HEAD: 124584061616ab0864355219645ed00c1298c575
+      WORKFLOW_FILE: exp319-learnability-foundation-diagnostic.yml
+    steps:
+      - name: Verify repaired target branch still points to sealed marker
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          actual="$(gh api "repos/${GITHUB_REPOSITORY}/branches/${TARGET_BRANCH}" --jq '.commit.sha')"
+          test "$actual" = "$EXPECTED_HEAD"
+      - name: Verify registered workflow matches repaired marker blob
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          registered="$(gh api "repos/${GITHUB_REPOSITORY}/contents/.github/workflows/${WORKFLOW_FILE}?ref=main" --jq '.sha')"
+          sealed="$(gh api "repos/${GITHUB_REPOSITORY}/contents/.github/workflows/${WORKFLOW_FILE}?ref=${EXPECTED_HEAD}" --jq '.sha')"
+          test "$registered" = "$sealed"
+          test "$sealed" = "613117dc0eb8fe563037522c74a3ba8ca00ce5fc"
+      - name: Dispatch exactly one repaired authoritative EXP-319 run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST             "repos/${GITHUB_REPOSITORY}/actions/workflows/${WORKFLOW_FILE}/dispatches"             -f ref="${TARGET_BRANCH}"
