@@ -33,6 +33,7 @@ def test_scientific_workflow_binds_marker_prereg_and_exact_checkpoint() -> None:
         "ee07280fee8379f39ccea16d38f1ff31482975cb39780a75a0592916e8d154c3",
         "35311529822",
         "scripts/exp321_localize_checkpoint.py",
+        "--execution-identity",
     ):
         assert token in text
 
