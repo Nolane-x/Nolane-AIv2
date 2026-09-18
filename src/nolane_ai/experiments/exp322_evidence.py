@@ -23,6 +23,10 @@ from .exp322_contract import (
     reduce_intervention,
     validate_snapshot,
 )
+from .exp322_identity import (
+    Exp322ExecutionIdentity,
+    validate_exp322_execution_identity,
+)
 
 
 ARM_EVIDENCE_SCHEMA = "EXP322-ARM-EVIDENCE-V1"
@@ -48,6 +52,7 @@ def parent_authority_payload() -> dict[str, Any]:
 def build_arm_evidence(
     *,
     arm: str,
+    execution_identity: Exp322ExecutionIdentity,
     snapshots: tuple[InterventionSnapshot, ...],
     family_summaries: Mapping[str, Any],
     completed_step: int,
@@ -58,12 +63,14 @@ def build_arm_evidence(
 ) -> dict[str, Any]:
     if arm not in ARMS:
         raise ValueError("unknown EXP-322 arm")
+    validate_exp322_execution_identity(execution_identity)
     payload: dict[str, Any] = {
         "schema": ARM_EVIDENCE_SCHEMA,
         "arm": arm,
         "learning_rate": ARM_LEARNING_RATES[arm],
         "starting_step": STARTING_STEP,
         "parent": parent_authority_payload(),
+        "execution_identity": asdict(execution_identity),
         "snapshots": [asdict(item) for item in snapshots],
         "family_summaries": dict(family_summaries),
         "completed_step": completed_step,
@@ -92,6 +99,14 @@ def validate_arm_evidence(payload: Mapping[str, Any]) -> None:
         raise ValueError("EXP-322 arm starting-step mismatch")
     if payload.get("parent") != parent_authority_payload():
         raise ValueError("EXP-322 parent authority mismatch")
+    identity_raw = payload.get("execution_identity")
+    if not isinstance(identity_raw, Mapping):
+        raise ValueError("EXP-322 execution identity must be an object")
+    try:
+        identity = Exp322ExecutionIdentity(**identity_raw)
+        validate_exp322_execution_identity(identity)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("EXP-322 execution identity is invalid") from exc
     for key, expected in AUTHORIZATION_FLAGS.items():
         if payload.get(key) is not expected:
             raise ValueError(f"EXP-322 forbidden authorization drift: {key}")
@@ -147,6 +162,10 @@ def build_final_evidence(
     by_arm = {str(hold_payload["arm"]): hold_payload, str(decay_payload["arm"]): decay_payload}
     if set(by_arm) != set(ARMS):
         raise ValueError("EXP-322 final evidence requires one artifact per registered arm")
+    hold_identity = by_arm["HOLD_1E4"].get("execution_identity")
+    decay_identity = by_arm["DECAY_5E5"].get("execution_identity")
+    if hold_identity != decay_identity:
+        raise ValueError("EXP-322 arm execution identities do not match")
 
     invalid = any(by_arm[arm].get("invalid_reason") is not None for arm in ARMS)
     records = {
@@ -161,6 +180,7 @@ def build_final_evidence(
     payload: dict[str, Any] = {
         "schema": FINAL_EVIDENCE_SCHEMA,
         "parent": parent_authority_payload(),
+        "execution_identity": hold_identity,
         "arm_evidence_digests": {
             arm: by_arm[arm]["arm_evidence_digest"] for arm in ARMS
         },

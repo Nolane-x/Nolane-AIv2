@@ -33,6 +33,10 @@ from .exp322_contract import (
     InterventionSnapshot,
 )
 from .exp322_evidence import build_arm_evidence
+from .exp322_identity import (
+    Exp322ExecutionIdentity,
+    validate_exp322_execution_identity,
+)
 
 
 EXPECTED_PARAMETER_COUNT = 10_000_000
@@ -247,9 +251,11 @@ def run_intervention_arm(
     checkpoint_path: str | Path,
     receipt_path: str | Path,
     arm: str,
+    execution_identity: Exp322ExecutionIdentity,
 ) -> dict[str, Any]:
     if arm not in ARMS:
         raise ValueError("unknown EXP-322 arm")
+    validate_exp322_execution_identity(execution_identity)
     bundle = load_checkpoint_bundle(checkpoint_path, receipt_path)
     validate_parent_receipt(bundle.receipt)
 
@@ -312,6 +318,7 @@ def run_intervention_arm(
 
     return build_arm_evidence(
         arm=arm,
+        execution_identity=execution_identity,
         snapshots=tuple(snapshots),
         family_summaries=family_summaries,
         completed_step=completed_step,

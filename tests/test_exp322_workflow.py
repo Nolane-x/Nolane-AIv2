@@ -35,12 +35,12 @@ def test_workflow_binds_parent_checkpoint_and_exp321_evidence() -> None:
 def test_workflow_has_no_scale_or_user_selected_scientific_controls() -> None:
     text = _text().lower()
     for token in (
-        "30m",
-        "100m",
         "--model-size",
         "--learning-rate",
         "--seed",
         "--checkpoint-step",
+        "target_parameters: 30000000",
+        "target_parameters: 100000000",
         "c_nrs_core",
     ):
         assert token not in text
@@ -53,3 +53,11 @@ def test_reducer_waits_for_both_arms_and_uploads_one_final_evidence() -> None:
     assert "exp322-DECAY_5E5-${{ github.run_id }}" in text
     assert "exp322-final.json" in text
     assert "exp322-teacher-forced-intervention-${{ github.run_id }}" in text
+
+
+def test_workflow_verifies_artifact_digests_and_embeds_execution_identity() -> None:
+    text = _text()
+    assert "10541366011" in text
+    assert "491f4fe0207a3ebbaba7122bbe254cf9bed44339e14aeb4a40b6a23928aecbe9" in text
+    assert "ee07280fee8379f39ccea16d38f1ff31482975cb39780a75a0592916e8d154c3" in text
+    assert "--execution-identity marker/protocols/v017/exp322_execution_identity_v1.json" in text

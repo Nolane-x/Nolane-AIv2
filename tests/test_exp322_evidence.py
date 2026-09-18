@@ -5,11 +5,20 @@ from copy import deepcopy
 import pytest
 
 from nolane_ai.experiments.exp322_contract import CHECKPOINTS, InterventionSnapshot
+from nolane_ai.experiments.exp322_identity import build_exp322_execution_identity
 from nolane_ai.experiments.exp322_evidence import (
     build_arm_evidence,
     build_final_evidence,
     validate_arm_evidence_digest,
 )
+
+
+def _identity():
+    return build_exp322_execution_identity(
+        source_commit_sha="a" * 40,
+        git_tree_sha="b" * 40,
+        workflow_sha256="c" * 64,
+    )
 
 
 def _snap(arm: str, step: int, *, token: float = 0.8, full: float = 0.3):
@@ -40,6 +49,7 @@ def _arm(arm: str, *, passing: bool = False):
     )
     return build_arm_evidence(
         arm=arm,
+        execution_identity=_identity(),
         snapshots=snapshots,
         family_summaries={str(step): {} for step in CHECKPOINTS},
         completed_step=2048,
@@ -72,6 +82,19 @@ def test_final_evidence_reduces_budget_then_lr() -> None:
     )
     assert result["decision"] == "LR_SCHEDULE_INSUFFICIENCY_EVIDENT"
     assert len(result["evidence_digest"]) == 64
+
+
+def test_final_evidence_rejects_mismatched_execution_identity() -> None:
+    hold = _arm("HOLD_1E4")
+    decay = _arm("DECAY_5E5")
+    decay = deepcopy(decay)
+    decay["execution_identity"]["source_commit_sha"] = "d" * 40
+    from nolane_ai.experiments.exp322_evidence import _digest
+    materialized = dict(decay)
+    materialized.pop("arm_evidence_digest")
+    decay["arm_evidence_digest"] = _digest(materialized)
+    with pytest.raises(ValueError):
+        build_final_evidence(hold, decay)
 
 
 def test_final_evidence_rejects_duplicate_arm_artifacts() -> None:

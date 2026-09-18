@@ -64,6 +64,59 @@ jobs:
             --json frozen/protocols/v017/exp322_preregistration_v1.json \
             --sha256 frozen/protocols/v017/exp322_preregistration_v1.sha256
 
+      - name: Verify immutable parent artifact metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import urllib.parse
+          import urllib.request
+
+          repo = "Nolane-x/Nolane-AIv2"
+          checks = (
+              (
+                  35331243762,
+                  10541366011,
+                  "exp321-afixed-failure-localization-35331243762",
+                  "sha256:491f4fe0207a3ebbaba7122bbe254cf9bed44339e14aeb4a40b6a23928aecbe9",
+              ),
+              (
+                  35311529822,
+                  10534351390,
+                  "exp319-stage-a-A_FIXED-0.0001-c3",
+                  "sha256:ee07280fee8379f39ccea16d38f1ff31482975cb39780a75a0592916e8d154c3",
+              ),
+          )
+          for run_id, expected_id, expected_name, expected_digest in checks:
+              url = (
+                  f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts?"
+                  + urllib.parse.urlencode({"name": expected_name})
+              )
+              req = urllib.request.Request(
+                  url,
+                  headers={
+                      "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                      "Accept": "application/vnd.github+json",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                      "User-Agent": "exp322-teacher-forced-intervention",
+                  },
+              )
+              with urllib.request.urlopen(req) as response:
+                  payload = json.load(response)
+              matches = [a for a in payload["artifacts"] if int(a["id"]) == expected_id]
+              if len(matches) != 1:
+                  raise SystemExit(f"EXP-322 artifact id mismatch: {expected_name}")
+              artifact = matches[0]
+              if artifact["name"] != expected_name or artifact.get("expired") is not False:
+                  raise SystemExit(f"EXP-322 artifact metadata mismatch: {expected_name}")
+              if artifact.get("digest") != expected_digest:
+                  raise SystemExit(f"EXP-322 artifact digest mismatch: {expected_name}")
+          PY
+
       - name: Download sealed EXP-321 evidence
         uses: actions/download-artifact@v4
         with:
@@ -119,6 +172,7 @@ jobs:
             --checkpoint input/checkpoint.pt \
             --receipt input/receipt.json \
             --arm "${{ matrix.arm }}" \
+            --execution-identity marker/protocols/v017/exp322_execution_identity_v1.json \
             --output "arm-${{ matrix.arm }}/evidence.json"
 
       - name: Upload sealed arm evidence
