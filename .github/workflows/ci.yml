@@ -281,6 +281,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Download authoritative Stage-A selection artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: exp319-stage-a-selection
+          path: recovered-input
+          github-token: ${{ github.token }}
+          repository: Nolane-x/Nolane-AIv2
+          run-id: 35311529822
       - name: Recover and independently verify Stage-A finalization
         env:
           GH_TOKEN: ${{ github.token }}
