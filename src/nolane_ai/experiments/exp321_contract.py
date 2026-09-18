@@ -137,12 +137,12 @@ def preregistration_payload() -> dict[str, Any]:
             "unused_id_end_inclusive": UNUSED_ID_END_INCLUSIVE,
         },
         "effort_grid": list(EFFORT_GRID),
-        "measurements": (
+        "measurements": [
             "teacher_forced_token_geometry",
             "greedy_rollout",
             "legal_vocab_masked_counterfactual",
             "family_and_answer_length_localization",
-        ),
+        ],
         "thresholds": asdict(THRESHOLDS),
         "reproduction_anchors": asdict(REPRODUCTION_ANCHORS),
         "dispositions": list(DISPOSITIONS),
