@@ -7,8 +7,10 @@ from pathlib import Path
 import subprocess
 
 from nolane_ai.experiments.exp321_freeze import (
+    EXP321_BASE_SHA,
     canonical_marker_json_bytes,
     marker_sidecar_bytes,
+    validate_frozen_changed_paths,
     validate_marker_changed_paths,
 )
 from nolane_ai.experiments.exp321_identity import (
@@ -47,6 +49,23 @@ def main(argv: list[str] | None = None) -> int:
     tree_sha = _git(repo, "rev-parse", f"{args.source_commit_sha}^{{tree}}")
     if identity.source_tree_digest != source_tree_digest_from_git_tree_sha(tree_sha):
         raise SystemExit("EXP-321 source tree digest mismatch")
+
+    merge_base = _git(repo, "merge-base", EXP321_BASE_SHA, args.source_commit_sha)
+    if merge_base != EXP321_BASE_SHA:
+        raise SystemExit("EXP-321 source is not descended from the frozen PR #87 base")
+    source_changed = tuple(
+        line
+        for line in _git(
+            repo,
+            "diff",
+            "--name-only",
+            EXP321_BASE_SHA,
+            args.source_commit_sha,
+        ).splitlines()
+        if line
+    )
+    validate_frozen_changed_paths(source_changed)
+
     parent = _git(repo, "rev-parse", "HEAD^")
     if parent != args.source_commit_sha:
         raise SystemExit("EXP-321 marker parent is not the sealed source commit")
