@@ -70,6 +70,44 @@ def canonical_exp321_execution_digest(identity: Exp321ExecutionIdentity) -> str:
     return hashlib.sha256(_canonical_bytes(payload)).hexdigest()
 
 
+def validate_exp321_execution_identity(
+    identity: Exp321ExecutionIdentity,
+) -> None:
+    if identity.schema != EXP321_IDENTITY_SCHEMA:
+        raise ValueError("EXP-321 execution identity schema mismatch")
+    _require_hex(identity.source_commit_sha, length=40, field="source commit")
+    _require_hex(identity.source_tree_digest, length=64, field="source tree digest")
+    _require_hex(identity.workflow_sha256, length=64, field="workflow sha256")
+    _require_hex(
+        identity.exp321_execution_digest,
+        length=64,
+        field="execution digest",
+    )
+    if identity.approved_preregistration_digest != preregistration_digest():
+        raise ValueError("EXP-321 execution identity preregistration mismatch")
+    if (
+        identity.parent_exp319_final_evidence_digest
+        != EXP319_FINAL_EVIDENCE_DIGEST
+    ):
+        raise ValueError("EXP-321 parent EXP-319 evidence digest mismatch")
+    if identity.selected_checkpoint_artifact_id != SELECTED_CHECKPOINT_ARTIFACT_ID:
+        raise ValueError("EXP-321 selected checkpoint artifact mismatch")
+    if identity.selected_checkpoint_zip_digest != SELECTED_CHECKPOINT_ZIP_DIGEST:
+        raise ValueError("EXP-321 selected checkpoint ZIP digest mismatch")
+    if identity.selected_receipt_artifact_digest != SELECTED_RECEIPT_ARTIFACT_DIGEST:
+        raise ValueError("EXP-321 selected receipt digest mismatch")
+    if identity.selected_model_state_digest != SELECTED_MODEL_STATE_DIGEST:
+        raise ValueError("EXP-321 selected model-state digest mismatch")
+    if tuple(identity.effort_grid) != tuple(EFFORT_GRID):
+        raise ValueError("EXP-321 effort grid mismatch")
+    if identity.device != "cpu":
+        raise ValueError("EXP-321 execution device must remain cpu")
+    if identity.gradient_updates != 0:
+        raise ValueError("EXP-321 must remain zero-gradient")
+    if identity.exp321_execution_digest != canonical_exp321_execution_digest(identity):
+        raise ValueError("EXP-321 execution digest mismatch")
+
+
 def build_exp321_execution_identity(
     *,
     source_commit_sha: str,
@@ -102,6 +140,5 @@ def build_exp321_execution_identity(
 
 
 def canonical_exp321_identity_json_bytes(identity: Exp321ExecutionIdentity) -> bytes:
-    if identity.exp321_execution_digest != canonical_exp321_execution_digest(identity):
-        raise ValueError("EXP-321 execution digest mismatch")
+    validate_exp321_execution_identity(identity)
     return _canonical_bytes(asdict(identity)) + b"\n"
