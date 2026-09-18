@@ -1,0 +1,56 @@
+name: exp319r-marker-verify-helper
+
+on:
+  push:
+    branches: [exp319r-marker-verify-helper]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-marker:
+    runs-on: ubuntu-latest
+    env:
+      SOURCE_SHA: 2002a42322c7b919c3c9dc3da7d9cb0f546d4431
+      MARKER_SHA: 124584061616ab0864355219645ed00c1298c575
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.MARKER_SHA }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - name: Verify exact marker-only diff and parent
+        run: |
+          test "$(git rev-parse HEAD)" = "$MARKER_SHA"
+          test "$(git rev-parse HEAD^)" = "$SOURCE_SHA"
+          changed="$(git diff-tree --no-commit-id --name-only -r HEAD)"
+          expected="$(printf '%s\n'             'protocols/v017/exp319_execution_identity_v1.json'             'protocols/v017/exp319_execution_identity_v1.sha256')"
+          test "$changed" = "$expected"
+      - name: Verify sealed EXP-319R execution identity
+        run: >-
+          python scripts/verify_exp319_freeze.py
+          --repo-root .
+          --source-commit-sha "$SOURCE_SHA"
+          --marker-json protocols/v017/exp319_execution_identity_v1.json
+          --marker-sha256 protocols/v017/exp319_execution_identity_v1.sha256
+      - name: Recompute identity from exact repaired source and compare bytes
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from nolane_ai.experiments.exp319_freeze import (
+              build_exp319_identity_from_git,
+              canonical_marker_json_bytes,
+              marker_sidecar_bytes,
+          )
+          identity = build_exp319_identity_from_git('.', os.environ['SOURCE_SHA'])
+          marker = Path('protocols/v017/exp319_execution_identity_v1.json')
+          sidecar = Path('protocols/v017/exp319_execution_identity_v1.sha256')
+          assert marker.read_bytes() == canonical_marker_json_bytes(identity)
+          assert sidecar.read_bytes() == marker_sidecar_bytes(identity)
+          assert identity.exp319_execution_digest == '675655dfec9499ac8c49f3429771d1c5456e7ee652a3d7f309117bbc8691c9ba'
+          PY
