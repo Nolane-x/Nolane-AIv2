@@ -8,6 +8,7 @@ on:
       - "protocols/v017/exp324_preregistration_v1.sha256"
       - "src/nolane_ai/experiments/exp324_*.py"
       - "scripts/verify_exp324_contract.py"
+      - "scripts/verify_exp324_freeze.py"
       - "scripts/exp324_*.py"
       - "tests/test_exp324_*.py"
       - ".github/workflows/v017-exp324-contract.yml"
@@ -30,6 +31,6 @@ jobs:
           python scripts/verify_exp324_contract.py
           --json protocols/v017/exp324_preregistration_v1.json
           --sha256 protocols/v017/exp324_preregistration_v1.sha256
-      - name: Run EXP-324 pure contract court
-        run: pytest -q tests/test_exp324_contract.py
+      - name: Run complete EXP-324 pure contract/freeze/workflow court
+        run: pytest -q tests/test_exp324_*.py
       - run: python -m compileall -q src scripts
