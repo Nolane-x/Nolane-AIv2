@@ -8,8 +8,10 @@ on:
       - "protocols/v017/exp324_preregistration_v1.sha256"
       - "src/nolane_ai/experiments/exp324_*.py"
       - "scripts/verify_exp324_contract.py"
+      - "scripts/exp324_*.py"
       - "tests/test_exp324_*.py"
       - ".github/workflows/v017-exp324-contract.yml"
+      - ".github/workflows/exp324-family-isolated-learnability.yml"
 
 permissions:
   contents: read
