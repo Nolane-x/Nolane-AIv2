@@ -64,8 +64,29 @@ AUTHORITATIVE_V016_REGIONS: tuple[RegionBudget, ...] = (
 )
 
 
+V017_FROZEN_BASE_PARAMETERS = 9_120_832
+V017_CAPACITY_EXCHANGE_ENVELOPE = 879_168
+
+AUTHORITATIVE_V017_REGIONS: tuple[RegionBudget, ...] = (
+    RegionBudget("native_recursive_base", V017_FROZEN_BASE_PARAMETERS),
+    RegionBudget("capacity_exchange_envelope", V017_CAPACITY_EXCHANGE_ENVELOPE),
+)
+
+
 def authoritative_v016_budget() -> ModelBudget:
     budget = ModelBudget(version="V0.16.1-authority-map", regions=AUTHORITATIVE_V016_REGIONS)
     if budget.total_parameters != 100_000_000:
         raise RuntimeError(f"authoritative budget drifted: {budget.total_parameters:,}")
+    return budget
+
+
+def authoritative_v017_10m_budget() -> ModelBudget:
+    budget = ModelBudget(
+        version="v0.17-exp301-10m-native-recursive",
+        regions=AUTHORITATIVE_V017_REGIONS,
+    )
+    if budget.total_parameters != 10_000_000:
+        raise RuntimeError(f"V0.17 10M budget drifted: {budget.total_parameters:,}")
+    if V017_FROZEN_BASE_PARAMETERS + V017_CAPACITY_EXCHANGE_ENVELOPE != 10_000_000:
+        raise RuntimeError("V0.17 base/CEE accounting drifted")
     return budget
