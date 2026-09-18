@@ -1,0 +1,24 @@
+name: Dispatch sealed EXP-322 once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/dispatch-exp322-sealed-once.yml"
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch exact sealed EXP-322 branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh api
+          --method POST
+          repos/${{ github.repository }}/actions/workflows/exp322-teacher-forced-learnability.yml/dispatches
+          -f ref=exp322-teacher-forced-learnability-intervention
