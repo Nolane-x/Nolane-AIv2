@@ -24,7 +24,7 @@ def record(family,index,passed=False):
     return {
         "family":family,
         "world_index":index,
-        "content_id":"exp319:" + f"{index:064x}",
+        "content_id":"exp319:" + f"{FAMILIES.index(family) * 8 + index:064x}",
         "snapshots":[
             {
                 "family":family,
