@@ -1,0 +1,72 @@
+name: exp321-seal-helper
+
+on:
+  push:
+    branches:
+      - exp321-seal-helper-05918dee
+    paths:
+      - ".github/workflows/exp321-seal-helper.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install source tooling
+        run: python -m pip install -e '.[dev]'
+      - name: Materialize exact EXP-321 marker bytes
+        env:
+          SOURCE_SHA: 05918dee112e5672837fc94b04a0ad8fd7c920b7
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          from nolane_ai.experiments.exp321_freeze import (
+              build_exp321_identity_from_git,
+              canonical_marker_json_bytes,
+              marker_sidecar_bytes,
+              validate_frozen_changed_paths,
+              EXP321_BASE_SHA,
+          )
+          from nolane_ai.experiments.exp321_identity import (
+              validate_exp321_execution_identity,
+          )
+          import subprocess
+
+          source = os.environ["SOURCE_SHA"]
+          base = EXP321_BASE_SHA
+          merge_base = subprocess.check_output(
+              ["git", "merge-base", base, source], text=True
+          ).strip()
+          if merge_base != base:
+              raise SystemExit("source is not descended from frozen PR87 base")
+          changed = tuple(
+              line for line in subprocess.check_output(
+                  ["git", "diff", "--name-only", base, source], text=True
+              ).splitlines() if line
+          )
+          validate_frozen_changed_paths(changed)
+          identity = build_exp321_identity_from_git(".", source)
+          validate_exp321_execution_identity(identity)
+          marker = canonical_marker_json_bytes(identity).decode("utf-8")
+          sidecar = marker_sidecar_bytes(identity).decode("ascii")
+          print("EXP321_MARKER_JSON_BEGIN")
+          print(marker, end="")
+          print("EXP321_MARKER_JSON_END")
+          print("EXP321_MARKER_SIDECAR_BEGIN")
+          print(sidecar, end="")
+          print("EXP321_MARKER_SIDECAR_END")
+          print(f"EXP321_SOURCE_SHA={identity.source_commit_sha}")
+          print(f"EXP321_SOURCE_TREE_DIGEST={identity.source_tree_digest}")
+          print(f"EXP321_WORKFLOW_SHA256={identity.workflow_sha256}")
+          print(f"EXP321_EXECUTION_DIGEST={identity.exp321_execution_digest}")
+          PY
