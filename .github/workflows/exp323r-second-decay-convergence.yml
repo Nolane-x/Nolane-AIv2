@@ -83,6 +83,13 @@ jobs:
           repository: Nolane-x/Nolane-AIv2
           run-id: 35345351869
 
+      - name: Verify downloaded reconstruction bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum reconstruction/reconstruction.pt | awk '{print $1}')" = "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5"
+          test "$(sha256sum reconstruction/reconstruction-receipt.json | awk '{print $1}')" = "617ba665149a366d00782df5c4457a6a3d01081fe847aa144465377ee164bba3"
+
       - name: Download sealed EXP-322 evidence
         uses: actions/download-artifact@v4
         with:

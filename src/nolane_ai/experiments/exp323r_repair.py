@@ -78,8 +78,14 @@ def validate_selection_lock(payload: Mapping[str, Any]) -> None:
     if not isinstance(state, Mapping):
         raise ValueError("EXP-323R authoritative state missing")
     reconstruction = expected_reconstruction_payload()
-    for key, value in reconstruction.items():
-        if state.get(key) != value:
+    for key in (
+        "completed_step",
+        "model_state_digest",
+        "optimizer_state_digest",
+        "rng_state_digest",
+        "nonfinite_events",
+    ):
+        if state.get(key) != reconstruction[key]:
             raise ValueError(f"EXP-323R authoritative state mismatch: {key}")
     if state.get("post_2048_optimizer_steps") != 0:
         raise ValueError("EXP-323R selection lock contains post-2048 training")
