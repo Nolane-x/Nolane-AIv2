@@ -17,6 +17,32 @@ class EffortSummary:
     masked_wrong_target_recovery: float
 
 
+_EXPECTED_STAGE_A_FAMILY_COUNTS = {
+    "algorithmic-sequence-transform": 8,
+    "generator-heldout-abstract-transformation": 8,
+    "iterative-grid-and-maze": 8,
+    "language-sequence-control": 8,
+}
+
+
+def validate_world_population(
+    identities: tuple[tuple[str, str], ...],
+) -> None:
+    if len(identities) != 32:
+        raise ValueError("EXP-321 requires exactly 32 frozen Stage-A worlds")
+    if len(set(identities)) != len(identities):
+        raise ValueError("EXP-321 Stage-A world identities must be unique")
+    counts: dict[str, int] = {}
+    for family, content_id in identities:
+        if not isinstance(family, str) or not family:
+            raise ValueError("EXP-321 world family must be a non-empty string")
+        if not isinstance(content_id, str) or not content_id:
+            raise ValueError("EXP-321 content_id must be a non-empty string")
+        counts[family] = counts.get(family, 0) + 1
+    if counts != _EXPECTED_STAGE_A_FAMILY_COUNTS:
+        raise ValueError("EXP-321 Stage-A family population does not match frozen geometry")
+
+
 def _unit(value: float, *, label: str) -> None:
     if not math.isfinite(value) or not 0.0 <= value <= 1.0:
         raise ValueError(f"{label} must be finite and in [0,1]")
