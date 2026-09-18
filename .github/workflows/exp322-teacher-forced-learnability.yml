@@ -1,0 +1,274 @@
+name: EXP-322 teacher-forced learnability intervention
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  intervention:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [HOLD_1E4, DECAY_5E5]
+    steps:
+      - name: Checkout sealed marker
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: marker
+
+      - name: Resolve sealed source identity
+        id: identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          p = json.loads(Path("marker/protocols/v017/exp322_execution_identity_v1.json").read_text(encoding="utf-8"))
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"source_sha={p['source_commit_sha']}\n")
+              out.write(f"workflow_sha256={p['workflow_sha256']}\n")
+              out.write(f"execution_digest={p['exp322_execution_digest']}\n")
+          PY
+
+      - name: Checkout exact frozen EXP-322 source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.identity.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify marker source workflow and preregistration
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/marker/src"
+          python marker/scripts/verify_exp322_freeze.py \
+            --repo-root marker \
+            --source-commit-sha "${{ steps.identity.outputs.source_sha }}" \
+            --marker-json marker/protocols/v017/exp322_execution_identity_v1.json \
+            --marker-sha256 marker/protocols/v017/exp322_execution_identity_v1.sha256
+          test "$(sha256sum frozen/.github/workflows/exp322-teacher-forced-learnability.yml | awk '{print $1}')" = "${{ steps.identity.outputs.workflow_sha256 }}"
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          python frozen/scripts/verify_exp322_contract.py \
+            --json frozen/protocols/v017/exp322_preregistration_v1.json \
+            --sha256 frozen/protocols/v017/exp322_preregistration_v1.sha256
+
+      - name: Verify immutable parent artifact metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import urllib.parse
+          import urllib.request
+
+          repo = "Nolane-x/Nolane-AIv2"
+          checks = (
+              (
+                  35331243762,
+                  10541366011,
+                  "exp321-afixed-failure-localization-35331243762",
+                  "sha256:491f4fe0207a3ebbaba7122bbe254cf9bed44339e14aeb4a40b6a23928aecbe9",
+              ),
+              (
+                  35311529822,
+                  10534351390,
+                  "exp319-stage-a-A_FIXED-0.0001-c3",
+                  "sha256:ee07280fee8379f39ccea16d38f1ff31482975cb39780a75a0592916e8d154c3",
+              ),
+          )
+          for run_id, expected_id, expected_name, expected_digest in checks:
+              url = (
+                  f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts?"
+                  + urllib.parse.urlencode({"name": expected_name})
+              )
+              req = urllib.request.Request(
+                  url,
+                  headers={
+                      "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                      "Accept": "application/vnd.github+json",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                      "User-Agent": "exp322-teacher-forced-intervention",
+                  },
+              )
+              with urllib.request.urlopen(req) as response:
+                  payload = json.load(response)
+              matches = [a for a in payload["artifacts"] if int(a["id"]) == expected_id]
+              if len(matches) != 1:
+                  raise SystemExit(f"EXP-322 artifact id mismatch: {expected_name}")
+              artifact = matches[0]
+              if artifact["name"] != expected_name or artifact.get("expired") is not False:
+                  raise SystemExit(f"EXP-322 artifact metadata mismatch: {expected_name}")
+              if artifact.get("digest") != expected_digest:
+                  raise SystemExit(f"EXP-322 artifact digest mismatch: {expected_name}")
+          PY
+
+      - name: Download sealed EXP-321 evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: exp321-afixed-failure-localization-35331243762
+          path: parent-exp321
+          github-token: ${{ github.token }}
+          repository: Nolane-x/Nolane-AIv2
+          run-id: 35331243762
+
+      - name: Verify EXP-321 scientific parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = json.loads(Path("parent-exp321/exp321-final.json").read_text(encoding="utf-8"))
+          if p.get("decision") != "TEACHER_FORCED_FOUNDATION_INSUFFICIENT":
+              raise SystemExit("EXP-322 parent disposition mismatch")
+          if p.get("evidence_digest") != "5f3bd6cbacef0af4883e33f14bafd56b49a307df88641e837bb9ecdf004d5091":
+              raise SystemExit("EXP-322 parent evidence digest mismatch")
+          selected = p.get("selected_checkpoint", {})
+          if selected.get("artifact_id") != 10534351390:
+              raise SystemExit("EXP-322 parent checkpoint artifact mismatch")
+          if selected.get("model_state_digest") != "18d738a3845a470f80cbfcb39662f630a73195fd383da7f71c9e54474115c7fb":
+              raise SystemExit("EXP-322 parent model-state mismatch")
+          PY
+
+      - name: Download immutable selected A_FIXED checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: exp319-stage-a-A_FIXED-0.0001-c3
+          path: input
+          github-token: ${{ github.token }}
+          repository: Nolane-x/Nolane-AIv2
+          run-id: 35311529822
+
+      - name: Install exact frozen runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+
+      - name: Run sealed EXP-322 continuation arm
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          mkdir -p "arm-${{ matrix.arm }}"
+          python frozen/scripts/exp322_run_arm.py \
+            --checkpoint input/checkpoint.pt \
+            --receipt input/receipt.json \
+            --arm "${{ matrix.arm }}" \
+            --execution-identity marker/protocols/v017/exp322_execution_identity_v1.json \
+            --output "arm-${{ matrix.arm }}/evidence.json"
+
+      - name: Upload sealed arm evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp322-${{ matrix.arm }}-${{ github.run_id }}
+          path: arm-${{ matrix.arm }}/evidence.json
+          if-no-files-found: error
+          retention-days: 90
+
+  reduce:
+    needs: intervention
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sealed marker
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: marker
+
+      - name: Resolve sealed source identity
+        id: identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          p = json.loads(Path("marker/protocols/v017/exp322_execution_identity_v1.json").read_text(encoding="utf-8"))
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"source_sha={p['source_commit_sha']}\n")
+              out.write(f"execution_digest={p['exp322_execution_digest']}\n")
+          PY
+
+      - name: Checkout exact frozen EXP-322 source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.identity.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download HOLD evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: exp322-HOLD_1E4-${{ github.run_id }}
+          path: hold
+
+      - name: Download DECAY evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: exp322-DECAY_5E5-${{ github.run_id }}
+          path: decay
+
+      - name: Install frozen reducer
+        run: python -m pip install -e './frozen[dev]'
+
+      - name: Reduce sealed EXP-322 evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          python frozen/scripts/exp322_reduce.py \
+            --hold hold/evidence.json \
+            --decay decay/evidence.json \
+            --output evidence/exp322-final.json
+
+      - name: Fail closed on authorization drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = json.loads(Path("evidence/exp322-final.json").read_text(encoding="utf-8"))
+          for key in (
+              "exp302_implementation_authorized",
+              "exp320_implementation_authorized",
+              "scale_authorized",
+              "authorized_30m",
+              "authorized_100m",
+          ):
+              if p.get(key) is not False:
+                  raise SystemExit(f"forbidden authorization: {key}")
+          print(f"EXP-322 sealed disposition: {p['decision']}")
+          print(f"EXP-322 evidence digest: {p['evidence_digest']}")
+          PY
+
+      - name: Upload sealed EXP-322 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp322-teacher-forced-intervention-${{ github.run_id }}
+          path: evidence/exp322-final.json
+          if-no-files-found: error
+          retention-days: 90
