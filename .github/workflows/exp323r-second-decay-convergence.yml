@@ -1,0 +1,188 @@
+name: EXP-323R repaired second-decay convergence
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  intervention:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arm: [HOLD_5E5, DECAY_2P5E5]
+    steps:
+      - name: Checkout sealed repair marker
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: marker
+
+      - name: Resolve sealed repaired source
+        id: identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p=json.loads(Path("marker/protocols/v017/exp323r_execution_identity_v1.json").read_text())
+          with open(os.environ["GITHUB_OUTPUT"],"a") as out:
+              out.write(f"source_sha={p['source_commit_sha']}\n")
+              out.write(f"workflow_sha256={p['workflow_sha256']}\n")
+          PY
+
+      - name: Checkout exact frozen repair source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.identity.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify frozen workflow and selected artifact metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum frozen/.github/workflows/exp323r-second-decay-convergence.yml | awk '{print $1}')" = "${{ steps.identity.outputs.workflow_sha256 }}"
+          python - <<'PY'
+          import json, os, urllib.request
+          from pathlib import Path
+          lock=json.loads(Path("frozen/protocols/v017/exp323r_reconstruction_selection_lock_v1.json").read_text())
+          url="https://api.github.com/repos/Nolane-x/Nolane-AIv2/actions/runs/35345351869/artifacts"
+          req=urllib.request.Request(url,headers={
+              "Authorization":f"Bearer {os.environ['GH_TOKEN']}",
+              "Accept":"application/vnd.github+json",
+              "X-GitHub-Api-Version":"2022-11-28",
+              "User-Agent":"exp323r-repaired-execution",
+          })
+          with urllib.request.urlopen(req) as r: payload=json.load(r)
+          matches=[a for a in payload["artifacts"] if int(a["id"])==10547681681]
+          if len(matches)!=1: raise SystemExit("selected reconstruction artifact missing")
+          a=matches[0]
+          if a["name"]!="exp323r-reconstruction-candidate-35345351869-0" or a.get("expired") is not False:
+              raise SystemExit("selected reconstruction artifact metadata mismatch")
+          if a.get("digest")!="sha256:c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621":
+              raise SystemExit("selected reconstruction artifact ZIP digest mismatch")
+          PY
+
+      - name: Download selected immutable reconstruction
+        uses: actions/download-artifact@v4
+        with:
+          name: exp323r-reconstruction-candidate-35345351869-0
+          path: reconstruction
+          github-token: ${{ github.token }}
+          repository: Nolane-x/Nolane-AIv2
+          run-id: 35345351869
+
+      - name: Verify downloaded reconstruction bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum reconstruction/reconstruction.pt | awk '{print $1}')" = "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5"
+          test "$(sha256sum reconstruction/reconstruction-receipt.json | awk '{print $1}')" = "617ba665149a366d00782df5c4457a6a3d01081fe847aa144465377ee164bba3"
+
+      - name: Download sealed EXP-322 evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: exp322-teacher-forced-intervention-35339004168
+          path: parent-exp322
+          github-token: ${{ github.token }}
+          repository: Nolane-x/Nolane-AIv2
+          run-id: 35339004168
+
+      - name: Install frozen repair runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+
+      - name: Run repaired arm from immutable step-2048 state
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          mkdir -p "arm-${{ matrix.arm }}"
+          python frozen/scripts/exp323r_run_arm.py \
+            --reconstruction-checkpoint reconstruction/reconstruction.pt \
+            --reconstruction-receipt reconstruction/reconstruction-receipt.json \
+            --selection-lock frozen/protocols/v017/exp323r_reconstruction_selection_lock_v1.json \
+            --parent-exp322 parent-exp322/exp322-final.json \
+            --arm "${{ matrix.arm }}" \
+            --execution-identity marker/protocols/v017/exp323r_execution_identity_v1.json \
+            --output "arm-${{ matrix.arm }}/evidence.json"
+
+      - name: Upload repaired arm evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp323r-${{ matrix.arm }}-${{ github.run_id }}
+          path: arm-${{ matrix.arm }}/evidence.json
+          if-no-files-found: error
+          retention-days: 90
+
+  reduce:
+    needs: intervention
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sealed repair marker
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: marker
+      - name: Resolve source SHA
+        id: identity
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p=json.loads(Path("marker/protocols/v017/exp323r_execution_identity_v1.json").read_text())
+          with open(os.environ["GITHUB_OUTPUT"],"a") as out: out.write(f"source_sha={p['source_commit_sha']}\n")
+          PY
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.identity.outputs.source_sha }}
+          path: frozen
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp323r-HOLD_5E5-${{ github.run_id }}
+          path: hold
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp323r-DECAY_2P5E5-${{ github.run_id }}
+          path: decay
+      - run: python -m pip install -e './frozen[dev]'
+      - name: Reduce repaired evidence
+        shell: bash
+        run: |
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          python frozen/scripts/exp323r_reduce.py --hold hold/evidence.json --decay decay/evidence.json --output evidence/exp323r-final.json
+      - name: Fail closed on authorization drift
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/exp323r-final.json").read_text())
+          for k in ("exp302_implementation_authorized","exp320_implementation_authorized","scale_authorized","authorized_30m","authorized_100m"):
+              if p.get(k) is not False: raise SystemExit(f"forbidden authorization: {k}")
+          print("EXP-323R sealed disposition:",p["decision"])
+          print("EXP-323R evidence digest:",p["evidence_digest"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp323r-second-decay-convergence-${{ github.run_id }}
+          path: evidence/exp323r-final.json
+          if-no-files-found: error
+          retention-days: 90

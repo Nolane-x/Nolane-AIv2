@@ -1,0 +1,41 @@
+{
+  "schema": "EXP323R-RECONSTRUCTION-SELECTION-LOCK-V1",
+  "materialization_run_id": 35345351869,
+  "materialization_source_commit_sha": "e4d226dd26ca580d909b850921b61187bcf3a61b",
+  "materialization_run_conclusion": "failure_after_candidate_upload_due_aggregator_sort_bug",
+  "selection_rule": "lowest_verified_attempt_index",
+  "verified_candidate_attempts": [
+    0,
+    2
+  ],
+  "selected_attempt_index": 0,
+  "selected_artifact_id": 10547681681,
+  "selected_artifact_name": "exp323r-reconstruction-candidate-35345351869-0",
+  "selected_artifact_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+  "selected_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+  "selected_receipt_digest": "f8153c9f88d7d28b7e0240d994991c8d232b1d192b1688b901982610e266e03f",
+  "selected_receipt_file_sha256": "617ba665149a366d00782df5c4457a6a3d01081fe847aa144465377ee164bba3",
+  "selected_diagnostic_file_sha256": "bb0978af39d0d3e56d3e1815ec2727b218e1161062eb2b4dba7f65e06f769d5f",
+  "alternate_exact_candidate": {
+    "attempt_index": 2,
+    "artifact_id": 10546972284,
+    "artifact_zip_digest": "556cbff21a1205b7b4eb0af98cf81635af136c96eb2ab9b16da47e3fd2ac20a3",
+    "checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5"
+  },
+  "authoritative_state": {
+    "completed_step": 2048,
+    "model_state_digest": "4d3b848d193e6e465473dab7346edaafa3ee0ffc870eac600c6c46952ca880fc",
+    "optimizer_state_digest": "9b32588f0bc63881aa974df54829c4cda1d9e4913aa0fcc40cff5d5f2cddeb79",
+    "rng_state_digest": "e293380e9776eb9e373bd0c3d3ab6a8aa4d0ab3b6764dc582bc859efc12fca07",
+    "nonfinite_events": 0,
+    "post_2048_optimizer_steps": 0
+  },
+  "authorization": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  },
+  "selection_lock_digest": "f74a22e4b3202f5157f0ca71faceedf69cbbf172f04a88aeaf8206f03066d011"
+}
