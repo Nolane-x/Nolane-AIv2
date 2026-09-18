@@ -12,6 +12,8 @@ from .exp321_identity import (
 )
 
 
+EXP321_BASE_SHA = "9aec137b915ed1238223bcc75d7c9f0c0ad1af2c"
+
 EXP321_MARKER_PATHS = (
     "protocols/v017/exp321_execution_identity_v1.json",
     "protocols/v017/exp321_execution_identity_v1.sha256",
