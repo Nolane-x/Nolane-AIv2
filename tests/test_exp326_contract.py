@@ -67,12 +67,21 @@ def test_all_registered_groups_fit_has_no_break() -> None:
 
 
 def test_pair_break_has_earliest_precedence() -> None:
-    decision,_,_=reduce_breakpoint(grid({("iterative-grid-and-maze","P01"):False}))
+    family="iterative-grid-and-maze"
+    decision,_,_=reduce_breakpoint(grid({
+        (family,"P01"):False,
+        (family,"Q0123"):False,
+        (family,"O01234567"):False,
+    }))
     assert decision=="PAIR_LEVEL_BREAK_PRESENT"
 
 
 def test_quartet_break_requires_all_pairs_to_fit() -> None:
-    decision,_,_=reduce_breakpoint(grid({("algorithmic-sequence-transform","Q0123"):False}))
+    family="algorithmic-sequence-transform"
+    decision,_,_=reduce_breakpoint(grid({
+        (family,"Q0123"):False,
+        (family,"O01234567"):False,
+    }))
     assert decision=="QUARTET_LEVEL_BREAK_PRESENT"
 
 
