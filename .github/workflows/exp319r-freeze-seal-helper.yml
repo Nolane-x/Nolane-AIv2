@@ -1,0 +1,64 @@
+name: exp319r-freeze-seal-helper
+
+on:
+  push:
+    branches: [exp319r-freeze-seal-helper]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-emit:
+    runs-on: ubuntu-latest
+    env:
+      ORIGINAL_SOURCE_SHA: faa51b858e3a211d7f3614d53e6cec9ca0bec74f
+      SOURCE_SHA: 2002a42322c7b919c3c9dc3da7d9cb0f546d4431
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - name: Install CPU-only model dependency
+        run: python -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+      - run: python -m pip install -e '.[dev,model]'
+      - name: Verify repair scope is procedural-only
+        run: |
+          expected="$(printf '%s\n'             '.github/workflows/exp319-learnability-foundation-diagnostic.yml'             'docs/superpowers/specs/2026-09-18-exp319r-runtime-dependency-repair.md'             'tests/test_exp319_workflow.py')"
+          actual="$(git diff --name-only "${ORIGINAL_SOURCE_SHA}" "${SOURCE_SHA}")"
+          test "$actual" = "$expected"
+      - name: EXP-319 exact suite
+        run: python -m pytest tests/test_exp319_*.py -q
+      - name: Inherited EXP-301 regressions
+        run: >-
+          python -m pytest
+          tests/test_exp301_arms.py
+          tests/test_exp301_training.py
+          tests/test_exp301_scientific.py
+          tests/test_exp301_worlds.py
+          tests/test_exp301r_recovery.py
+          -q
+      - name: Verify preregistration and compile surface
+        run: |
+          python scripts/verify_exp319_contract.py --protocol protocols/v017/exp319_preregistration_v1.json --digest-file protocols/v017/exp319_preregistration_v1.sha256
+          python -m compileall -q src scripts
+      - name: Emit repaired canonical execution identity
+        run: |
+          python - <<'PY'
+          import os
+          from nolane_ai.experiments.exp319_freeze import (
+              build_exp319_identity_from_git,
+              canonical_marker_json_bytes,
+              marker_sidecar_bytes,
+          )
+          identity = build_exp319_identity_from_git('.', os.environ['SOURCE_SHA'])
+          print('EXP319R_MARKER_JSON_BEGIN')
+          print(canonical_marker_json_bytes(identity).decode('utf-8'), end='')
+          print('EXP319R_MARKER_JSON_END')
+          print('EXP319R_MARKER_SIDECAR_BEGIN')
+          print(marker_sidecar_bytes(identity).decode('ascii'), end='')
+          print('EXP319R_MARKER_SIDECAR_END')
+          PY
