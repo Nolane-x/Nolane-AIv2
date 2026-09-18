@@ -1,0 +1,31 @@
+name: v017-exp321-contract
+
+on:
+  pull_request:
+    paths:
+      - "docs/superpowers/specs/**exp321**"
+      - "protocols/v017/exp321_*"
+      - "src/nolane_ai/experiments/exp321_*"
+      - "scripts/*exp321*"
+      - "tests/test_exp321_*"
+      - ".github/workflows/*exp321*"
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install fast test runtime
+        run: python -m pip install -e '.[dev]'
+      - name: Verify canonical preregistration
+        run: |
+          python scripts/verify_exp321_contract.py             --json protocols/v017/exp321_preregistration_v1.json             --sha256 protocols/v017/exp321_preregistration_v1.sha256
+      - name: Run exact EXP-321 source court
+        run: |
+          pytest -q             tests/test_exp321_contract.py             tests/test_exp321_measurement_surface.py             tests/test_exp321_identity.py             tests/test_exp321_freeze.py             tests/test_exp321_workflow.py
