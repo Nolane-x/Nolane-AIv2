@@ -31,5 +31,5 @@ jobs:
           --json protocols/v017/exp324_preregistration_v1.json
           --sha256 protocols/v017/exp324_preregistration_v1.sha256
       - name: Run EXP-324 pure contract court
-        run: pytest -q tests/test_exp324_*.py
+        run: pytest -q tests/test_exp324_contract.py
       - run: python -m compileall -q src scripts
