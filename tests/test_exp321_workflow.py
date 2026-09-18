@@ -19,6 +19,7 @@ def test_scientific_workflow_is_manual_standard_runner_and_input_free() -> None:
     assert "runs-on: ubuntu-latest" in text
     assert "self-hosted" not in text
     assert "inputs:" not in text
+    assert "fetch-depth: 0" in text
 
 
 def test_scientific_workflow_binds_marker_prereg_and_exact_checkpoint() -> None:
