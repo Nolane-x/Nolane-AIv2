@@ -3,6 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
+pytest.importorskip("torch")
+
 from nolane_ai.experiments.exp323r_repair import (
     load_locked_reconstruction,
     validate_selection_lock,
