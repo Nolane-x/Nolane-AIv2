@@ -1,0 +1,39 @@
+name: v017-exp322-contract
+
+on:
+  pull_request:
+    paths:
+      - "docs/superpowers/specs/2026-09-18-exp322-teacher-forced-learnability-intervention-design.md"
+      - "protocols/v017/exp322_preregistration_v1.json"
+      - "protocols/v017/exp322_preregistration_v1.sha256"
+      - "src/nolane_ai/experiments/exp322_*.py"
+      - "scripts/verify_exp322_contract.py"
+      - "scripts/exp322_*.py"
+      - "tests/test_exp322_*.py"
+      - ".github/workflows/v017-exp322-contract.yml"
+      - ".github/workflows/exp322-teacher-forced-learnability.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e '.[dev,model]'
+      - name: Verify preregistration
+        run: >-
+          python scripts/verify_exp322_contract.py
+          --json protocols/v017/exp322_preregistration_v1.json
+          --sha256 protocols/v017/exp322_preregistration_v1.sha256
+      - name: Run EXP-322 contract and runtime courts
+        run: >-
+          pytest -q
+          tests/test_exp322_contract.py
+          tests/test_exp322_evidence.py
+          tests/test_exp322_runtime.py
+      - run: python -m compileall -q src scripts
