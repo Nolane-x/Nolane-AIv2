@@ -4,7 +4,19 @@ from dataclasses import dataclass
 import math
 from typing import Mapping
 
-from .exp321_contract import DISPOSITIONS, THRESHOLDS
+from .exp321_contract import (
+    AUTHORIZATION_FLAGS,
+    BYTE_ID_START,
+    DISPOSITIONS,
+    EOS_ID,
+    SELECTED_ARM,
+    SELECTED_LEARNING_RATE,
+    SELECTED_MODEL_STATE_DIGEST,
+    SELECTED_RECEIPT_ARTIFACT_DIGEST,
+    SELECTED_STEP,
+    THRESHOLDS,
+    VOCAB_SIZE,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +53,49 @@ def validate_world_population(
         counts[family] = counts.get(family, 0) + 1
     if counts != _EXPECTED_STAGE_A_FAMILY_COUNTS:
         raise ValueError("EXP-321 Stage-A family population does not match frozen geometry")
+
+
+def validate_tokenizer_geometry(tokenizer: object) -> None:
+    expected = {
+        "pad_id": 0,
+        "bos_id": 1,
+        "separator_id": 2,
+        "eos_id": EOS_ID,
+        "byte_offset": BYTE_ID_START,
+        "vocab_size": VOCAB_SIZE,
+    }
+    for attribute, value in expected.items():
+        if getattr(tokenizer, attribute, None) != value:
+            raise ValueError(
+                f"EXP-321 tokenizer geometry mismatch for {attribute}"
+            )
+
+
+def validate_checkpoint_receipt_authority(receipt: object) -> None:
+    expected = {
+        "stage": "A_SANITY",
+        "arm_id": SELECTED_ARM,
+        "root": 0,
+        "learning_rate": SELECTED_LEARNING_RATE,
+        "cumulative_step": SELECTED_STEP,
+        "artifact_digest": SELECTED_RECEIPT_ARTIFACT_DIGEST,
+    }
+    for attribute, value in expected.items():
+        if getattr(receipt, attribute, None) != value:
+            raise ValueError(
+                f"EXP-321 checkpoint receipt authority mismatch for {attribute}"
+            )
+
+
+def validate_model_state_authority(model_state_digest: str) -> None:
+    if model_state_digest != SELECTED_MODEL_STATE_DIGEST:
+        raise ValueError("EXP-321 checkpoint model-state digest mismatch")
+
+
+def validate_authorization_boundary(payload: Mapping[str, object]) -> None:
+    for key, expected in AUTHORIZATION_FLAGS.items():
+        if payload.get(key) is not expected:
+            raise ValueError(f"EXP-321 forbidden authorization drift: {key}")
 
 
 def _unit(value: float, *, label: str) -> None:
