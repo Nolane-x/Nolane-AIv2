@@ -48,6 +48,17 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Verify sealed marker and frozen source
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/marker/src"
+          python marker/scripts/verify_exp325_freeze.py \
+            --repo-root marker \
+            --source-commit-sha "${{ steps.identity.outputs.source_sha }}" \
+            --marker-json marker/protocols/v017/exp325_execution_identity_v1.json \
+            --marker-sha256 marker/protocols/v017/exp325_execution_identity_v1.sha256
+
       - name: Verify immutable artifacts
         env:
           GH_TOKEN: ${{ github.token }}

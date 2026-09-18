@@ -37,3 +37,10 @@ def test_workflow_exposes_no_scientific_inputs_or_scale() -> None:
     t=text().lower()
     for token in ("--learning-rate","--model-size","--world-index","30000000","100000000"):
         assert token not in t
+
+
+def test_workflow_verifies_full_marker_freeze_before_science() -> None:
+    t=text()
+    assert "verify_exp325_freeze.py" in t
+    assert "--marker-json marker/protocols/v017/exp325_execution_identity_v1.json" in t
+    assert "--marker-sha256 marker/protocols/v017/exp325_execution_identity_v1.sha256" in t

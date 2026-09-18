@@ -9,6 +9,7 @@ from typing import Any, Mapping, Sequence
 from .exp319_training import model_state_digest, optimizer_state_digest, rng_state_digest
 from .exp319_worlds import materialize_stage_a
 from .exp322_runtime import _train_one_step
+from .exp323_evidence import expected_reconstruction_payload
 from .exp323r_repair import load_locked_reconstruction
 from .exp324_runtime import _evaluate_subset, validate_optimizer_invariants
 from .exp325_contract import (
@@ -199,6 +200,8 @@ def validate_family_evidence(payload: Mapping[str, Any], *, with_digest: bool = 
     if not isinstance(raw, Mapping):
         raise ValueError("EXP-325 execution identity missing")
     validate_execution_identity(Exp325ExecutionIdentity(**raw))
+    if payload.get("reconstruction") != expected_reconstruction_payload():
+        raise ValueError("EXP-325 reconstruction authority mismatch")
     worlds = payload.get("worlds")
     if not isinstance(worlds, list) or len(worlds) != 8:
         raise ValueError("EXP-325 family evidence requires eight worlds")
@@ -280,12 +283,17 @@ def build_final_evidence(family_arms: Sequence[Mapping[str, Any]]) -> dict[str, 
     records: dict[tuple[str, int], tuple[WorldSnapshot, ...]] = {}
     invalid = False
     content_ids: dict[str, str] = {}
+    seen_content_ids: set[str] = set()
     for family in FAMILIES:
         for record in by_family[family]["worlds"]:
             key = (family, int(record["world_index"]))
             rows = tuple(WorldSnapshot(**x) for x in record["snapshots"])
             records[key] = rows
-            content_ids[f"{family}:{key[1]}"] = str(record["content_id"])
+            content_id = str(record["content_id"])
+            if content_id in seen_content_ids:
+                raise ValueError("duplicate EXP-325 content ID across worlds")
+            seen_content_ids.add(content_id)
+            content_ids[f"{family}:{key[1]}"] = content_id
             invalid = invalid or record.get("invalid_reason") is not None
 
     if invalid:
