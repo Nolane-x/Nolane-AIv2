@@ -243,11 +243,15 @@ def _project_source(
     targets: list[tuple[str, tuple[torch.Tensor, ...]]],
 ) -> tuple[tuple[torch.Tensor, ...], list[str], dict[str, float], dict[str, float]]:
     raw = {world_id: _dot(source, grad) for world_id, grad in targets}
-    selected = [
-        (world_id, grad)
-        for world_id, grad in targets
-        if raw[world_id] < 0.0 and _norm_sq(grad) > TARGET_NORM_SQUARED_FLOOR
-    ]
+    selected: list[tuple[str, tuple[torch.Tensor, ...]]] = []
+    selected_norm_sq: list[float] = []
+    for world_id, grad in targets:
+        if raw[world_id] >= 0.0:
+            continue
+        norm_sq = _norm_sq(grad)
+        if norm_sq > TARGET_NORM_SQUARED_FLOOR:
+            selected.append((world_id, grad))
+            selected_norm_sq.append(norm_sq)
     if not selected:
         cloned = tuple(x.clone() for x in source)
         return cloned, [], raw, raw.copy()
@@ -257,8 +261,12 @@ def _project_source(
     rhs = torch.empty((count,), dtype=torch.float64)
     for i, (_, gi) in enumerate(selected):
         rhs[i] = _dot(gi, source)
-        for j, (_, gj) in enumerate(selected):
-            gram[i, j] = _dot(gi, gj)
+        gram[i, i] = selected_norm_sq[i]
+        for j in range(i + 1, count):
+            gj = selected[j][1]
+            value = _dot(gi, gj)
+            gram[i, j] = value
+            gram[j, i] = value
     alpha = torch.linalg.pinv(gram, rtol=PINV_RTOL) @ rhs
 
     result: list[torch.Tensor] = []
