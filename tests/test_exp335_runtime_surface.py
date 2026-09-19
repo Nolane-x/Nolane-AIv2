@@ -42,3 +42,10 @@ def test_sham_elides_unused_projection_solve_but_keeps_all_raw_dots():
     assert "selected = []" in text
     assert "post_dots = {}" in text
     assert "applied = source_grads" in text
+
+
+def test_sham_streams_target_dots_without_retaining_all_gradients():
+    text = Path("src/nolane_ai/experiments/exp335_runtime.py").read_text()
+    assert "if project:\n            targets.append((target_id, target_grads))" in text
+    assert "else:\n            raw_dots[target_id] = _dot(source_grads, target_grads)" in text
+    assert "raw_dots = {world_id: _dot(source_grads, grad) for world_id, grad in targets}" not in text
