@@ -1,0 +1,21 @@
+{
+  "schema": "EXP335-AUTHORITATIVE-RUN-LOCK-V1",
+  "experiment_id": "EXP-335",
+  "scientific_source_sha": "d29e20e5af3467d16123e224462b37ef9a2ebf9d",
+  "sealed_marker_sha": "57fdf3a38b42b41951639a35dbb3c0d82055846b",
+  "execution_digest": "24d4e97ad3c7026881a122cd309d671d9999f3f84b5dcc04a11c468c4409d520",
+  "authoritative_run_id": 35445927525,
+  "authoritative_run_created_at": "2026-09-19T13:29:42Z",
+  "duplicate_run_ids": [
+    35447261711
+  ],
+  "duplicate_runs_authoritative": false,
+  "authority_rule": "Only the earliest successfully dispatched run bound to the sealed marker is eligible for EXP-335 scientific authority. Any later duplicate dispatch is infrastructure noise and must not be substituted, pooled, selected by outcome, or reinterpreted as confirmatory evidence.",
+  "current_status": "RUNNING",
+  "result_interpretation_locked_until_authoritative_run_completes": true,
+  "scale_authorized": false,
+  "authorized_30m": false,
+  "authorized_100m": false,
+  "exp302_implementation_authorized": false,
+  "exp320_implementation_authorized": false
+}
