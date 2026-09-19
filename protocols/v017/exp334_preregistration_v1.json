@@ -1,0 +1,109 @@
+{
+  "authority": {
+    "historical_exp326_family_artifact_id": 10574301567,
+    "historical_exp326_family_artifact_zip_digest": "25545e871f16007ca5e7fb87abbe9b39b7c12c330feb640fb298ad55a8f87045",
+    "historical_exp326_family_evidence_digest": "7074a809c3d68ebe59ca6297c9fc401d1783467c0cb42ff64a271eb4d5523780",
+    "historical_exp326_family_json_sha256": "04f8f89f33f3af0145076872bb845d80751c0f3406852309215114647f1b06a7",
+    "historical_exp326_run_id": 35409935457,
+    "historical_exp327_artifact_id": 10578071604,
+    "historical_exp327_artifact_zip_digest": "a5093c7b332f2a174336f3216ec878b09fc8fa0e5dcda9cd5f7651b796708b95",
+    "historical_exp327_evidence_digest": "a9b9f06cfc05bc2dcca025d90ecbdd65c53b261437fedb178c63b23c3a8ebeb7",
+    "historical_exp327_final_json_sha256": "cc608361850a524f6e82c06c8f65a5a7c0cb321a90b2c6d4686238a82233540f",
+    "historical_exp327_run_id": 35413434081,
+    "parent_exp333_artifact_id": 10581761422,
+    "parent_exp333_artifact_zip_digest": "49ca57616fa99099dc24d39d0846a5f2fcfe3e55b5eec7156d5bf42c6e0236dd",
+    "parent_exp333_evidence_digest": "232ffe694650bc5b953acee2b03a84e30444d7aec41456b450ace739840e6b10",
+    "parent_exp333_execution_digest": "b54dcdf76ec2b604f48ee21fb5f2c001db2e480be6d21daa8a3277c3a7758771",
+    "parent_exp333_final_json_sha256": "50e53e3b45a454b7fbb2c3358f8a7284d60ec4b473c1929bbaa157dafbc4340b",
+    "parent_exp333_run_id": 35431490998,
+    "reconstruction_artifact_id": 10547681681,
+    "reconstruction_artifact_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+    "reconstruction_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+    "reconstruction_receipt_sha256": "617ba665149a366d00782df5c4457a6a3d01081fe847aa144465377ee164bba3",
+    "reconstruction_run_id": 35345351869
+  },
+  "authorization": {
+    "authorized_100m": false,
+    "authorized_30m": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false
+  },
+  "decision_order": [
+    "INVALID_HIGHER_ORDER_COURT",
+    "PARENT_HIGHER_ORDER_REPRODUCTION_MISMATCH",
+    "SHAM_HIGHER_ORDER_MISMATCH",
+    "BASELINE_FAILURE_WITHOUT_SUBSPACE_TRIGGER",
+    "PROJECT_HIGHER_ORDER_REGRESSION_PRESENT",
+    "BASELINE_HIGHER_ORDER_FAILURES_NOT_RESCUED",
+    "BASELINE_HIGHER_ORDER_FAILURES_PARTIALLY_RESCUED",
+    "HIGHER_ORDER_SUBSPACE_RESCUE_NO_REGRESSION"
+  ],
+  "experiment_id": "EXP-334",
+  "model": {
+    "architecture_change": false,
+    "arm": "A_FIXED",
+    "device": "cpu",
+    "objective_change": false,
+    "resident_trainable_parameters": 10000000,
+    "scale_change": false,
+    "starting_cumulative_step": 2048,
+    "tokenizer_change": false
+  },
+  "nonclaims": [
+    "does not establish cross-family generalization",
+    "does not establish persistent always-active state or online plasticity",
+    "does not authorize EXP-302 or EXP-320 implementation",
+    "does not authorize scaling, 30M, or 100M",
+    "does not establish all 56 triples or all 70 quartets of worlds 0..7"
+  ],
+  "population": {
+    "family": "iterative-grid-and-maze",
+    "groups": {
+      "O01234567": [0,1,2,3,4,5,6,7],
+      "Q0123": [0,1,2,3],
+      "Q4567": [4,5,6,7],
+      "T012": [0,1,2],
+      "T013": [0,1,3],
+      "T023": [0,2,3],
+      "T123": [1,2,3]
+    },
+    "historical_control_pass": {
+      "O01234567": false,
+      "Q0123": false,
+      "Q4567": true,
+      "T012": false,
+      "T013": true,
+      "T023": false,
+      "T123": true
+    },
+    "independent_clone_per_group_mode": true
+  },
+  "projection": {
+    "gram_dtype": "float64",
+    "name": "simultaneous conflicting-target subspace projection",
+    "pinv_rtol_decimal": "1e-12",
+    "rule": "At the same pre-update state compute source gradient and every other group-member target gradient. Select targets with source dot target < 0 and target norm^2 > 1e-24. Let T contain those target gradients. Replace source gradient by g - T pinv(T^T T) T^T g. For one selected target this reduces to the exact EXP-330 pair rule.",
+    "sham": "measure identical source/target gradients but apply the untouched source gradient; RNG after source backward is restored before optimizer step",
+    "target_norm_squared_floor_decimal": "1e-24"
+  },
+  "role": "post_exp333_higher_order_conflict_subspace_rescue",
+  "schema_version": "EXP334-HIGHER-ORDER-CONFLICT-SUBSPACE-RESCUE-V1",
+  "strongest_positive": "HIGHER_ORDER_SUBSPACE_RESCUE_NO_REGRESSION",
+  "thresholds": {
+    "nonfinite_events_max": 0,
+    "teacher_forced_full_answer_exact_floor": 0.9,
+    "teacher_forced_token_accuracy_floor": 0.99
+  },
+  "training": {
+    "effort_assignment": "world-local exposure index",
+    "effort_cycle": [1,2,4,8],
+    "exposures_per_world": 32,
+    "gradient_clip_norm_decimal": "1.0",
+    "learning_rate_decimal": "0.00005",
+    "modes": ["CONTROL","SHAM","SUBSPACE_PROJECT"],
+    "optimizer": "AdamW",
+    "weight_decay_decimal": "0.01",
+    "within_exposure_order": "ascending world index within group"
+  }
+}
