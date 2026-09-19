@@ -1,0 +1,24 @@
+name: Dispatch sealed EXP-332R once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/dispatch-exp332r-sealed-once.yml"
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch exact sealed EXP-332R branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh api
+          --method POST
+          repos/${{ github.repository }}/actions/workflows/exp332-portable-pair-lattice-confirmation.yml/dispatches
+          -f ref=exp332-portable-pair-lattice-confirmation
