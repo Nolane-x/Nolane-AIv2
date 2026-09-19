@@ -1,3 +1,7 @@
+import hashlib
+import json
+from pathlib import Path
+
 from nolane_ai.experiments.exp329_contract import (
     PROBE_ROUNDS,ProbeRecord,directed_damage,effort_for_round,reduce_cross_update,
 )
@@ -43,3 +47,15 @@ def test_reducer_can_find_world2_only_damage():
 def test_reducer_fail_closes_incomplete_probe_lattice():
     rows=[_p(i) for i in PROBE_ROUNDS[:-1]]
     assert reduce_cross_update(rows,final_token_accuracies=(0.5,1.0),final_full_answer_exact=(0.0,1.0))[0]=="INVALID_CROSS_UPDATE_COURT"
+
+
+def test_preregistration_canonical_and_exact_file_digests_are_locked():
+    from nolane_ai.experiments.exp329_contract import APPROVED_PREREGISTRATION_DIGEST
+    root=Path(__file__).resolve().parents[1]
+    path=root/"protocols/v017/exp329_preregistration_v1.json"
+    raw=path.read_bytes()
+    payload=json.loads(raw)
+    canonical=json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False,allow_nan=False).encode()
+    assert hashlib.sha256(canonical).hexdigest()==APPROVED_PREREGISTRATION_DIGEST
+    checksum=(root/"protocols/v017/exp329_preregistration_v1.sha256").read_text().split()[0]
+    assert hashlib.sha256(raw).hexdigest()==checksum
