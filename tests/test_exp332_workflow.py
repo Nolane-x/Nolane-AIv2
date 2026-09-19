@@ -30,14 +30,22 @@ def test_contract_workflow_runs_exact_suite():
         assert token in text
 
 
-def test_scientific_workflow_downloads_immutable_artifacts_by_id_v5():
+def test_scientific_workflow_downloads_current_attempt_artifacts_by_id_v5():
     text = SCI.read_text()
     assert "actions/download-artifact@v5" in text
-    for artifact_id in ("10547681681", "10577706134", "10574837015", "10578071604"):
+    for artifact_id in ("10547681681", "10577706134", "10578071604"):
         assert f'artifact-ids: "{artifact_id}"' in text
     for run_id in ("35345351869", "35419828278", "35413434081"):
         assert f'run-id: "{run_id}"' in text
     assert "github-token: ${{ github.token }}" in text
-    assert "/actions/artifacts/{artifact_id}/zip" not in text
     assert "sha2556sum" not in text
     assert "sha256sum exp327-replay/exp327-final.json" in text
+
+def test_original_exp327_attempt_is_downloaded_by_exact_artifact_id_without_forwarding_token():
+    text = SCI.read_text()
+    assert "actions/artifacts/10574837015/zip" in text
+    assert 'artifact-ids: "10574837015"' not in text
+    assert 'Authorization: Bearer ${GH_TOKEN}' in text
+    assert 'signed_url="$(awk' in text
+    assert 'curl --fail --silent --show-error --location "$signed_url"' in text
+    assert "unzip -q exp327-original.zip -d exp327-original" in text
