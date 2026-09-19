@@ -15,6 +15,7 @@ That extra solve is not part of the scientific intervention assigned to SHAM. SH
 The candidate changes only the SHAM branch inside `_measured_step`:
 
 - keep all 31 target-gradient backward measurements unchanged;
+- stream each SHAM target gradient: compute its raw source-target dot immediately and release it instead of retaining the full 31-gradient set in memory;
 - keep RNG reset/restoration unchanged;
 - compute the same ordered raw source-target dot products needed for `negative_targets`;
 - do not build the conflict subspace, Gram matrix, pseudoinverse, projected gradient, or post-projection dots for SHAM;
