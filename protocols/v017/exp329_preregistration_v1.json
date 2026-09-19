@@ -1,0 +1,125 @@
+{
+  "schema_version": "EXP329-P02-CROSS-UPDATE-INTERFERENCE-V1",
+  "experiment_id": "EXP-329",
+  "role": "post_exp328_p02_direct_local_interaction_localization",
+  "authority": {
+    "parent_exp328_marker_sha": "61b76af60481db6c945f7a7051c2ce2ca516d2b7",
+    "parent_exp328_source_sha": "a61c6a3a1dc06a4228f50a292f7869304971ef54",
+    "parent_exp328_run_id": 35414453731,
+    "parent_exp328_disposition": "ORDER_GEOMETRY_INVARIANT_PAIR_FAILURE",
+    "parent_exp328_final_artifact_id": 10575945812,
+    "parent_exp328_final_artifact_zip_digest": "b15b7910abc91c4ba1b5fb3f64af3daa784fa400eae98983442c7565bf94e3d5",
+    "parent_exp328_final_json_sha256": "e60f45b966954d48ad5d84ba65743925c87aa948fe15759f5860c88e9f6e77ba",
+    "parent_exp328_final_evidence_digest": "04f610460ff5a681fe05b34f1d82dcb28a2fe81ec92b4026cb015841b305428a",
+    "parent_arm_pass": {
+      "ALT_0_2": false,
+      "ALT_2_0": false,
+      "BLOCK_0_2": false,
+      "BLOCK_2_0": false
+    },
+    "reconstruction_run_id": 35345351869,
+    "reconstruction_artifact_id": 10547681681,
+    "reconstruction_artifact_name": "exp323r-reconstruction-candidate-35345351869-0",
+    "reconstruction_artifact_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+    "reconstruction_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+    "reconstruction_receipt_digest": "f8153c9f88d7d28b7e0240d994991c8d232b1d192b1688b901982610e266e03f"
+  },
+  "model": {
+    "arm": "A_FIXED",
+    "resident_trainable_parameters": 10000000,
+    "starting_cumulative_step": 2048,
+    "device": "cpu",
+    "architecture_change": false,
+    "tokenizer_change": false,
+    "objective_change": false,
+    "scale_change": false
+  },
+  "population": {
+    "stage": "A_SANITY",
+    "root": 0,
+    "family": "iterative-grid-and-maze",
+    "world_indices": [
+      0,
+      2
+    ]
+  },
+  "replay": {
+    "schedule": "ALT_0_2",
+    "exposures_per_world": 32,
+    "effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "effort_assignment": "world-local exposure index; round k updates world 0 then world 2 with effort_cycle[k mod 4]",
+    "probe_rounds_before_update": [
+      0,
+      1,
+      2,
+      4,
+      8,
+      16,
+      24,
+      31
+    ],
+    "parent_reproduction_evaluation_after_round": 32
+  },
+  "probe": {
+    "clone_per_directed_update": true,
+    "main_replay_mutated_by_probe": false,
+    "preserve_and_restore_torch_cpu_rng": true,
+    "gradient_measurement": "answer-only gradients for worlds 0 and 2 at the registered next-round effort from the identical pre-round state",
+    "gradient_metrics": [
+      "dot_product",
+      "cosine_similarity",
+      "world0_gradient_norm",
+      "world2_gradient_norm"
+    ],
+    "directed_update_measurement": "from independent deep-cloned model+optimizer state, apply exactly one registered update to source world and evaluate both worlds at the same probe effort",
+    "cross_damage_epsilon": 0.000001,
+    "self_improvement_epsilon": 0.000001,
+    "directed_damage_rule": "source post-loss <= source pre-loss - self_improvement_epsilon and target post-loss >= target pre-loss + cross_damage_epsilon"
+  },
+  "thresholds": {
+    "teacher_forced_token_accuracy_floor": 0.99,
+    "teacher_forced_full_answer_exact_floor": 0.9,
+    "nonfinite_events_max": 0
+  },
+  "dispositions": [
+    "INVALID_CROSS_UPDATE_COURT",
+    "PARENT_ALT_REPRODUCTION_MISMATCH",
+    "BIDIRECTIONAL_LOCAL_CROSS_DAMAGE",
+    "WORLD0_ONLY_LOCAL_CROSS_DAMAGE",
+    "WORLD2_ONLY_LOCAL_CROSS_DAMAGE",
+    "NO_REGISTERED_LOCAL_CROSS_DAMAGE"
+  ],
+  "decision_order": [
+    "INVALID_CROSS_UPDATE_COURT",
+    "PARENT_ALT_REPRODUCTION_MISMATCH",
+    "BIDIRECTIONAL_LOCAL_CROSS_DAMAGE",
+    "WORLD0_ONLY_LOCAL_CROSS_DAMAGE",
+    "WORLD2_ONLY_LOCAL_CROSS_DAMAGE",
+    "NO_REGISTERED_LOCAL_CROSS_DAMAGE"
+  ],
+  "interpretation": {
+    "BIDIRECTIONAL_LOCAL_CROSS_DAMAGE": "at least one registered probe in each direction shows a source-self-improving one-step update that increases the other world's same-effort answer-only loss beyond epsilon",
+    "WORLD0_ONLY_LOCAL_CROSS_DAMAGE": "registered direct cross-damage is observed only for world0 updates harming world2",
+    "WORLD2_ONLY_LOCAL_CROSS_DAMAGE": "registered direct cross-damage is observed only for world2 updates harming world0",
+    "NO_REGISTERED_LOCAL_CROSS_DAMAGE": "no registered one-step probe meets the preregistered direct cross-damage rule despite parent pair failure reproduction"
+  },
+  "nonclaims": [
+    "EXP-329 does not establish universal gradient conflict",
+    "EXP-329 does not prove a global optimization mechanism outside the registered P02 trajectory",
+    "EXP-329 does not establish an architectural capacity ceiling",
+    "EXP-329 does not establish that scaling would help",
+    "EXP-329 does not authorize EXP-320 or larger model sizes"
+  ],
+  "authorization": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
