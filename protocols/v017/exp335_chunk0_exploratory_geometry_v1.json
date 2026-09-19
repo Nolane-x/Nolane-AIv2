@@ -1,0 +1,48 @@
+{
+  "schema": "EXP335-CHUNK0-EXPLORATORY-GEOMETRY-V1",
+  "experiment_id": "EXP-335",
+  "authoritative_run_id": 35445927525,
+  "authoritative_chunk_index": 0,
+  "source_artifact_id": 10586346937,
+  "source_artifact_digest": "42db4c1f5389a9a566d02c212948df524fb0d1b74af87c0b778b4b2ce21461c9",
+  "source_chunk_bundle_digest": "ee63050f95f69c1ff493cafc01ec11b56ea5c18b5214e9d4b51ef6e5b6bed7a4",
+  "posthoc": true,
+  "decisional": false,
+  "reducer_input": false,
+  "current_experiment_must_not_change": true,
+  "projector": "SUBSPACE_PROJECT_FULL32",
+  "measurements": 128,
+  "raw_negative_target_count": 1763,
+  "raw_negative_mass": 138388.1199169127,
+  "projected_target_count": 1692,
+  "projection_update_count": 128,
+  "selected_target_negative_residual_count": 946,
+  "selected_target_negative_residual_mass": 0.025510004867792136,
+  "selected_target_negative_residual_mass_over_raw_negative_mass": 1.8433666764970993e-7,
+  "raw_negative_resolved_to_nonnegative_count": 757,
+  "new_conflict_count_raw_nonnegative_to_post_negative": 469,
+  "new_conflict_negative_mass": 10955.4641550265,
+  "total_post_negative_count": 1475,
+  "total_post_negative_mass": 10955.489665031373,
+  "new_conflict_share_of_post_negative_mass": 0.9999976714865649,
+  "new_conflict_magnitude_counts": {
+    "abs_post_gt_1e-8": 332,
+    "abs_post_gt_1e-6": 289,
+    "abs_post_gt_1e-4": 222,
+    "abs_post_gt_1e-2": 140,
+    "abs_post_gt_1": 70,
+    "abs_post_gt_10": 33,
+    "abs_post_gt_100": 15
+  },
+  "interpretation": [
+    "The registered projector nearly annihilates conflict mass on the targets selected from the raw negative set.",
+    "Most remaining post-projection negative mass is not residual on selected conflicts; it comes from targets that were non-conflicting before projection and became conflicting afterward.",
+    "This is an exploratory observation only. It must not alter EXP-335 source, thresholds, reducer, or interpretation.",
+    "Any future no-new-conflict geometry must be preregistered as a distinct intervention after EXP-335 closes."
+  ],
+  "forbidden_inferences": [
+    "Do not infer the final EXP-335 disposition from chunk0.",
+    "Do not use this post-hoc observation to modify or rerun the authoritative EXP-335 court.",
+    "Do not authorize EXP-302, EXP-320, scale, 30M, or 100M from this observation."
+  ]
+}
