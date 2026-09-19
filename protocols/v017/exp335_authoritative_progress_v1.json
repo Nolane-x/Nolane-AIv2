@@ -234,8 +234,8 @@
   "scale_authorized": false,
   "authorized_30m": false,
   "authorized_100m": false,
-  "current_authoritative_job": "chunk3",
-  "final_disposition_available": false,
+  "current_authoritative_job": "completed",
+  "final_disposition_available": true,
   "independent_audit_through_chunk2": {
     "auditor_sha": "bb629e90fd7dc0755b3f60842bba6bc0aa846d03",
     "workflow_run_id": 35452153972,
@@ -267,5 +267,52 @@
     "note": "Independent auditor validated raw GitHub ZIP digests, sealed identity, authority constants, checkpoint/receipt hashes, CONTROL/SHAM exactness and the reconstruction->chunk0->chunk1->chunk2 chain."
   },
   "independent_final_audit_lock_path": "protocols/v017/exp335_independent_audit_lock_v1.json",
-  "independent_final_auditor_sha": "bb629e90fd7dc0755b3f60842bba6bc0aa846d03"
+  "independent_final_auditor_sha": "bb629e90fd7dc0755b3f60842bba6bc0aa846d03",
+  "authoritative_run_status": "completed",
+  "authoritative_run_conclusion": "success",
+  "final_closure_path": "protocols/v017/exp335_final_closure_v1.json",
+  "final": {
+    "final_artifact_id": 10590026763,
+    "final_artifact_name": "exp335-full32-foundation-reentry-final-35445927525",
+    "final_artifact_zip_sha256": "ae4ab3bc0b8ce064ece92655fd578a896fe3ed6f27fffd411b9b14d0fc1729a5",
+    "final_json_sha256": "955d400eb4d590fe0399671dfadb37e8140be835451c5d7482a8928ed2686032",
+    "evidence_digest": "6fcabeb87971a0cb5d5ef0d14029f5ab248f3e353b21bb55f42ac977a4ffe1af",
+    "decision": "AFIXED_FULL32_FOUNDATION_REENTRY_RESCUED_NO_REGRESSION",
+    "control_failed_worlds": [
+      "iterative-grid-and-maze:2",
+      "iterative-grid-and-maze:6"
+    ],
+    "project_failed_worlds": [],
+    "rescued_control_failures": [
+      "iterative-grid-and-maze:2",
+      "iterative-grid-and-maze:6"
+    ],
+    "project_regressions": [],
+    "projection_update_count": 1024,
+    "projected_target_count": 12598,
+    "final_pass_counts": {
+      "CONTROL_FULL32": 30,
+      "SHAM_MEASURE_FULL32": 30,
+      "SUBSPACE_PROJECT_FULL32": 32
+    }
+  },
+  "frozen_independent_final_audit": {
+    "auditor_sha": "bb629e90fd7dc0755b3f60842bba6bc0aa846d03",
+    "workflow_run_id": 35477337239,
+    "conclusion": "success",
+    "artifact_id": 10595335243,
+    "artifact_zip_sha256": "0ae527b905d92e51d6ec62553fdaa0098ebde9432f7d0201baa6d773c2782b7d",
+    "receipt_json_sha256": "50cbfe612b8debb208ae578c929dddbc94a94be618eab9047f1e5083247ac9a9",
+    "report_json_sha256": "6eec3678b0b00321a83fa69cc45add2111ec6524d6ace1c691dca2a6817900a0",
+    "verified_chunk_count": 8,
+    "complete_chunk_chain": true,
+    "decision_recomputed": true,
+    "evidence_digest_recomputed": true
+  },
+  "selected_transition": {
+    "next_scope": "C_NRS_CORE_FULL32_STAGE_A_DESIGN_ONLY",
+    "cnrs_scope": "DESIGN_PREREGISTRATION_ONLY",
+    "foundation_for_cnrs": "REGISTERED_SUBSPACE_PROJECT_FULL32_REPAIRED_FOUNDATION",
+    "implementation_authorized": false
+  }
 }
