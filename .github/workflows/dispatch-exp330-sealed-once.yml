@@ -1,0 +1,24 @@
+name: Dispatch sealed EXP-330 once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/dispatch-exp330-sealed-once.yml"
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch exact sealed EXP-330 branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh api
+          --method POST
+          repos/${{ github.repository }}/actions/workflows/exp330-p02-conflict-projection-rescue.yml/dispatches
+          -f ref=exp330-p02-conflict-projection-rescue
