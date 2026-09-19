@@ -19,7 +19,7 @@ The candidate changes only the SHAM branch inside `_measured_step`:
 - compute the same ordered raw source-target dot products needed for `negative_targets`;
 - do not build the conflict subspace, Gram matrix, pseudoinverse, projected gradient, or post-projection dots for SHAM;
 - apply `source_grads` exactly as before;
-- leave PROJECT behavior byte-for-byte at the algorithmic level: it still calls the existing `_project_source` implementation and uses the same float64 Gram / `pinv(..., rtol=1e-12)` rule.
+- preserve PROJECT mathematics exactly while reducing redundant Gram work: reuse the already-computed selected-target norm² on the diagonal and compute each off-diagonal dot once, mirroring it into the symmetric position; the float64 Gram values, rhs, `pinv(..., rtol=1e-12)`, coefficient order, projected-gradient construction, and post-projection diagnostics remain unchanged.
 
 ## Scientific invariants
 
@@ -43,7 +43,7 @@ Before sealing a repair run, tests must establish that under the same reconstruc
 
 1. old SHAM and repaired SHAM produce identical source loss, target-loss map, ordered raw-dot map, negative-target list, model state, optimizer state, and RNG state;
 2. repaired SHAM still equals CONTROL at the existing per-chunk exact-state gate;
-3. PROJECT outputs are unchanged for the same inputs;
+3. PROJECT outputs are unchanged for the same inputs, including exact selected-target ordering, raw-dot map, post-dot map, and projected tensors against the registered full Gram implementation;
 4. no new scientific authorization is inferred from the optimization itself.
 
 No EXP-302, EXP-320, scale, 30M, or 100M authorization is granted by this candidate.
