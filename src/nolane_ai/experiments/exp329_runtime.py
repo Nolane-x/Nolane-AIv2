@@ -11,7 +11,8 @@ from typing import Any,Mapping,Sequence
 import torch
 
 from .exp301_scientific import forward_scientific_arm
-from .exp301_training import compute_answer_only_loss,model_state_digest,optimizer_state_digest,rng_state_digest
+from .exp301_training import compute_answer_only_loss
+from .exp319_training import model_state_digest,optimizer_state_digest,rng_state_digest
 from .exp319_metrics import nonfinite_report
 from .exp322_runtime import _encoded_tensors
 from .exp323_evidence import expected_reconstruction_payload
@@ -137,9 +138,11 @@ def _directed_update_probe(
 
 def _probe(compiled:object,optimizer:torch.optim.Optimizer,worlds:Mapping[int,object],round_index:int)->ProbeRecord:
     effort=effort_for_round(round_index)
-    l0,l2,dot,cosine,n0,n2,gradient_nonfinite=_gradient_pair_metrics(
+    _,_,dot,cosine,n0,n2,gradient_nonfinite=_gradient_pair_metrics(
         compiled,worlds[0],worlds[2],effort
     )
+    l0=_loss_at_effort(compiled,worlds[0],effort)
+    l2=_loss_at_effort(compiled,worlds[2],effort)
     w0_self,w0_cross,w0_nf=_directed_update_probe(
         compiled,optimizer,source_world=worlds[0],target_world=worlds[2],effort=effort,
         source_loss_pre=l0,target_loss_pre=l2,
