@@ -1,0 +1,174 @@
+{
+  "schema_version": "EXP333-COMPLETE-8WORLD-PAIR-LATTICE-PROJECTION-V1",
+  "experiment_id": "EXP-333",
+  "role": "post_exp332_complete_eight_world_pair_lattice_generalization",
+  "authority": {
+    "parent_exp332_run_id": 35427969759,
+    "parent_exp332_artifact_id": 10580076061,
+    "parent_exp332_zip_digest": "7bdbb30570a98326af5a98effb7718c2f40d8430a1a2f5a115fb3590a901b141",
+    "parent_exp332_json_sha256": "02bf65b708e58837aa5b2a61c3af6acff09d000f8916bcda3a27a59ebdcd6355",
+    "parent_exp332_evidence_digest": "a50e23fe4fe875358b95d060e22905a6e12eb2c27b4666b7477fb2e96aaedd2b",
+    "parent_exp332_execution_digest": "6fc30fa5eaca26594fa79d3b37f817e67cc89c5570444dbf9b15b8e9823c21bb",
+    "reconstruction_artifact_id": 10547681681,
+    "reconstruction_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+    "reconstruction_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+    "reconstruction_receipt_sha256": "617ba665149a366d00782df5c4457a6a3d01081fe847aa144465377ee164bba3"
+  },
+  "model": {
+    "arm": "A_FIXED",
+    "resident_trainable_parameters": 10000000,
+    "starting_cumulative_step": 2048,
+    "device": "cpu",
+    "architecture_change": false,
+    "tokenizer_change": false,
+    "objective_change": false,
+    "scale_change": false
+  },
+  "population": {
+    "stage": "A_SANITY",
+    "root": 0,
+    "family": "iterative-grid-and-maze",
+    "world_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "pair_ids": [
+      "P01",
+      "P02",
+      "P03",
+      "P04",
+      "P05",
+      "P06",
+      "P07",
+      "P12",
+      "P13",
+      "P14",
+      "P15",
+      "P16",
+      "P17",
+      "P23",
+      "P24",
+      "P25",
+      "P26",
+      "P27",
+      "P34",
+      "P35",
+      "P36",
+      "P37",
+      "P45",
+      "P46",
+      "P47",
+      "P56",
+      "P57",
+      "P67"
+    ],
+    "pair_count": 28,
+    "independent_clone_per_pair_mode": true
+  },
+  "training": {
+    "optimizer": "AdamW",
+    "inherited_optimizer_state": true,
+    "inherited_rng_state": true,
+    "learning_rate_decimal": "0.00005",
+    "weight_decay_decimal": "0.01",
+    "gradient_clip_norm_decimal": "1.0",
+    "exposures_per_world": 32,
+    "effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "within_exposure_order": "ascending world index within pair",
+    "total_optimizer_updates_per_pair_arm": 64
+  },
+  "arms": {
+    "CONTROL": "exact inherited pair training primitive",
+    "SHAM": "same-state partner-gradient measurement with source gradient/RNG restored and no projection",
+    "PROJECT": "same EXP-330/EXP-332 projection: remove source component along partner gradient only when dot<0 and partner norm squared>1e-24"
+  },
+  "parent_anchor_contract": {
+    "anchor_pairs": [
+      "P01",
+      "P02",
+      "P03",
+      "P12",
+      "P13",
+      "P23"
+    ],
+    "control_pass_vector": {
+      "P01": true,
+      "P02": false,
+      "P03": true,
+      "P12": true,
+      "P13": true,
+      "P23": true
+    },
+    "required_control_reproduction": [
+      "pair membership",
+      "token metrics",
+      "full-answer exact metrics",
+      "RNG digest",
+      "pass/fail status"
+    ],
+    "cross_run_model_optimizer_digest_required": false,
+    "within_run_sham_requires_bitwise_model_optimizer_rng_and_metric_equality": true
+  },
+  "thresholds": {
+    "teacher_forced_token_accuracy_floor": 0.99,
+    "teacher_forced_full_answer_exact_floor": 0.9,
+    "nonfinite_events_max": 0,
+    "target_norm_squared_floor": 1e-24
+  },
+  "decision_contract": {
+    "baseline_failures": "all CONTROL-failing pairs are determined from the complete 28-pair court; no pair is selected post hoc",
+    "rescued_baseline_failures": "baseline failures whose PROJECT arm passes",
+    "unresolved_baseline_failures": "baseline failures whose PROJECT arm still fails",
+    "project_regressions": "CONTROL-passing pairs whose PROJECT arm fails",
+    "baseline_failure_without_projection_trigger": "any CONTROL-failing pair with zero PROJECT projection events is a distinct fail-closed disposition",
+    "strongest_positive": "COMPLETE_8WORLD_PAIR_LATTICE_RESCUE_NO_REGRESSION requires at least one baseline failure, every baseline failure rescued, zero PROJECT regressions, and a projection trigger for every baseline failure"
+  },
+  "dispositions": [
+    "INVALID_COMPLETE_PAIR_LATTICE_COURT",
+    "PARENT_PAIR_ANCHOR_REPRODUCTION_MISMATCH",
+    "SHAM_COMPLETE_PAIR_LATTICE_MISMATCH",
+    "P02_PROJECTION_NOT_TRIGGERED",
+    "BASELINE_FAILURE_WITHOUT_PROJECTION_TRIGGER",
+    "PROJECT_PAIR_REGRESSION_PRESENT",
+    "BASELINE_PAIR_FAILURES_NOT_RESCUED",
+    "BASELINE_PAIR_FAILURES_PARTIALLY_RESCUED",
+    "COMPLETE_8WORLD_PAIR_LATTICE_RESCUE_NO_REGRESSION"
+  ],
+  "decision_order": [
+    "INVALID_COMPLETE_PAIR_LATTICE_COURT",
+    "PARENT_PAIR_ANCHOR_REPRODUCTION_MISMATCH",
+    "SHAM_COMPLETE_PAIR_LATTICE_MISMATCH",
+    "P02_PROJECTION_NOT_TRIGGERED",
+    "BASELINE_FAILURE_WITHOUT_PROJECTION_TRIGGER",
+    "PROJECT_PAIR_REGRESSION_PRESENT",
+    "BASELINE_PAIR_FAILURES_NOT_RESCUED",
+    "BASELINE_PAIR_FAILURES_PARTIALLY_RESCUED",
+    "COMPLETE_8WORLD_PAIR_LATTICE_RESCUE_NO_REGRESSION"
+  ],
+  "nonclaims": [
+    "EXP-333 establishes evidence only for the 28 pair subsets of iterative-grid-and-maze worlds 0..7 under the frozen 10M reconstruction",
+    "EXP-333 does not test triples, quartets, larger subsets, or all eight worlds jointly",
+    "EXP-333 does not establish universal projection safety outside this family and pair lattice",
+    "EXP-333 does not establish an architectural capacity ceiling",
+    "EXP-333 does not establish that scaling helps",
+    "EXP-333 does not authorize EXP-302 or EXP-320"
+  ],
+  "authorization": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
