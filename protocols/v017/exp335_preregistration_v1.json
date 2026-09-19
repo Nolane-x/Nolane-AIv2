@@ -1,0 +1,195 @@
+{
+  "arms": [
+    "CONTROL_FULL32",
+    "SHAM_MEASURE_FULL32",
+    "SUBSPACE_PROJECT_FULL32"
+  ],
+  "authority": {
+    "parent_exp319_disposition": "TRAINING_STACK_NOT_LEARNABLE",
+    "parent_exp319_evidence_digest": "4be2850f6c1d633af4cb6687e379c0011aaf8281075bea79821d0f2e038ffb07",
+    "parent_exp334_artifact_id": 10583626513,
+    "parent_exp334_artifact_name": "exp334-higher-order-rescue-final-35438656413",
+    "parent_exp334_disposition": "HIGHER_ORDER_SUBSPACE_RESCUE_NO_REGRESSION",
+    "parent_exp334_evidence_digest": "4cc1b2fa67610dc0614fcd6e03ac0aa122f5aa2c7f680dce01e2a29382105a05",
+    "parent_exp334_execution_digest": "074625265749d9a7437bd14c132b7fe6906267904f0985f2b4e2c38ba1240a44",
+    "parent_exp334_final_json_sha256": "a393bf8fc237e2f2a357666059011e468ba7de06db3f3c62ecc3090f2aa25354",
+    "parent_exp334_marker_sha": "b6e682af602adce57f4f36045452cac3e384fd10",
+    "parent_exp334_run_id": 35438656413,
+    "parent_exp334_source_sha": "2791a3127b4cec57d02d0ce25936350cf35b7707",
+    "parent_exp334_zip_digest": "8339fd376a23b7daeb8f45087eff634893557f37c47a117f308c7f54692b8ee8",
+    "reconstruction_artifact_id": 10547681681,
+    "reconstruction_artifact_name": "exp323r-reconstruction-candidate-35345351869-0",
+    "reconstruction_artifact_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+    "reconstruction_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+    "reconstruction_receipt_sha256": "617ba665149a366d00782df5c4457a6a3d01081fe847aa144465377ee164bba3",
+    "reconstruction_run_id": 35345351869
+  },
+  "authorization": {
+    "authorized_100m": false,
+    "authorized_30m": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "exp335_implementation_authorized": false,
+    "scale_authorized": false
+  },
+  "experiment_id": "EXP-335",
+  "integrity": {
+    "continuation_receipt_must_bind": [
+      "arm",
+      "chunk_index",
+      "cumulative_exposure_per_world",
+      "cumulative_source_updates",
+      "model_state_digest",
+      "optimizer_state_digest",
+      "rng_state_digest",
+      "data_order_digest",
+      "parent_artifact_digest",
+      "source_tree_digest",
+      "preregistration_digest"
+    ],
+    "cross_arm_state_splicing_forbidden": true,
+    "duplicate_chain_position_forbidden": true,
+    "same_run_control_sham_chunk_pairing_required": true,
+    "sham_exact_fields": [
+      "teacher_forced_world_metrics",
+      "model_state_digest",
+      "optimizer_state_digest",
+      "rng_state_digest"
+    ]
+  },
+  "measurement_and_projection": {
+    "gram_accumulation_dtype": "float64",
+    "negative_target_rule": "source_target_dot < 0",
+    "pinv_rtol_decimal": "1e-12",
+    "pre_update_state": "For SHAM and SUBSPACE_PROJECT, source and all 31 target gradients are measured from the identical pre-update model/optimizer state and source RNG start.",
+    "project_rule": "Select every target with negative source-target dot and target norm^2 above the floor; project the source gradient onto the orthogonal complement of their simultaneous span, then apply the ordinary global clip and AdamW step.",
+    "projection_rule": "g' = g - T pinv(T^T T) T^T g",
+    "required_diagnostics": [
+      "per_update_negative_target_count",
+      "per_update_projected_target_count",
+      "raw_source_target_dots",
+      "post_projection_source_target_dots",
+      "gradient_norm_preclip",
+      "parameter_update_norm_ratio",
+      "nonfinite_events"
+    ],
+    "sham_rule": "Measure the same source/31-target gradient geometry, restore the source post-forward RNG state, apply the untouched source gradient, then perform the ordinary clipped AdamW step.",
+    "target_norm_squared_floor_decimal": "1e-24",
+    "target_population": "all other 31 registered worlds"
+  },
+  "model": {
+    "architecture_change": false,
+    "arm": "A_FIXED",
+    "device": "cpu",
+    "objective_change": false,
+    "resident_trainable_parameters": 10000000,
+    "scale_change": false,
+    "starting_cumulative_step": 2048,
+    "tokenizer_change": false
+  },
+  "nonclaims": [
+    "EXP-335 does not test C_NRS_CORE.",
+    "EXP-335 does not establish Stage-B IID generalization.",
+    "EXP-335 does not establish Stage-C generator-heldout transfer.",
+    "EXP-335 does not test always-active persistent state or online plasticity.",
+    "EXP-335 does not authorize EXP-320 implementation.",
+    "EXP-335 does not authorize scaling to 30M or 100M.",
+    "EXP-335 does not retroactively alter EXP-301 KILL_H_RD_01 or EXP-319 TRAINING_STACK_NOT_LEARNABLE."
+  ],
+  "population": {
+    "families": [
+      "iterative-grid-and-maze",
+      "algorithmic-sequence-transform",
+      "generator-heldout-abstract-transformation",
+      "language-sequence-control"
+    ],
+    "indices_per_family": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "root": 0,
+    "stage": "A_SANITY_REENTRY",
+    "total_worlds": 32,
+    "world_id_format": "<family>:<index>"
+  },
+  "primary_gate": "At exposure 32, every one of the 32 worlds must simultaneously satisfy token accuracy >=0.99 and full-answer exact >=0.90 with zero nonfinite events.",
+  "reducer": {
+    "control_first": true,
+    "decision_order": [
+      "INVALID_FULL32_FOUNDATION_REENTRY",
+      "PARENT_AUTHORITY_MISMATCH",
+      "SHAM_FULL32_MISMATCH",
+      "AFIXED_FULL32_FOUNDATION_REENTERED_BOTH",
+      "AFIXED_FULL32_FOUNDATION_REENTERED_CONTROL_ONLY_PROJECT_REGRESSION",
+      "BASELINE_FULL32_FAILURE_WITHOUT_SUBSPACE_TRIGGER",
+      "AFIXED_FULL32_FOUNDATION_REENTRY_RESCUED_NO_REGRESSION",
+      "AFIXED_FULL32_FOUNDATION_REENTRY_NOT_ESTABLISHED"
+    ],
+    "interpretation": {
+      "AFIXED_FULL32_FOUNDATION_REENTERED_BOTH": "CONTROL and SUBSPACE_PROJECT both pass the full-32 final foundation gate. The balanced schedule alone is sufficient at this continuation state; projection is non-regressing.",
+      "AFIXED_FULL32_FOUNDATION_REENTERED_CONTROL_ONLY_PROJECT_REGRESSION": "CONTROL passes but projection fails at least one world. A_FIXED foundation re-entry is established for the balanced control schedule, but the all-32 projection intervention is not safe.",
+      "AFIXED_FULL32_FOUNDATION_REENTRY_NOT_ESTABLISHED": "The full-32 A_FIXED foundation floor remains unmet after the preregistered intervention.",
+      "AFIXED_FULL32_FOUNDATION_REENTRY_RESCUED_NO_REGRESSION": "CONTROL fails, projection engages, SUBSPACE_PROJECT passes all 32 worlds, and no world that passed under CONTROL becomes failing under PROJECT.",
+      "BASELINE_FULL32_FAILURE_WITHOUT_SUBSPACE_TRIGGER": "CONTROL fails and the PROJECT path records no projection update; the registered mechanism did not engage."
+    },
+    "required_vectors": [
+      "control_failed_worlds",
+      "project_failed_worlds",
+      "rescued_control_failures",
+      "project_world_regressions",
+      "projection_update_count",
+      "projected_target_count"
+    ]
+  },
+  "role": "post_exp334_full32_afixed_stage_a_foundation_reentry_design",
+  "schema_version": "EXP335-FULL32-AFIXED-FOUNDATION-REENTRY-V1",
+  "scientific_question": "From the immutable A_FIXED 10M step-2048 reconstruction, does a balanced full-32-world Stage-A continuation re-enter the frozen teacher-forced foundation floor, either without intervention or under the exact EXP-334 conflict-subspace projection generalized to all other 31 worlds at each source update, while SHAM proves measurement non-perturbation?",
+  "successor_boundary": {
+    "exp320_design_remains_blocked_until_cnrs_and_stage_b_c": true,
+    "positive_foundation_dispositions": [
+      "AFIXED_FULL32_FOUNDATION_REENTERED_BOTH",
+      "AFIXED_FULL32_FOUNDATION_REENTERED_CONTROL_ONLY_PROJECT_REGRESSION",
+      "AFIXED_FULL32_FOUNDATION_REENTRY_RESCUED_NO_REGRESSION"
+    ],
+    "positive_scope": "May authorize design/preregistration only for C_NRS_CORE full-32 Stage-A re-entry under the corresponding repaired foundation. Does not authorize C_NRS implementation in this EXP-335 design phase.",
+    "stage_b_c_remain_required": true
+  },
+  "thresholds": {
+    "nonfinite_events_max": 0,
+    "teacher_forced_answer_token_accuracy_floor_per_world": 0.99,
+    "teacher_forced_full_answer_exact_floor_per_world": 0.9
+  },
+  "training": {
+    "continuation_chunk_count": 8,
+    "continuation_chunk_exposures": 4,
+    "diagnostic_exposure_checkpoints": [
+      8,
+      16,
+      24,
+      32
+    ],
+    "effort_assignment": "world-local exposure index j; every world uses effort_cycle[j mod 4]",
+    "effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "exposures_per_world": 32,
+    "gradient_clip_norm_decimal": "1.0",
+    "inherited_optimizer_state": true,
+    "inherited_rng_state": true,
+    "learning_rate_decimal": "0.00005",
+    "optimizer": "AdamW",
+    "primary_checkpoint_exposure": 32,
+    "total_source_updates_per_arm": 1024,
+    "weight_decay_decimal": "0.01",
+    "within_exposure_order": "families in frozen population order; within each family world index 0..7"
+  }
+}
