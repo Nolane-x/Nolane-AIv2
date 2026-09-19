@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   audit:
-    if: ${{ github.event.workflow_run.id == 35445927525 }}
+    if: ${{ github.event.workflow_run.id == 35445927525 && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     env:
       AUTHORITATIVE_RUN_ID: "35445927525"
@@ -283,3 +283,130 @@ jobs:
           PY
           gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/110/comments" \
             -F body=@/tmp/exp335-final-audit-comment.md
+
+
+  failure_receipt:
+    if: ${{ github.event.workflow_run.id == 35445927525 && github.event.workflow_run.conclusion != 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      AUTHORITATIVE_RUN_ID: "35445927525"
+      AUTHORITATIVE_HEAD_SHA: "57fdf3a38b42b41951639a35dbb3c0d82055846b"
+    steps:
+      - name: Fail closed on wrong sealed head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ github.event.workflow_run.id }}" = "${AUTHORITATIVE_RUN_ID}"
+          test "${{ github.event.workflow_run.head_sha }}" = "${AUTHORITATIVE_HEAD_SHA}"
+          test "${{ github.event.workflow_run.conclusion }}" != "success"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Materialize non-success authoritative-run receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p failure-receipt
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+          from pathlib import Path
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          run_id=int(os.environ["AUTHORITATIVE_RUN_ID"])
+          token=os.environ["GH_TOKEN"]
+          headers={
+              "Authorization":f"Bearer {token}",
+              "Accept":"application/vnd.github+json",
+              "X-GitHub-Api-Version":"2022-11-28",
+              "User-Agent":"exp335-authoritative-failure-receipt",
+          }
+
+          def get(url):
+              req=urllib.request.Request(url,headers=headers)
+              with urllib.request.urlopen(req) as response:
+                  return json.load(response)
+
+          run=get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}")
+          jobs=get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100")
+          artifacts=get(
+              f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100"
+          )
+
+          if run.get("head_sha") != os.environ["AUTHORITATIVE_HEAD_SHA"]:
+              raise SystemExit("authoritative failure receipt head mismatch")
+          if run.get("conclusion") == "success":
+              raise SystemExit("failure receipt cannot record a successful run")
+
+          receipt={
+              "schema":"EXP335-AUTHORITATIVE-NONSUCCESS-RECEIPT-V1",
+              "authoritative_run_id":run_id,
+              "authoritative_head_sha":run.get("head_sha"),
+              "run_status":run.get("status"),
+              "run_conclusion":run.get("conclusion"),
+              "created_at":run.get("created_at"),
+              "updated_at":run.get("updated_at"),
+              "jobs":[
+                  {
+                      "id":job.get("id"),
+                      "name":job.get("name"),
+                      "status":job.get("status"),
+                      "conclusion":job.get("conclusion"),
+                      "started_at":job.get("started_at"),
+                      "completed_at":job.get("completed_at"),
+                  }
+                  for job in jobs.get("jobs",[])
+              ],
+              "artifacts":[
+                  {
+                      "id":item.get("id"),
+                      "name":item.get("name"),
+                      "digest":item.get("digest"),
+                      "size_in_bytes":item.get("size_in_bytes"),
+                      "created_at":item.get("created_at"),
+                      "expired":item.get("expired"),
+                  }
+                  for item in artifacts.get("artifacts",[])
+              ],
+              "scientific_disposition":None,
+              "capability_interpretation_authorized":False,
+              "automatic_rerun_authorized":False,
+              "automatic_scientific_source_change_authorized":False,
+              "exp302_implementation_authorized":False,
+              "exp320_implementation_authorized":False,
+              "scale_authorized":False,
+              "authorized_30m":False,
+              "authorized_100m":False,
+              "rule":"Preserve this non-success run and diagnose the exact failure. Do not substitute another run, reinterpret partial chunks as the final EXP-335 result, or automatically modify/reseal/rerun the scientific court.",
+          }
+          path=Path("failure-receipt/exp335-authoritative-nonsuccess-receipt.json")
+          path.write_text(json.dumps(receipt,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          print(json.dumps(receipt,sort_keys=True,indent=2))
+          PY
+          sha256sum failure-receipt/exp335-authoritative-nonsuccess-receipt.json
+
+      - uses: actions/upload-artifact@v4
+        id: upload_failure_receipt
+        with:
+          name: exp335-authoritative-nonsuccess-receipt-${{ github.event.workflow_run.id }}
+          path: failure-receipt/exp335-authoritative-nonsuccess-receipt.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Record fail-closed non-success receipt on PR 110
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RECEIPT_ARTIFACT_ID: ${{ steps.upload_failure_receipt.outputs.artifact-id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          conclusion="${{ github.event.workflow_run.conclusion }}"
+          body="EXP-335 authoritative run \`${AUTHORITATIVE_RUN_ID}\` completed with non-success conclusion \`${conclusion}\`. A fail-closed provenance receipt was archived as artifact \`${RECEIPT_ARTIFACT_ID}\`. No scientific disposition is assigned, no partial chunk is promoted, and no automatic rerun/source change is authorized. Diagnose the recorded failure before any separate operator transition."
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/110/comments" -f body="${body}"
