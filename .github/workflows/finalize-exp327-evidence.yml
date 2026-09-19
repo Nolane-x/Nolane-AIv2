@@ -13,7 +13,6 @@ on:
 permissions:
   actions: read
   contents: read
-  issues: write
 
 jobs:
   finalize:
@@ -152,9 +151,8 @@ jobs:
               f.write("monotonicity="+json.dumps(p.get("monotonicity_violations",[]),separators=(",",":"))+"\n")
           PY
 
-      - name: Seal result on PR 100
+      - name: Emit verified seal summary
         env:
-          GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ steps.resolve.outputs.run_id }}
           DECISION: ${{ steps.evidence.outputs.decision }}
           EVIDENCE_DIGEST: ${{ steps.evidence.outputs.evidence_digest }}
@@ -169,41 +167,20 @@ jobs:
           set -euo pipefail
           artifact_id="$(cat artifact-id.txt)"
           artifact_digest="$(cat artifact-digest.txt)"
-          export ARTIFACT_ID="$artifact_id"
-          export ARTIFACT_DIGEST="$artifact_digest"
-          python - <<'PY'
-          import os
-          from pathlib import Path
-          body = f"""EXP-327 authoritative execution is complete and independently fail-closed verified.
-
-          Authoritative run:
-          - run: `{os.environ['RUN_ID']}` — SUCCESS
-          - sealed marker/head: `{os.environ['EXPECTED_HEAD']}`
-          - frozen source: `{os.environ['EXPECTED_SOURCE']}`
-          - execution digest: `{os.environ['EXPECTED_EXECUTION_DIGEST']}`
-          - preregistration digest: `{os.environ['EXPECTED_PREREG_DIGEST']}`
-          - final artifact id: `{os.environ['ARTIFACT_ID']}`
-          - final artifact ZIP digest: `{os.environ['ARTIFACT_DIGEST']}`
-          - final JSON SHA-256: `{os.environ['JSON_SHA256']}`
-          - final evidence digest: `{os.environ['EVIDENCE_DIGEST']}`
-          - disposition: **`{os.environ['DECISION']}`**
-
-          Subset localization:
-          - minimal failing size: `{os.environ['MINIMAL_SIZE']}`
-          - minimal failing groups: `{os.environ['MINIMAL_GROUPS']}`
-          - failed pairs: `{os.environ['FAILED_PAIRS']}`
-          - failed triples: `{os.environ['FAILED_TRIPLES']}`
-          - monotonicity violations: `{os.environ['MONOTONICITY']}`
-
-          The finalizer independently recomputed the canonical EXP-327 evidence digest and verified exact source/preregistration/execution identity, full 11-group coverage, and fail-closed authorization flags.
-
-          All authorization remains false:
-          - EXP-302 implementation
-          - EXP-320 implementation
-          - scale
-          - 30M
-          - 100M
-          """
-          Path("comment.md").write_text(body, encoding="utf-8")
-          PY
-          gh api --method POST "repos/${{ github.repository }}/issues/$TARGET_PR/comments" -f body="$(cat comment.md)"
+          {
+            echo "## EXP-327 authoritative seal"
+            echo
+            echo "- run: \`$RUN_ID\`"
+            echo "- disposition: \`$DECISION\`"
+            echo "- artifact id: \`$artifact_id\`"
+            echo "- artifact digest: \`$artifact_digest\`"
+            echo "- final JSON SHA-256: \`$JSON_SHA256\`"
+            echo "- evidence digest: \`$EVIDENCE_DIGEST\`"
+            echo "- minimal failing size: \`$MINIMAL_SIZE\`"
+            echo "- minimal failing groups: \`$MINIMAL_GROUPS\`"
+            echo "- failed pairs: \`$FAILED_PAIRS\`"
+            echo "- failed triples: \`$FAILED_TRIPLES\`"
+            echo "- monotonicity violations: \`$MONOTONICITY\`"
+            echo
+            echo "Canonical evidence digest, execution identity, parent lineage, full group coverage, and all fail-closed authorization flags were independently verified."
+          } >> "$GITHUB_STEP_SUMMARY"
