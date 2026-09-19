@@ -8,6 +8,7 @@ on:
 permissions:
   actions: read
   contents: read
+  issues: write
 
 jobs:
   audit:
@@ -231,6 +232,7 @@ jobs:
           sha256sum audit-input/exp335-final.json
 
       - uses: actions/upload-artifact@v4
+        id: upload_audit
         with:
           name: exp335-postrun-independent-audit-${{ github.event.workflow_run.id }}
           path: |
@@ -240,3 +242,43 @@ jobs:
             audit-input/exp335-final.json
           if-no-files-found: error
           retention-days: 90
+
+      - name: Record independently verified final receipt on PR 110
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUDIT_ARTIFACT_ID: ${{ steps.upload_audit.outputs.artifact-id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' > /tmp/exp335-final-audit-comment.md
+          import json
+          import os
+          from pathlib import Path
+          r=json.loads(
+              Path("audit-input/exp335-postrun-independent-audit-receipt.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          print("EXP-335 post-run independent audit completed successfully.")
+          print()
+          print(f"- authoritative run: \`{r['authoritative_run_id']}\`")
+          print(f"- sealed head: \`{r['authoritative_head_sha']}\`")
+          print(f"- frozen independent auditor: \`{r['auditor_sha']}\`")
+          print(f"- independently recomputed disposition: **\`{r['decision']}\`**")
+          print(f"- evidence digest: \`{r['evidence_digest']}\`")
+          print(f"- final JSON SHA-256: \`{r['final_json_sha256']}\`")
+          print(f"- independent audit report SHA-256: \`{r['independent_audit_report_sha256']}\`")
+          print(f"- verified chunk count: \`{r['verified_chunk_count']}/8\`")
+          print(f"- complete artifact chain: \`{r['complete_chunk_chain']}\`")
+          print(f"- audit artifact ID: \`{os.environ['AUDIT_ARTIFACT_ID']}\`")
+          print()
+          print("The receipt was produced only after independently re-downloading and hashing all")
+          print("8 chunk artifact ZIPs + final artifact, validating the sealed execution identity,")
+          print("recomputing the entire artifact chain, binding final boundaries to audited chunk7,")
+          print("rerunning \`reduce_full32\`, and recomputing the final evidence digest.")
+          print()
+          print("EXP-302 / EXP-320 / scale / 30M / 100M remain unauthorized unless a separate")
+          print("already-frozen successor transition explicitly says otherwise.")
+          PY
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/110/comments" \
+            -F body=@/tmp/exp335-final-audit-comment.md
