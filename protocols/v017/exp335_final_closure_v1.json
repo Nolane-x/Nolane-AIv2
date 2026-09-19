@@ -1,0 +1,141 @@
+{
+  "schema": "EXP335-FINAL-CLOSURE-V1",
+  "experiment_id": "EXP-335",
+  "scientific_source_sha": "d29e20e5af3467d16123e224462b37ef9a2ebf9d",
+  "sealed_marker_sha": "57fdf3a38b42b41951639a35dbb3c0d82055846b",
+  "execution_digest": "24d4e97ad3c7026881a122cd309d671d9999f3f84b5dcc04a11c468c4409d520",
+  "authoritative_run": {
+    "id": 35445927525,
+    "status": "completed",
+    "conclusion": "success",
+    "run_attempt": 1,
+    "head_sha": "57fdf3a38b42b41951639a35dbb3c0d82055846b",
+    "completed_at": "2026-09-19T18:52:41Z"
+  },
+  "authoritative_final_artifact": {
+    "id": 10590026763,
+    "name": "exp335-full32-foundation-reentry-final-35445927525",
+    "artifact_zip_sha256": "ae4ab3bc0b8ce064ece92655fd578a896fe3ed6f27fffd411b9b14d0fc1729a5",
+    "final_json_sha256": "955d400eb4d590fe0399671dfadb37e8140be835451c5d7482a8928ed2686032",
+    "evidence_digest": "6fcabeb87971a0cb5d5ef0d14029f5ab248f3e353b21bb55f42ac977a4ffe1af"
+  },
+  "frozen_independent_audit": {
+    "auditor_sha": "bb629e90fd7dc0755b3f60842bba6bc0aa846d03",
+    "workflow_run_id": 35477337239,
+    "conclusion": "success",
+    "artifact_id": 10595335243,
+    "artifact_name": "exp335-frozen-independent-final-audit-35445927525",
+    "artifact_zip_sha256": "0ae527b905d92e51d6ec62553fdaa0098ebde9432f7d0201baa6d773c2782b7d",
+    "receipt_json_sha256": "50cbfe612b8debb208ae578c929dddbc94a94be618eab9047f1e5083247ac9a9",
+    "independent_audit_report_sha256": "6eec3678b0b00321a83fa69cc45add2111ec6524d6ace1c691dca2a6817900a0",
+    "verified_chunk_count": 8,
+    "complete_chunk_chain": true,
+    "control_sham_exact_by_chunk": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "chunk_pass_trajectory": [
+    {
+      "chunk_index": 0,
+      "cumulative_exposure_per_world": 4,
+      "CONTROL_FULL32": 14,
+      "SHAM_MEASURE_FULL32": 14,
+      "SUBSPACE_PROJECT_FULL32": 15
+    },
+    {
+      "chunk_index": 1,
+      "cumulative_exposure_per_world": 8,
+      "CONTROL_FULL32": 24,
+      "SHAM_MEASURE_FULL32": 24,
+      "SUBSPACE_PROJECT_FULL32": 25
+    },
+    {
+      "chunk_index": 2,
+      "cumulative_exposure_per_world": 12,
+      "CONTROL_FULL32": 23,
+      "SHAM_MEASURE_FULL32": 23,
+      "SUBSPACE_PROJECT_FULL32": 31
+    },
+    {
+      "chunk_index": 3,
+      "cumulative_exposure_per_world": 16,
+      "CONTROL_FULL32": 24,
+      "SHAM_MEASURE_FULL32": 24,
+      "SUBSPACE_PROJECT_FULL32": 31
+    },
+    {
+      "chunk_index": 4,
+      "cumulative_exposure_per_world": 20,
+      "CONTROL_FULL32": 27,
+      "SHAM_MEASURE_FULL32": 27,
+      "SUBSPACE_PROJECT_FULL32": 32
+    },
+    {
+      "chunk_index": 5,
+      "cumulative_exposure_per_world": 24,
+      "CONTROL_FULL32": 27,
+      "SHAM_MEASURE_FULL32": 27,
+      "SUBSPACE_PROJECT_FULL32": 32
+    },
+    {
+      "chunk_index": 6,
+      "cumulative_exposure_per_world": 28,
+      "CONTROL_FULL32": 31,
+      "SHAM_MEASURE_FULL32": 31,
+      "SUBSPACE_PROJECT_FULL32": 32
+    },
+    {
+      "chunk_index": 7,
+      "cumulative_exposure_per_world": 32,
+      "CONTROL_FULL32": 30,
+      "SHAM_MEASURE_FULL32": 30,
+      "SUBSPACE_PROJECT_FULL32": 32
+    }
+  ],
+  "final_reducer": {
+    "decision": "AFIXED_FULL32_FOUNDATION_REENTRY_RESCUED_NO_REGRESSION",
+    "control_failed_worlds": [
+      "iterative-grid-and-maze:2",
+      "iterative-grid-and-maze:6"
+    ],
+    "project_failed_worlds": [],
+    "rescued_control_failures": [
+      "iterative-grid-and-maze:2",
+      "iterative-grid-and-maze:6"
+    ],
+    "project_regressions": [],
+    "projection_update_count": 1024,
+    "projected_target_count": 12598
+  },
+  "selected_pre_result_transition": {
+    "source": "protocols/v017/exp335_post_result_transition_lock_v1.json",
+    "foundation_reentry_established": true,
+    "cnrs_design_authorized": true,
+    "cnrs_scope": "DESIGN_PREREGISTRATION_ONLY",
+    "foundation_for_cnrs": "REGISTERED_SUBSPACE_PROJECT_FULL32_REPAIRED_FOUNDATION",
+    "projection_status": "FOUNDATION_REPAIR_SUPPORTED_IN_EXP335_SCOPE",
+    "next_scope": "C_NRS_CORE_FULL32_STAGE_A_DESIGN_ONLY",
+    "rule": "Future C_NRS design may inherit the exact registered projection repair, frozen prospectively. It may not substitute a post-hoc projector variant without a separate causal court."
+  },
+  "forbidden_authorizations": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  },
+  "closure_interpretation": [
+    "A_FIXED full-32 Stage-A foundation re-entry is established only under the preregistered SUBSPACE_PROJECT_FULL32 arm at the final boundary.",
+    "CONTROL and SHAM remain exactly matched and both fail iterative-grid-and-maze:2 and iterative-grid-and-maze:6 at the final boundary.",
+    "The registered projector rescues exactly those two final CONTROL failures with zero PROJECT regressions and reaches all 32 worlds above both final floors.",
+    "This closure authorizes only a new C_NRS_CORE full-32 Stage-A design/preregistration using the exact registered repair prospectively.",
+    "This closure does not authorize C_NRS implementation, Stage B, Stage C, EXP-302, EXP-320, model scaling, 30M, or 100M."
+  ]
+}

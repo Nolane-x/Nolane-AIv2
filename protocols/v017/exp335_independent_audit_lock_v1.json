@@ -1,0 +1,66 @@
+{
+  "schema": "EXP335-INDEPENDENT-AUDIT-LOCK-V1",
+  "experiment_id": "EXP-335",
+  "created_before_final_result": true,
+  "authoritative_run_id": 35445927525,
+  "authoritative_sealed_head": "57fdf3a38b42b41951639a35dbb3c0d82055846b",
+  "scientific_source_sha": "d29e20e5af3467d16123e224462b37ef9a2ebf9d",
+  "execution_digest": "24d4e97ad3c7026881a122cd309d671d9999f3f84b5dcc04a11c468c4409d520",
+  "frozen_independent_auditor": {
+    "pull_request": 112,
+    "commit_sha": "bb629e90fd7dc0755b3f60842bba6bc0aa846d03",
+    "contract_status": "SUCCESS",
+    "generic_ci_status": "SUCCESS",
+    "real_artifact_validation": {
+      "workflow_run_id": 35452153972,
+      "conclusion": "SUCCESS",
+      "chunks_verified": [
+        0,
+        1,
+        2
+      ],
+      "audit_artifact_id": 10587292259,
+      "audit_artifact_zip_sha256": "bf915c7bf55608c534828bddcfc6d048ec64be64cb7b6705303e2e5b5dc92733",
+      "audit_report_json_sha256": "da56f34f000c99b356a54d5c13dfc04d85e692c9dab3a020811ab58e999f32ba",
+      "last_verified_chunk_artifact_sha256": "f1d0c7c5e02c23cee61a2d77dfb5db67c0f9acd7537a924ebecfac75111df042"
+    }
+  },
+  "postrun_hook": {
+    "repository_branch": "main",
+    "workflow_path": ".github/workflows/exp335-postrun-independent-audit.yml",
+    "latest_registration_commit": "285743b6cb28d4e36c769470168cecd8dd1b1ee7",
+    "frozen_auditor_sha": "bb629e90fd7dc0755b3f60842bba6bc0aa846d03",
+    "target_authoritative_run_id": 35445927525,
+    "target_authoritative_head_sha": "57fdf3a38b42b41951639a35dbb3c0d82055846b",
+    "scientific_audit_fail_closed": true,
+    "pr_comment_is_noncritical": true
+  },
+  "final_audit_requirements": [
+    "Download all 8 authoritative chunk artifacts as raw ZIP bytes.",
+    "Match every raw ZIP SHA-256 to GitHub artifact metadata.",
+    "Validate the sealed execution identity and fixed parent/reconstruction authority.",
+    "Recompute each chunk canonical bundle digest.",
+    "Verify checkpoint member SHA-256, receipt digest, receipt/boundary state digest equality and CONTROL/SHAM exactness.",
+    "Verify reconstruction -> chunk0 -> ... -> chunk7 artifact parent chain.",
+    "Download and hash the final artifact and final JSON.",
+    "Require final boundaries to equal independently audited chunk7 boundaries.",
+    "Independently rerun reduce_full32 and compare the decision plus every reducer vector.",
+    "Independently recompute the final evidence digest.",
+    "Require all forbidden authorization flags to remain false.",
+    "Emit and archive an independent final audit report and receipt."
+  ],
+  "anti_outcome_selection_rules": [
+    "Do not change the frozen auditor SHA after final-result visibility and call the new code the preregistered verifier.",
+    "A future auditor improvement may be supplemental only; the frozen bb629e... auditor remains the required primary independent verifier for EXP-335.",
+    "Do not substitute a duplicate scientific run for authoritative run 35445927525.",
+    "Do not treat failure to post a PR comment as failure of an otherwise successful independent scientific audit.",
+    "Do not treat successful PR commenting as evidence if the underlying independent audit failed."
+  ],
+  "authorization_flags": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}

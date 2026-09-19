@@ -1,0 +1,82 @@
+{
+  "schema": "EXP335-POST-RESULT-TRANSITION-LOCK-V1",
+  "experiment_id": "EXP-335",
+  "created_before_final_result": true,
+  "authoritative_run_id": 35445927525,
+  "sealed_marker_sha": "57fdf3a38b42b41951639a35dbb3c0d82055846b",
+  "execution_digest": "24d4e97ad3c7026881a122cd309d671d9999f3f84b5dcc04a11c468c4409d520",
+  "purpose": "Freeze the allowed repository transition for every preregistered EXP-335 reducer disposition before chunk-7/final-result visibility.",
+  "transitions": {
+    "INVALID_FULL32_FOUNDATION_REENTRY": {
+      "foundation_reentry_established": false,
+      "cnrs_design_authorized": false,
+      "next_scope": "PROVENANCE_OR_EXECUTION_VALIDITY_REVIEW_ONLY",
+      "rule": "Do not interpret capability. Preserve the invalid run and repair only the identified validity/infrastructure defect under a distinct sealed execution if separately authorized; do not change frozen scientific geometry."
+    },
+    "PARENT_AUTHORITY_MISMATCH": {
+      "foundation_reentry_established": false,
+      "cnrs_design_authorized": false,
+      "next_scope": "PARENT_AUTHORITY_RECONCILIATION_ONLY",
+      "rule": "No capability interpretation. Reconcile immutable parent/reconstruction authority before any new scientific execution."
+    },
+    "SHAM_FULL32_MISMATCH": {
+      "foundation_reentry_established": false,
+      "cnrs_design_authorized": false,
+      "next_scope": "MEASUREMENT_NONPERTURBATION_LOCALIZATION_ONLY",
+      "rule": "No capability interpretation. Localize why measurement perturbs CONTROL before any new foundation court."
+    },
+    "AFIXED_FULL32_FOUNDATION_REENTERED_BOTH": {
+      "foundation_reentry_established": true,
+      "cnrs_design_authorized": true,
+      "cnrs_scope": "DESIGN_PREREGISTRATION_ONLY",
+      "foundation_for_cnrs": "BALANCED_CONTROL_FULL32",
+      "projection_status": "NONREQUIRED_FOR_FOUNDATION; retain as bounded evidence only",
+      "next_scope": "C_NRS_CORE_FULL32_STAGE_A_DESIGN_ONLY",
+      "rule": "The balanced control continuation is sufficient. A future C_NRS_CORE court must start from a prospectively frozen A_FIXED foundation and may not infer that projection is required."
+    },
+    "AFIXED_FULL32_FOUNDATION_REENTERED_CONTROL_ONLY_PROJECT_REGRESSION": {
+      "foundation_reentry_established": true,
+      "cnrs_design_authorized": true,
+      "cnrs_scope": "DESIGN_PREREGISTRATION_ONLY",
+      "foundation_for_cnrs": "BALANCED_CONTROL_FULL32",
+      "projection_status": "UNSAFE_FOR_FULL32_FOUNDATION; forbidden as default C_NRS foundation intervention",
+      "next_scope": "C_NRS_CORE_FULL32_STAGE_A_DESIGN_ONLY",
+      "rule": "Use the passing CONTROL foundation for future C_NRS design. Do not carry the regressing all-world projector forward as a repair."
+    },
+    "BASELINE_FULL32_FAILURE_WITHOUT_SUBSPACE_TRIGGER": {
+      "foundation_reentry_established": false,
+      "cnrs_design_authorized": false,
+      "next_scope": "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY",
+      "rule": "The registered intervention did not engage. Do not open C_NRS. Localize the remaining baseline failure under a distinct hypothesis."
+    },
+    "AFIXED_FULL32_FOUNDATION_REENTRY_RESCUED_NO_REGRESSION": {
+      "foundation_reentry_established": true,
+      "cnrs_design_authorized": true,
+      "cnrs_scope": "DESIGN_PREREGISTRATION_ONLY",
+      "foundation_for_cnrs": "REGISTERED_SUBSPACE_PROJECT_FULL32_REPAIRED_FOUNDATION",
+      "projection_status": "FOUNDATION_REPAIR_SUPPORTED_IN_EXP335_SCOPE",
+      "next_scope": "C_NRS_CORE_FULL32_STAGE_A_DESIGN_ONLY",
+      "rule": "Future C_NRS design may inherit the exact registered projection repair, frozen prospectively. It may not substitute a post-hoc projector variant without a separate causal court."
+    },
+    "AFIXED_FULL32_FOUNDATION_REENTRY_NOT_ESTABLISHED": {
+      "foundation_reentry_established": false,
+      "cnrs_design_authorized": false,
+      "next_scope": "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY",
+      "rule": "Do not open C_NRS. Preserve the negative result. A new preregistered hypothesis may investigate unresolved interference, including the already-documented no-new-conflict half-space candidate, but only as a distinct future intervention."
+    }
+  },
+  "universal_guards": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false,
+    "stage_b_required_after_future_cnrs_stage_a_success": true,
+    "stage_c_required_after_future_stage_b_success": true,
+    "persistent_state_design_blocked_until_required_foundation_and_stage_b_c_gates": true,
+    "no_intermediate_chunk_may_authorize_transition": true,
+    "only_final_preregistered_reducer_may_select_transition": true,
+    "posthoc_chunk0_geometry_is_not_reducer_input": true,
+    "contingency_pr111_is_not_authoritative_science": true
+  }
+}
