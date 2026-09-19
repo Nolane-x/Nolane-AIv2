@@ -1,0 +1,128 @@
+{
+  "schema_version": "EXP330-P02-CONFLICT-PROJECTION-RESCUE-V1",
+  "experiment_id": "EXP-330",
+  "role": "post_exp329_p02_conflicting_gradient_causal_rescue",
+  "authority": {
+    "parent_exp329_marker_sha": "b55749e6feb4126253a0e73b6458d901b542c380",
+    "parent_exp329_source_sha": "1c406c45526b2e7c90b9afc3e37d452e0a77e092",
+    "parent_exp329_run_id": 35417293679,
+    "parent_exp329_disposition": "BIDIRECTIONAL_LOCAL_CROSS_DAMAGE",
+    "parent_exp329_final_artifact_id": 10576262539,
+    "parent_exp329_final_artifact_zip_digest": "d95a36e7305617b3b07232f18072ea99ef766a68161c6dbd9a707545253ae6a9",
+    "parent_exp329_final_json_sha256": "f59682e2a08d3fd55437bfa3bfa6f4c3a88e950c4bc8a2ee7526774161be6e7f",
+    "parent_exp329_final_evidence_digest": "719b0c35b8538ef379a912448d7539bbdf1ef6e856e036a986b7c64b7a648cd7",
+    "parent_world0_damage_rounds": [
+      4,
+      8,
+      16,
+      24,
+      31
+    ],
+    "parent_world2_damage_rounds": [
+      1,
+      4,
+      8,
+      16,
+      24,
+      31
+    ],
+    "reconstruction_run_id": 35345351869,
+    "reconstruction_artifact_id": 10547681681,
+    "reconstruction_artifact_name": "exp323r-reconstruction-candidate-35345351869-0",
+    "reconstruction_artifact_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+    "reconstruction_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+    "reconstruction_receipt_digest": "f8153c9f88d7d28b7e0240d994991c8d232b1d192b1688b901982610e266e03f"
+  },
+  "model": {
+    "arm": "A_FIXED",
+    "resident_trainable_parameters": 10000000,
+    "starting_cumulative_step": 2048,
+    "device": "cpu",
+    "architecture_change": false,
+    "tokenizer_change": false,
+    "objective_change": false,
+    "scale_change": false
+  },
+  "population": {
+    "stage": "A_SANITY",
+    "root": 0,
+    "family": "iterative-grid-and-maze",
+    "world_indices": [
+      0,
+      2
+    ]
+  },
+  "training": {
+    "optimizer": "AdamW",
+    "inherited_optimizer_state": true,
+    "inherited_rng_state": true,
+    "learning_rate_decimal": "0.00005",
+    "weight_decay_decimal": "0.01",
+    "gradient_clip_norm_decimal": "1.0",
+    "exposures_per_world": 32,
+    "effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "within_round_order": [
+      0,
+      2
+    ],
+    "total_optimizer_updates_per_arm": 64,
+    "independent_clone_per_arm": true
+  },
+  "arms": {
+    "CONTROL_ALT": "exact inherited ALT_0_2 sequential updates using the frozen source-gradient training primitive",
+    "SHAM_MEASURE_ALT": "same 64 source updates; before each step compute source and target gradients from the identical pre-step state, restore the exact source gradient and source-consumed RNG, apply no projection; final model/optimizer/RNG digests must exactly equal CONTROL_ALT",
+    "PROJECT_CONFLICT_ALT": "same measured-update machinery; when source-target gradient dot product is negative and target norm squared is above 1e-24, replace source gradient g_s with g_s-(dot(g_s,g_t)/||g_t||^2)g_t before the inherited global norm clip and AdamW step"
+  },
+  "measurement_integrity": {
+    "auxiliary_target_gradient_mutates_optimizer": false,
+    "auxiliary_target_gradient_rng_effect": "restored; authoritative RNG after each measured update equals the state immediately after source forward/backward",
+    "sham_exact_state_match_required": true,
+    "target_norm_squared_floor": 1e-24
+  },
+  "thresholds": {
+    "teacher_forced_token_accuracy_floor": 0.99,
+    "teacher_forced_full_answer_exact_floor": 0.9,
+    "nonfinite_events_max": 0
+  },
+  "dispositions": [
+    "INVALID_PROJECTION_COURT",
+    "PARENT_ALT_REPRODUCTION_MISMATCH",
+    "SHAM_TRAJECTORY_MISMATCH",
+    "PROJECTION_NOT_TRIGGERED",
+    "CONFLICT_PROJECTION_RESCUE",
+    "CONFLICT_PROJECTION_NO_RESCUE"
+  ],
+  "decision_order": [
+    "INVALID_PROJECTION_COURT",
+    "PARENT_ALT_REPRODUCTION_MISMATCH",
+    "SHAM_TRAJECTORY_MISMATCH",
+    "PROJECTION_NOT_TRIGGERED",
+    "CONFLICT_PROJECTION_RESCUE",
+    "CONFLICT_PROJECTION_NO_RESCUE"
+  ],
+  "interpretation": {
+    "CONFLICT_PROJECTION_RESCUE": "the exact control failure reproduces, measurement-only sham is bitwise trajectory-equivalent, at least one negative-dot projection occurs, and the projected arm simultaneously fits worlds 0 and 2; the registered conflicting gradient component is causally sufficient for rescue under this frozen court",
+    "CONFLICT_PROJECTION_NO_RESCUE": "the exact control failure reproduces, sham integrity holds and projection activates, but the projected arm still fails simultaneous fit; local orthogonal conflict removal alone is insufficient under this frozen court",
+    "PROJECTION_NOT_TRIGGERED": "the registered projection rule never activates, so the intervention court cannot support a projection-rescue or no-rescue claim",
+    "SHAM_TRAJECTORY_MISMATCH": "measurement instrumentation changes the nominal control trajectory; intervention comparison is invalid"
+  },
+  "nonclaims": [
+    "EXP-330 does not establish PCGrad or any projection method as a universal optimizer improvement",
+    "EXP-330 does not establish that all multiworld interference is caused by pairwise gradient conflict",
+    "EXP-330 does not establish an architectural capacity ceiling",
+    "EXP-330 does not establish that scaling would help",
+    "EXP-330 does not authorize EXP-320 or larger model sizes"
+  ],
+  "authorization": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
