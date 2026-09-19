@@ -1,0 +1,94 @@
+{
+  "schema_version": "EXP328-P02-ORDER-GEOMETRY-V1",
+  "experiment_id": "EXP-328",
+  "role": "post_exp327_p02_order_retention_geometry_localization",
+  "authority": {
+    "parent_exp327_marker_sha": "cf8cdd35750b90c402a274fb6c8327dfc5c70869",
+    "parent_exp327_source_sha": "9753aa78f768ce6b6a20436f9b6729d9bf1c20af",
+    "parent_exp327_run_id": 35413434081,
+    "parent_exp327_disposition": "PAIR_MINIMAL_FAILURE_PRESENT",
+    "parent_exp327_final_artifact_id": 10574837015,
+    "parent_exp327_final_artifact_zip_digest": "b4ddab033a85762c99451f6532f790fbf4cda9181ff67c1a2093613dd0156d77",
+    "parent_exp327_final_json_sha256": "27f8ef1fbe2bbb2a2a931d9dddd1409a6f3a0b9a8ecb06902f1e46bb07543279",
+    "parent_exp327_final_evidence_digest": "bc9999f3f6e366de8ec41b26ec265514546cf68cb82661295a31b202e3e907e2",
+    "parent_minimal_failing_group": "P02",
+    "parent_failed_pairs": ["P02"],
+    "reconstruction_run_id": 35345351869,
+    "reconstruction_artifact_id": 10547681681,
+    "reconstruction_artifact_name": "exp323r-reconstruction-candidate-35345351869-0",
+    "reconstruction_artifact_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+    "reconstruction_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+    "reconstruction_receipt_digest": "f8153c9f88d7d28b7e0240d994991c8d232b1d192b1688b901982610e266e03f"
+  },
+  "model": {
+    "arm": "A_FIXED",
+    "resident_trainable_parameters": 10000000,
+    "starting_cumulative_step": 2048,
+    "device": "cpu",
+    "architecture_change": false,
+    "tokenizer_change": false,
+    "objective_change": false,
+    "scale_change": false
+  },
+  "population": {
+    "stage": "A_SANITY",
+    "root": 0,
+    "family": "iterative-grid-and-maze",
+    "world_indices": [0, 2],
+    "independent_clone_per_arm": true
+  },
+  "training": {
+    "optimizer": "AdamW",
+    "inherited_optimizer_state": true,
+    "inherited_rng_state": true,
+    "learning_rate_decimal": "0.00005",
+    "weight_decay_decimal": "0.01",
+    "gradient_clip_norm_decimal": "1.0",
+    "exposures_per_world": 32,
+    "effort_cycle": [1, 2, 4, 8],
+    "effort_assignment": "world-local exposure index; exposure j uses effort_cycle[j mod 4] for each world",
+    "arms": {
+      "ALT_0_2": "for each exposure j=0..31: update world 0 then world 2",
+      "ALT_2_0": "for each exposure j=0..31: update world 2 then world 0",
+      "BLOCK_0_2": "32 updates of world 0, then 32 updates of world 2",
+      "BLOCK_2_0": "32 updates of world 2, then 32 updates of world 0"
+    },
+    "primary_evaluation": "after exactly 32 exposures of each world in each arm"
+  },
+  "thresholds": {
+    "teacher_forced_token_accuracy_floor": 0.99,
+    "teacher_forced_full_answer_exact_floor": 0.9,
+    "nonfinite_events_max": 0
+  },
+  "dispositions": [
+    "INVALID_ORDER_GEOMETRY_COURT",
+    "PARENT_P02_REPRODUCTION_MISMATCH",
+    "ORDER_GEOMETRY_SENSITIVE_INTERFERENCE",
+    "ORDER_GEOMETRY_INVARIANT_PAIR_FAILURE"
+  ],
+  "decision_order": [
+    "INVALID_ORDER_GEOMETRY_COURT",
+    "PARENT_P02_REPRODUCTION_MISMATCH",
+    "ORDER_GEOMETRY_SENSITIVE_INTERFERENCE",
+    "ORDER_GEOMETRY_INVARIANT_PAIR_FAILURE"
+  ],
+  "interpretation": {
+    "PARENT_P02_REPRODUCTION_MISMATCH": "the exact EXP-327 ALT_0_2 P02 failure did not reproduce; no schedule-mechanism claim is allowed",
+    "ORDER_GEOMETRY_SENSITIVE_INTERFERENCE": "ALT_0_2 reproduces failure and at least one preregistered reordering arm passes; P02 interference depends on update ordering/retention geometry under the frozen court",
+    "ORDER_GEOMETRY_INVARIANT_PAIR_FAILURE": "ALT_0_2 reproduces failure and none of ALT_2_0/BLOCK_0_2/BLOCK_2_0 passes; simple schedule reordering does not rescue P02 under the frozen court"
+  },
+  "nonclaims": [
+    "EXP-328 does not identify a universal catastrophic-forgetting mechanism",
+    "EXP-328 does not establish gradient conflict as the causal mechanism",
+    "EXP-328 does not establish an architectural capacity ceiling",
+    "EXP-328 does not establish that scaling would help",
+    "EXP-328 does not authorize EXP-320 or larger model sizes"
+  ],
+  "authorization": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
