@@ -62,37 +62,38 @@ jobs:
               if item["name"] != name or item.get("expired") is not False or item.get("digest") != digest:
                   raise SystemExit(f"artifact authority mismatch {artifact_id}")
           PY
-      - name: Download immutable artifacts by ID
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          python - <<'PY'
-          import io, os, urllib.request, zipfile
-          from pathlib import Path
-          specs = (
-              (10547681681, "reconstruction"),
-              (10577706134, "exp330-parent"),
-              (10574837015, "exp327-original"),
-              (10578071604, "exp327-replay"),
-          )
-          for artifact_id, target in specs:
-              request = urllib.request.Request(
-                  f"https://api.github.com/repos/Nolane-x/Nolane-AIv2/actions/artifacts/{artifact_id}/zip",
-                  headers={
-                      "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
-                      "Accept": "application/vnd.github+json",
-                      "X-GitHub-Api-Version": "2022-11-28",
-                      "User-Agent": "exp332",
-                  },
-              )
-              with urllib.request.urlopen(request) as response:
-                  data = response.read()
-              path = Path(target)
-              path.mkdir(parents=True, exist_ok=True)
-              with zipfile.ZipFile(io.BytesIO(data)) as archive:
-                  archive.extractall(path)
-          PY
+      - name: Download reconstruction artifact by ID
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: "10547681681"
+          path: reconstruction
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: "35345351869"
+      - name: Download EXP-330 parent artifact by ID
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: "10577706134"
+          path: exp330-parent
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: "35419828278"
+      - name: Download EXP-327 original artifact by ID
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: "10574837015"
+          path: exp327-original
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: "35413434081"
+      - name: Download EXP-327 replay artifact by ID
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: "10578071604"
+          path: exp327-replay
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: "35413434081"
       - name: Verify downloaded bytes
         shell: bash
         run: |
@@ -101,7 +102,7 @@ jobs:
           test "$(sha256sum reconstruction/reconstruction-receipt.json | awk '{print $1}')" = "617ba665149a366d00782df5c4457a6a3d01081fe847aa144465377ee164bba3"
           test "$(sha256sum exp330-parent/exp330-final.json | awk '{print $1}')" = "8aefca4b8fa4b6f814da219a2e58a4e97bab849a4f3291f95a6b2d19c35f4b2d"
           test "$(sha256sum exp327-original/exp327-final.json | awk '{print $1}')" = "27f8ef1fbe2bbb2a2a931d9dddd1409a6f3a0b9a8ecb06902f1e46bb07543279"
-          test "$(sha2556sum exp327-replay/exp327-final.json | awk '{print $1}')" = "cc608361850a524f6e82c06c8f65a5a7c0cb321a90b2c6d4686238a82233540f"
+          test "$(sha256sum exp327-replay/exp327-final.json | awk '{print $1}')" = "cc608361850a524f6e82c06c8f65a5a7c0cb321a90b2c6d4686238a82233540f"
       - name: Install frozen runtime
         run: |
           python -m pip install --upgrade pip
