@@ -1,0 +1,36 @@
+name: v017-exp326-contract
+
+on:
+  pull_request:
+    paths:
+      - "docs/superpowers/specs/2026-09-19-exp326-balanced-multiworld-breakpoint.md"
+      - "protocols/v017/exp326_preregistration_v1.json"
+      - "protocols/v017/exp326_preregistration_v1.sha256"
+      - "src/nolane_ai/experiments/exp326_*.py"
+      - "scripts/verify_exp326_contract.py"
+      - "scripts/verify_exp326_freeze.py"
+      - "scripts/exp326_*.py"
+      - "tests/test_exp326_*.py"
+      - ".github/workflows/v017-exp326-contract.yml"
+      - ".github/workflows/exp326-balanced-multiworld-breakpoint.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -e '.[dev,model]'
+      - name: Verify preregistration
+        run: >-
+          python scripts/verify_exp326_contract.py
+          --json protocols/v017/exp326_preregistration_v1.json
+          --sha256 protocols/v017/exp326_preregistration_v1.sha256
+      - name: Run EXP-326 pure contract court
+        run: pytest -q tests/test_exp326_*.py
+      - run: python -m compileall -q src scripts
