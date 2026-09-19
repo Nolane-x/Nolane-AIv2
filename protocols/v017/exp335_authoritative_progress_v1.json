@@ -235,5 +235,37 @@
   "authorized_30m": false,
   "authorized_100m": false,
   "current_authoritative_job": "chunk3",
-  "final_disposition_available": false
+  "final_disposition_available": false,
+  "independent_audit_through_chunk2": {
+    "auditor_sha": "bb629e90fd7dc0755b3f60842bba6bc0aa846d03",
+    "workflow_run_id": 35452153972,
+    "workflow_conclusion": "SUCCESS",
+    "verified_chunk_count": 3,
+    "complete_chunk_chain": false,
+    "audit_artifact_id": 10587292259,
+    "audit_artifact_zip_sha256": "bf915c7bf55608c534828bddcfc6d048ec64be64cb7b6705303e2e5b5dc92733",
+    "audit_report_json_sha256": "da56f34f000c99b356a54d5c13dfc04d85e692c9dab3a020811ab58e999f32ba",
+    "last_verified_chunk_index": 2,
+    "last_verified_artifact_sha256": "f1d0c7c5e02c23cee61a2d77dfb5db67c0f9acd7537a924ebecfac75111df042",
+    "pass_counts_by_chunk": {
+      "0": {
+        "CONTROL_FULL32": 14,
+        "SHAM_MEASURE_FULL32": 14,
+        "SUBSPACE_PROJECT_FULL32": 15
+      },
+      "1": {
+        "CONTROL_FULL32": 24,
+        "SHAM_MEASURE_FULL32": 24,
+        "SUBSPACE_PROJECT_FULL32": 25
+      },
+      "2": {
+        "CONTROL_FULL32": 23,
+        "SHAM_MEASURE_FULL32": 23,
+        "SUBSPACE_PROJECT_FULL32": 31
+      }
+    },
+    "note": "Independent auditor validated raw GitHub ZIP digests, sealed identity, authority constants, checkpoint/receipt hashes, CONTROL/SHAM exactness and the reconstruction->chunk0->chunk1->chunk2 chain."
+  },
+  "independent_final_audit_lock_path": "protocols/v017/exp335_independent_audit_lock_v1.json",
+  "independent_final_auditor_sha": "bb629e90fd7dc0755b3f60842bba6bc0aa846d03"
 }
