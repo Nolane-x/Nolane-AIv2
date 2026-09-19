@@ -21,4 +21,5 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install numpy
           python -m pip install -e '.[dev,model]'
-      - run: pytest -q tests/test_exp327_contract.py
+      - run: pytest -q tests/test_exp327_*.py
+      - run: python -m compileall -q src scripts
