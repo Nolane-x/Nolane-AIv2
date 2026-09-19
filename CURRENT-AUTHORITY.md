@@ -42,19 +42,37 @@ At the latest repository-process update:
 
 - `prepare`: **SUCCESS**
 - `chunk0`: **SUCCESS**
-- `chunk1`: **IN PROGRESS**
-- `chunk2..chunk7`: not yet authoritative evidence
+- `chunk1`: **SUCCESS**
+- `chunk2`: **SUCCESS**
+- `chunk3`: **IN PROGRESS**
+- `chunk4..chunk7`: not yet authoritative evidence
 - `finalize`: not yet run
 - final EXP-335 disposition: **NOT YET AVAILABLE**
 
-Chunk 0 immutable evidence:
+Verified immutable evidence so far:
 
-- artifact ID: `10586346937`
-- artifact digest: `42db4c1f5389a9a566d02c212948df524fb0d1b74af87c0b778b4b2ce21461c9`
-- chunk bundle digest: `ee63050f95f69c1ff493cafc01ec11b56ea5c18b5214e9d4b51ef6e5b6bed7a4`
-- CONTROL/SHAM exact equality: true
+- chunk0 artifact `10586346937`, ZIP digest `42db4c1f5389a9a566d02c212948df524fb0d1b74af87c0b778b4b2ce21461c9`, bundle `ee63050f95f69c1ff493cafc01ec11b56ea5c18b5214e9d4b51ef6e5b6bed7a4`
+- chunk1 artifact `10586443959`, ZIP digest `3baa5c052874c71811ea7545bf4517e3f60f024caa84280d173ada72a08a466a`, bundle `9c1077e7802d97881d828129b4753f870a50089f98c6d2d57697edfd7fa59255`
+- chunk2 artifact `10587006784`, ZIP digest `f1d0c7c5e02c23cee61a2d77dfb5db67c0f9acd7537a924ebecfac75111df042`, bundle `fbaf4f545d03a9af6c604ed2e5315ea3161da90f2af2e2616363739e3954c6fe`
+- reconstruction → chunk0 → chunk1 → chunk2 parent-artifact chain: verified
+- checkpoint SHA / receipt digest / receipt-boundary state digests: independently verified for all 3 arms through chunk2
+- CONTROL/SHAM exact equality: true through all completed chunks
 - nonfinite events: 0 in all arms
-- diagnostic worlds passing both thresholds: CONTROL `14/32`, SHAM `14/32`, PROJECT `15/32`
+
+Diagnostic pass counts:
+- chunk0 / exposure 4: CONTROL `14/32`, SHAM `14/32`, PROJECT `15/32`
+- chunk1 / exposure 8: CONTROL `24/32`, SHAM `24/32`, PROJECT `25/32`
+- chunk2 / exposure 12: CONTROL `23/32`, SHAM `23/32`, PROJECT `31/32`
+
+At exposure 12, PROJECT's only failing world is `generator-heldout-abstract-transformation:3` (token `0.5`, full-answer exact `0.0`). This remains intermediate evidence only.
+
+Independent artifact audit through chunk2:
+- draft auditor PR: `#112`
+- frozen auditor head used: `bb629e90fd7dc0755b3f60842bba6bc0aa846d03`
+- real audit run: `35452153972` — SUCCESS
+- audit artifact: `10587292259`
+- audit artifact ZIP SHA-256: `bf915c7bf55608c534828bddcfc6d048ec64be64cb7b6705303e2e5b5dc92733`
+- audit report JSON SHA-256: `da56f34f000c99b356a54d5c13dfc04d85e692c9dab3a020811ab58e999f32ba`
 
 These chunk-level values are **diagnostic only**. They cannot authorize a successor or substitute for the final reducer.
 
@@ -103,13 +121,16 @@ Only three positive foundation states can open the next lane, and even then only
 
 All other final states keep C_NRS blocked and require validity review or a distinct new causal hypothesis.
 
-## Post-hoc exploratory finding
+## Post-hoc exploratory findings
 
-Chunk-0 geometry analysis found that the registered projector nearly eliminates negative mass on selected conflicts, while most remaining negative mass is introduced on targets that had non-negative raw dots.
+Chunk geometry analysis shows that the registered projector nearly eliminates negative mass on selected conflicts, while most remaining negative mass is introduced on targets that had non-negative raw dots.
 
-This is stored as **post-hoc, non-decisional** evidence:
+Recorded **post-hoc, non-decisional** evidence:
 
-`protocols/v017/exp335_chunk0_exploratory_geometry_v1.json`
+- `protocols/v017/exp335_chunk0_exploratory_geometry_v1.json`
+- `protocols/v017/exp335_chunk2_generator3_exploratory_localization_v1.json`
+
+At exposure 12, the only PROJECT failure (`generator-heldout-abstract-transformation:3`) has concrete within-PROJECT new-conflict examples where a raw-positive target dot is rotated strongly negative by projection. This is hypothesis-generating only and is not a reducer input.
 
 A possible half-space / no-new-conflict projection is documented only as a future distinct hypothesis:
 
@@ -117,13 +138,15 @@ A possible half-space / no-new-conflict projection is documented only as a futur
 
 It must not be substituted into EXP-335.
 
-## Contingency engineering branch
+## Engineering and audit support
 
-Draft PR `#111` is an execution-performance contingency, not authoritative science.
+Draft PR `#111` is an execution-performance contingency, not authoritative science. Its EXP-335 contract and full generic CI are green. It preserves the registered scientific semantics while reducing redundant SHAM/projector compute. It may be used only if the authoritative execution becomes operationally unusable and a separate repair execution is explicitly authorized and resealed.
 
-It preserves the registered scientific semantics while reducing redundant SHAM/projector compute. It may be used only if the authoritative execution becomes operationally unusable and a separate repair execution is explicitly authorized and resealed.
+Draft PR `#112` is the independent artifact/final auditor. Its contract and generic CI are green, and it has already verified the real chunk0→chunk2 artifact chain successfully.
 
-It must never be substituted for successful authoritative evidence merely because it is faster.
+`main` contains `.github/workflows/exp335-postrun-independent-audit.yml`. When authoritative run `35445927525` completes successfully, this hook is bound to the sealed run/head, downloads all 8 raw chunk ZIPs plus the final artifact, independently recomputes the full chain + reducer + evidence digest, uploads an immutable audit receipt, and attempts to record that receipt on PR #110. PR commenting is non-critical; scientific audit success is not allowed to fail merely because comment permissions fail.
+
+Neither PR #111 nor PR #112 may be substituted for successful authoritative evidence.
 
 ## Universal authorization guards
 
@@ -142,5 +165,6 @@ Even after a future positive C_NRS Stage-A result, Stage B and Stage C remain ma
 1. Preserve run `35445927525` as the only authoritative EXP-335 execution.
 2. Continue validating its immutable chunk chain.
 3. Do not change EXP-335 scientific geometry based on intermediate evidence.
-4. When chunk7 + final reducer exist, independently verify artifact digest, final JSON SHA, canonical evidence digest, CONTROL/SHAM integrity, chunk parent chain, and reducer.
-5. Apply exactly the pre-result successor transition lock.
+4. Continue from chunk3 and verify every new immutable artifact against the previous artifact digest.
+5. When chunk7 + final reducer exist, require the independent post-run audit receipt: raw artifact ZIP digests, final JSON SHA, canonical evidence digest, CONTROL/SHAM integrity, chunk parent chain, and independently recomputed reducer.
+6. Apply exactly the pre-result successor transition lock.
