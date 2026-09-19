@@ -1,0 +1,651 @@
+name: EXP-335 full-32 A_FIXED foundation re-entry court
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      source_sha: ${{ steps.identity.outputs.source_sha }}
+    steps:
+      - name: Enforce one-shot run attempt
+        shell: bash
+        run: test "$GITHUB_RUN_ATTEMPT" = "1"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: marker
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Resolve sealed identity
+        id: identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          p=Path("marker/protocols/v017/exp335_execution_identity_v1.json")
+          s=Path("marker/protocols/v017/exp335_execution_identity_v1.sha256")
+          claimed=s.read_text().split()[0]
+          observed=hashlib.sha256(p.read_bytes()).hexdigest()
+          if claimed != observed: raise SystemExit("EXP-335 identity sidecar mismatch")
+          payload=json.loads(p.read_text())
+          with open(os.environ["GITHUB_OUTPUT"],"a") as out:
+              out.write(f"source_sha={payload['source_commit_sha']}\n")
+          PY
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.identity.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+      - name: Verify frozen source, workflow and preregistration
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=frozen/src python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from nolane_ai.experiments.exp335_identity import Exp335ExecutionIdentity, validate_execution_identity
+          from nolane_ai.protocol.identity import source_tree_digest
+          p=json.loads(Path("marker/protocols/v017/exp335_execution_identity_v1.json").read_text())
+          identity=Exp335ExecutionIdentity(**p)
+          validate_execution_identity(identity)
+          if source_tree_digest("frozen") != identity.source_tree_digest:
+              raise SystemExit("EXP-335 source tree mismatch")
+          workflow=Path("frozen/.github/workflows/exp335-full32-afixed-foundation-reentry.yml").read_bytes()
+          if hashlib.sha256(workflow).hexdigest() != identity.workflow_sha256:
+              raise SystemExit("EXP-335 workflow mismatch")
+          prereg=Path("frozen/protocols/v017/exp335_preregistration_v1.json").read_bytes()
+          if hashlib.sha256(prereg).hexdigest() != "cc9f245fba352e9607400a6316db987253ccc41cbaf00dc8af9cd8cfe5952d88":
+              raise SystemExit("EXP-335 preregistration bytes mismatch")
+          sidecar=Path("frozen/protocols/v017/exp335_preregistration_v1.sha256").read_text().split()[0]
+          if sidecar != "db73212d75770ae3a3c0b2a3fb6f60544672970cc3ad112063b1b5bb232021cb":
+              raise SystemExit("EXP-335 preregistration canonical digest mismatch")
+          PY
+      - name: Verify immutable artifact metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request
+          checks=(
+            (10547681681,"exp323r-reconstruction-candidate-35345351869-0","sha256:c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621"),
+            (10583626513,"exp334-higher-order-rescue-final-35438656413","sha256:8339fd376a23b7daeb8f45087eff634893557f37c47a117f308c7f54692b8ee8"),
+          )
+          for artifact_id,name,digest in checks:
+              req=urllib.request.Request(
+                f"https://api.github.com/repos/Nolane-x/Nolane-AIv2/actions/artifacts/{artifact_id}",
+                headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json",
+                         "X-GitHub-Api-Version":"2022-11-28","User-Agent":"exp335"},
+              )
+              with urllib.request.urlopen(req) as response: item=json.load(response)
+              if item["name"] != name or item.get("expired") is not False or item.get("digest") != digest:
+                  raise SystemExit(f"artifact authority mismatch {artifact_id}: {item.get('name')} {item.get('digest')}")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp335-identity-${{ github.run_id }}
+          path: |
+            marker/protocols/v017/exp335_execution_identity_v1.json
+            marker/protocols/v017/exp335_execution_identity_v1.sha256
+          if-no-files-found: error
+          retention-days: 90
+  chunk0:
+    needs: prepare
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_digest: ${{ steps.upload.outputs.artifact-digest }}
+    steps:
+      - name: Enforce one-shot run attempt
+        shell: bash
+        run: test "$GITHUB_RUN_ATTEMPT" = "1"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v5
+        with:
+          name: exp335-identity-${{ github.run_id }}
+          path: identity
+      - name: Download immutable reconstruction
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: "10547681681"
+          path: reconstruction
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: "35345351869"
+      - name: Download EXP-334 parent
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: "10583626513"
+          path: exp334-parent
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: "35438656413"
+      - name: Verify immutable input bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum reconstruction/reconstruction.pt | awk '{print $1}')" = "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5"
+          test "$(sha256sum reconstruction/reconstruction-receipt.json | awk '{print $1}')" = "617ba665149a366d00782df5c4457a6a3d01081fe847aa144465377ee164bba3"
+          test "$(sha256sum exp334-parent/exp334-final.json | awk '{print $1}')" = "a393bf8fc237e2f2a357666059011e468ba7de06db3f3c62ecc3090f2aa25354"
+      - name: Install frozen runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+      - name: Execute EXP-335 chunk 0 court
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          python frozen/scripts/exp335_run_chunk.py --chunk-index 0 \
+            --execution-identity identity/exp335_execution_identity_v1.json \
+            --code-root frozen \
+            --parent-artifact-digest "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621" \
+            --output-dir evidence/chunk0 \
+            --reconstruction-checkpoint reconstruction/reconstruction.pt \
+            --reconstruction-receipt reconstruction/reconstruction-receipt.json \
+            --selection-lock frozen/protocols/v017/exp323r_reconstruction_selection_lock_v1.json \
+            --parent-exp334 exp334-parent/exp334-final.json
+      - name: Upload immutable chunk
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp335-chunk-0-${{ github.run_id }}
+          path: evidence/chunk0
+          if-no-files-found: error
+          retention-days: 90
+  chunk1:
+    needs: [prepare, chunk0]
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_digest: ${{ steps.upload.outputs.artifact-digest }}
+    steps:
+      - name: Enforce one-shot run attempt
+        shell: bash
+        run: test "$GITHUB_RUN_ATTEMPT" = "1"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v5
+        with:
+          name: exp335-identity-${{ github.run_id }}
+          path: identity
+      - name: Download previous immutable chunk
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-0-${{ github.run_id }}
+          path: previous
+      - name: Install frozen runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+      - name: Execute EXP-335 chunk 1 court
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          test -n "${{ needs.chunk0.outputs.artifact_digest }}"
+          python frozen/scripts/exp335_run_chunk.py --chunk-index 1 \
+            --execution-identity identity/exp335_execution_identity_v1.json \
+            --code-root frozen \
+            --parent-artifact-digest "${{ needs.chunk0.outputs.artifact_digest }}" \
+            --output-dir evidence/chunk1 \
+            --previous-dir previous
+      - name: Upload immutable chunk
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp335-chunk-1-${{ github.run_id }}
+          path: evidence/chunk1
+          if-no-files-found: error
+          retention-days: 90
+  chunk2:
+    needs: [prepare, chunk1]
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_digest: ${{ steps.upload.outputs.artifact-digest }}
+    steps:
+      - name: Enforce one-shot run attempt
+        shell: bash
+        run: test "$GITHUB_RUN_ATTEMPT" = "1"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v5
+        with:
+          name: exp335-identity-${{ github.run_id }}
+          path: identity
+      - name: Download previous immutable chunk
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-1-${{ github.run_id }}
+          path: previous
+      - name: Install frozen runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+      - name: Execute EXP-335 chunk 2 court
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          test -n "${{ needs.chunk1.outputs.artifact_digest }}"
+          python frozen/scripts/exp335_run_chunk.py --chunk-index 2 \
+            --execution-identity identity/exp335_execution_identity_v1.json \
+            --code-root frozen \
+            --parent-artifact-digest "${{ needs.chunk1.outputs.artifact_digest }}" \
+            --output-dir evidence/chunk2 \
+            --previous-dir previous
+      - name: Upload immutable chunk
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp335-chunk-2-${{ github.run_id }}
+          path: evidence/chunk2
+          if-no-files-found: error
+          retention-days: 90
+  chunk3:
+    needs: [prepare, chunk2]
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_digest: ${{ steps.upload.outputs.artifact-digest }}
+    steps:
+      - name: Enforce one-shot run attempt
+        shell: bash
+        run: test "$GITHUB_RUN_ATTEMPT" = "1"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v5
+        with:
+          name: exp335-identity-${{ github.run_id }}
+          path: identity
+      - name: Download previous immutable chunk
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-2-${{ github.run_id }}
+          path: previous
+      - name: Install frozen runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+      - name: Execute EXP-335 chunk 3 court
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          test -n "${{ needs.chunk2.outputs.artifact_digest }}"
+          python frozen/scripts/exp335_run_chunk.py --chunk-index 3 \
+            --execution-identity identity/exp335_execution_identity_v1.json \
+            --code-root frozen \
+            --parent-artifact-digest "${{ needs.chunk2.outputs.artifact_digest }}" \
+            --output-dir evidence/chunk3 \
+            --previous-dir previous
+      - name: Upload immutable chunk
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp335-chunk-3-${{ github.run_id }}
+          path: evidence/chunk3
+          if-no-files-found: error
+          retention-days: 90
+  chunk4:
+    needs: [prepare, chunk3]
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_digest: ${{ steps.upload.outputs.artifact-digest }}
+    steps:
+      - name: Enforce one-shot run attempt
+        shell: bash
+        run: test "$GITHUB_RUN_ATTEMPT" = "1"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v5
+        with:
+          name: exp335-identity-${{ github.run_id }}
+          path: identity
+      - name: Download previous immutable chunk
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-3-${{ github.run_id }}
+          path: previous
+      - name: Install frozen runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+      - name: Execute EXP-335 chunk 4 court
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          test -n "${{ needs.chunk3.outputs.artifact_digest }}"
+          python frozen/scripts/exp335_run_chunk.py --chunk-index 4 \
+            --execution-identity identity/exp335_execution_identity_v1.json \
+            --code-root frozen \
+            --parent-artifact-digest "${{ needs.chunk3.outputs.artifact_digest }}" \
+            --output-dir evidence/chunk4 \
+            --previous-dir previous
+      - name: Upload immutable chunk
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp335-chunk-4-${{ github.run_id }}
+          path: evidence/chunk4
+          if-no-files-found: error
+          retention-days: 90
+  chunk5:
+    needs: [prepare, chunk4]
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_digest: ${{ steps.upload.outputs.artifact-digest }}
+    steps:
+      - name: Enforce one-shot run attempt
+        shell: bash
+        run: test "$GITHUB_RUN_ATTEMPT" = "1"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v5
+        with:
+          name: exp335-identity-${{ github.run_id }}
+          path: identity
+      - name: Download previous immutable chunk
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-4-${{ github.run_id }}
+          path: previous
+      - name: Install frozen runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+      - name: Execute EXP-335 chunk 5 court
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          test -n "${{ needs.chunk4.outputs.artifact_digest }}"
+          python frozen/scripts/exp335_run_chunk.py --chunk-index 5 \
+            --execution-identity identity/exp335_execution_identity_v1.json \
+            --code-root frozen \
+            --parent-artifact-digest "${{ needs.chunk4.outputs.artifact_digest }}" \
+            --output-dir evidence/chunk5 \
+            --previous-dir previous
+      - name: Upload immutable chunk
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp335-chunk-5-${{ github.run_id }}
+          path: evidence/chunk5
+          if-no-files-found: error
+          retention-days: 90
+  chunk6:
+    needs: [prepare, chunk5]
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_digest: ${{ steps.upload.outputs.artifact-digest }}
+    steps:
+      - name: Enforce one-shot run attempt
+        shell: bash
+        run: test "$GITHUB_RUN_ATTEMPT" = "1"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v5
+        with:
+          name: exp335-identity-${{ github.run_id }}
+          path: identity
+      - name: Download previous immutable chunk
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-5-${{ github.run_id }}
+          path: previous
+      - name: Install frozen runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+      - name: Execute EXP-335 chunk 6 court
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          test -n "${{ needs.chunk5.outputs.artifact_digest }}"
+          python frozen/scripts/exp335_run_chunk.py --chunk-index 6 \
+            --execution-identity identity/exp335_execution_identity_v1.json \
+            --code-root frozen \
+            --parent-artifact-digest "${{ needs.chunk5.outputs.artifact_digest }}" \
+            --output-dir evidence/chunk6 \
+            --previous-dir previous
+      - name: Upload immutable chunk
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp335-chunk-6-${{ github.run_id }}
+          path: evidence/chunk6
+          if-no-files-found: error
+          retention-days: 90
+  chunk7:
+    needs: [prepare, chunk6]
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_digest: ${{ steps.upload.outputs.artifact-digest }}
+    steps:
+      - name: Enforce one-shot run attempt
+        shell: bash
+        run: test "$GITHUB_RUN_ATTEMPT" = "1"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v5
+        with:
+          name: exp335-identity-${{ github.run_id }}
+          path: identity
+      - name: Download previous immutable chunk
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-6-${{ github.run_id }}
+          path: previous
+      - name: Install frozen runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+      - name: Execute EXP-335 chunk 7 court
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          test -n "${{ needs.chunk6.outputs.artifact_digest }}"
+          python frozen/scripts/exp335_run_chunk.py --chunk-index 7 \
+            --execution-identity identity/exp335_execution_identity_v1.json \
+            --code-root frozen \
+            --parent-artifact-digest "${{ needs.chunk6.outputs.artifact_digest }}" \
+            --output-dir evidence/chunk7 \
+            --previous-dir previous
+      - name: Upload immutable chunk
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: exp335-chunk-7-${{ github.run_id }}
+          path: evidence/chunk7
+          if-no-files-found: error
+          retention-days: 90
+  finalize:
+    needs: [prepare, chunk0, chunk1, chunk2, chunk3, chunk4, chunk5, chunk6, chunk7]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce one-shot run attempt
+        shell: bash
+        run: test "$GITHUB_RUN_ATTEMPT" = "1"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v5
+        with:
+          name: exp335-identity-${{ github.run_id }}
+          path: identity
+      - name: Download EXP-334 parent
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: "10583626513"
+          path: exp334-parent
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: "35438656413"
+      - name: Download chunk 0
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-0-${{ github.run_id }}
+          path: chunks/0
+      - name: Download chunk 1
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-1-${{ github.run_id }}
+          path: chunks/1
+      - name: Download chunk 2
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-2-${{ github.run_id }}
+          path: chunks/2
+      - name: Download chunk 3
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-3-${{ github.run_id }}
+          path: chunks/3
+      - name: Download chunk 4
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-4-${{ github.run_id }}
+          path: chunks/4
+      - name: Download chunk 5
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-5-${{ github.run_id }}
+          path: chunks/5
+      - name: Download chunk 6
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-6-${{ github.run_id }}
+          path: chunks/6
+      - name: Download chunk 7
+        uses: actions/download-artifact@v5
+        with:
+          name: exp335-chunk-7-${{ github.run_id }}
+          path: chunks/7
+      - name: Install frozen runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+      - name: Finalize preregistered reducer
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          python frozen/scripts/exp335_finalize.py \
+            --execution-identity identity/exp335_execution_identity_v1.json \
+            --parent-exp334 exp334-parent/exp334-final.json \
+            --chunk-dir chunks/0 --chunk-dir chunks/1 --chunk-dir chunks/2 --chunk-dir chunks/3 \
+            --chunk-dir chunks/4 --chunk-dir chunks/5 --chunk-dir chunks/6 --chunk-dir chunks/7 \
+            --chunk-artifact-digest "${{ needs.chunk0.outputs.artifact_digest }}" \
+            --chunk-artifact-digest "${{ needs.chunk1.outputs.artifact_digest }}" \
+            --chunk-artifact-digest "${{ needs.chunk2.outputs.artifact_digest }}" \
+            --chunk-artifact-digest "${{ needs.chunk3.outputs.artifact_digest }}" \
+            --chunk-artifact-digest "${{ needs.chunk4.outputs.artifact_digest }}" \
+            --chunk-artifact-digest "${{ needs.chunk5.outputs.artifact_digest }}" \
+            --chunk-artifact-digest "${{ needs.chunk6.outputs.artifact_digest }}" \
+            --chunk-artifact-digest "${{ needs.chunk7.outputs.artifact_digest }}" \
+            --output evidence/exp335-final.json
+      - name: Fail closed
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/exp335-final.json").read_text())
+          allowed={
+            "INVALID_FULL32_FOUNDATION_REENTRY",
+            "PARENT_AUTHORITY_MISMATCH",
+            "SHAM_FULL32_MISMATCH",
+            "AFIXED_FULL32_FOUNDATION_REENTERED_BOTH",
+            "AFIXED_FULL32_FOUNDATION_REENTERED_CONTROL_ONLY_PROJECT_REGRESSION",
+            "BASELINE_FULL32_FAILURE_WITHOUT_SUBSPACE_TRIGGER",
+            "AFIXED_FULL32_FOUNDATION_REENTRY_RESCUED_NO_REGRESSION",
+            "AFIXED_FULL32_FOUNDATION_REENTRY_NOT_ESTABLISHED",
+          }
+          if p.get("decision") not in allowed: raise SystemExit("unknown EXP-335 reducer state")
+          for key in ("exp302_implementation_authorized","exp320_implementation_authorized","scale_authorized","authorized_30m","authorized_100m"):
+              if p.get(key) is not False: raise SystemExit(f"forbidden authorization {key}")
+          print("EXP-335 disposition:",p["decision"])
+          print("evidence digest:",p["evidence_digest"])
+          print("CONTROL failed worlds:",p["control_failed_worlds"])
+          print("PROJECT failed worlds:",p["project_failed_worlds"])
+          print("rescued CONTROL failures:",p["rescued_control_failures"])
+          print("PROJECT regressions:",p["project_regressions"])
+          print("projection updates:",p["projection_update_count"])
+          print("projected targets:",p["projected_target_count"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp335-full32-foundation-reentry-final-${{ github.run_id }}
+          path: evidence/exp335-final.json
+          if-no-files-found: error
+          retention-days: 90
