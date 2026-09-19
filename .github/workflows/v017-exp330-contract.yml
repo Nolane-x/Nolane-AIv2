@@ -1,0 +1,23 @@
+name: v017-exp330-contract
+on:
+  pull_request:
+    paths:
+      - "src/nolane_ai/experiments/exp330_*.py"
+      - "scripts/exp330_run.py"
+      - "protocols/v017/exp330_*"
+      - "tests/test_exp330_*.py"
+      - ".github/workflows/exp330-p02-conflict-projection-rescue.yml"
+      - ".github/workflows/v017-exp330-contract.yml"
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - run: pytest -q tests/test_exp330_contract.py tests/test_exp330_runtime_surface.py tests/test_exp330_workflow.py
