@@ -66,3 +66,5 @@ def test_preregistration_canonical_digest_is_locked():
     payload=json.loads(raw)
     canonical=json.dumps(payload,sort_keys=True,separators=(",",":"),ensure_ascii=False,allow_nan=False).encode()
     assert hashlib.sha256(canonical).hexdigest()==APPROVED_PREREGISTRATION_DIGEST
+    checksum=(root/"protocols/v017/exp330_preregistration_v1.sha256").read_text().split()[0]
+    assert hashlib.sha256(raw).hexdigest()==checksum
