@@ -44,5 +44,88 @@
     "Do not infer the final EXP-335 disposition from chunk0.",
     "Do not use this post-hoc observation to modify or rerun the authoritative EXP-335 court.",
     "Do not authorize EXP-302, EXP-320, scale, 30M, or 100M from this observation."
-  ]
+  ],
+  "family_stratification": {
+    "interim_threshold_worlds_passing_both": {
+      "CONTROL_FULL32": {
+        "iterative-grid-and-maze": 3,
+        "algorithmic-sequence-transform": 2,
+        "generator-heldout-abstract-transformation": 6,
+        "language-sequence-control": 3
+      },
+      "SUBSPACE_PROJECT_FULL32": {
+        "iterative-grid-and-maze": 3,
+        "algorithmic-sequence-transform": 1,
+        "generator-heldout-abstract-transformation": 7,
+        "language-sequence-control": 4
+      }
+    },
+    "new_conflicts_by_source_family": {
+      "iterative-grid-and-maze": {
+        "count": 131,
+        "negative_mass": 10293.124239444733
+      },
+      "algorithmic-sequence-transform": {
+        "count": 85,
+        "negative_mass": 478.0736321041823
+      },
+      "generator-heldout-abstract-transformation": {
+        "count": 149,
+        "negative_mass": 49.829701252914205
+      },
+      "language-sequence-control": {
+        "count": 104,
+        "negative_mass": 134.43658222467954
+      }
+    },
+    "new_conflicts_by_target_family": {
+      "iterative-grid-and-maze": {
+        "count": 163,
+        "negative_mass": 9651.109924809067
+      },
+      "algorithmic-sequence-transform": {
+        "count": 104,
+        "negative_mass": 211.43391056634417
+      },
+      "generator-heldout-abstract-transformation": {
+        "count": 111,
+        "negative_mass": 1018.0596042324545
+      },
+      "language-sequence-control": {
+        "count": 91,
+        "negative_mass": 74.86071541864543
+      }
+    },
+    "dominant_source_target_pairs_by_negative_mass": [
+      {
+        "source_family": "iterative-grid-and-maze",
+        "target_family": "iterative-grid-and-maze",
+        "count": 30,
+        "negative_mass": 9111.17525756453
+      },
+      {
+        "source_family": "iterative-grid-and-maze",
+        "target_family": "generator-heldout-abstract-transformation",
+        "count": 44,
+        "negative_mass": 953.6228650179623
+      },
+      {
+        "source_family": "algorithmic-sequence-transform",
+        "target_family": "iterative-grid-and-maze",
+        "count": 44,
+        "negative_mass": 466.91026656365847
+      },
+      {
+        "source_family": "iterative-grid-and-maze",
+        "target_family": "algorithmic-sequence-transform",
+        "count": 28,
+        "negative_mass": 179.8763108751175
+      }
+    ],
+    "interpretation": [
+      "New-conflict mass is strongly concentrated in updates sourced from iterative-grid-and-maze.",
+      "The largest single leakage channel is iterative-grid-and-maze -> iterative-grid-and-maze.",
+      "This stratification is post-hoc and must not change EXP-335 or select a successor before the final reducer."
+    ]
+  }
 }
