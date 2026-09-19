@@ -1,0 +1,122 @@
+{
+  "schema": "EXP335-CHUNK2-GENERATOR3-EXPLORATORY-LOCALIZATION-V1",
+  "experiment_id": "EXP-335",
+  "authoritative_run_id": 35445927525,
+  "authoritative_chunks_analyzed": [
+    0,
+    1,
+    2
+  ],
+  "target_world": "generator-heldout-abstract-transformation:3",
+  "posthoc": true,
+  "decisional": false,
+  "reducer_input": false,
+  "current_experiment_must_not_change": true,
+  "exposure12_boundary": {
+    "CONTROL_FULL32": {
+      "teacher_forced_answer_token_accuracy": 1,
+      "teacher_forced_full_answer_exact": 1,
+      "passes_both": true
+    },
+    "SHAM_MEASURE_FULL32": {
+      "teacher_forced_answer_token_accuracy": 1,
+      "teacher_forced_full_answer_exact": 1,
+      "passes_both": true
+    },
+    "SUBSPACE_PROJECT_FULL32": {
+      "teacher_forced_answer_token_accuracy": 0.5,
+      "teacher_forced_full_answer_exact": 0,
+      "passes_both": false
+    }
+  },
+  "within_project_new_conflict_events": [
+    {
+      "chunk_index": 1,
+      "exposure_index": 4,
+      "source_world": "iterative-grid-and-maze:2",
+      "raw_source_target_dot": 123.63992391746872,
+      "post_projection_source_target_dot": -650.1589416299114,
+      "target_was_selected_for_projection": false,
+      "source_loss": 5.246779918670654
+    },
+    {
+      "chunk_index": 1,
+      "exposure_index": 4,
+      "source_world": "iterative-grid-and-maze:6",
+      "raw_source_target_dot": 75.94847843801983,
+      "post_projection_source_target_dot": -480.51969476999136,
+      "target_was_selected_for_projection": false,
+      "source_loss": 2.3616254329681396
+    },
+    {
+      "chunk_index": 2,
+      "exposure_index": 8,
+      "source_world": "iterative-grid-and-maze:6",
+      "raw_source_target_dot": 147.2331019584294,
+      "post_projection_source_target_dot": -264.62511797213136,
+      "target_was_selected_for_projection": false,
+      "source_loss": 6.203668117523193
+    }
+  ],
+  "target_world_chunk_local_summary": {
+    "chunk0": {
+      "raw_negative_count": 64,
+      "raw_negative_mass": 5639.132124052753,
+      "new_conflict_count": 20,
+      "new_conflict_negative_mass": 58.19393084366595,
+      "total_post_negative_mass": 58.194240201743604
+    },
+    "chunk1": {
+      "raw_negative_count": 61,
+      "raw_negative_mass": 5543.083873057053,
+      "new_conflict_count": 13,
+      "new_conflict_negative_mass": 1130.693102133306,
+      "total_post_negative_mass": 1130.6933287787251
+    },
+    "chunk2": {
+      "raw_negative_count": 50,
+      "raw_negative_mass": 14.635108871562682,
+      "new_conflict_count": 6,
+      "new_conflict_negative_mass": 264.6260723866244,
+      "total_post_negative_mass": 264.6260744554397
+    }
+  },
+  "sham_context_for_same_source_positions": [
+    {
+      "chunk_index": 1,
+      "exposure_index": 4,
+      "source_world": "iterative-grid-and-maze:2",
+      "sham_raw_source_target_dot": 34.3965748163145
+    },
+    {
+      "chunk_index": 1,
+      "exposure_index": 4,
+      "source_world": "iterative-grid-and-maze:6",
+      "sham_raw_source_target_dot": 0.8172928916747755
+    },
+    {
+      "chunk_index": 2,
+      "exposure_index": 8,
+      "source_world": "iterative-grid-and-maze:6",
+      "sham_raw_source_target_dot": 101.60210719980941
+    }
+  ],
+  "interpretation": [
+    "Within the PROJECT arm itself, the highlighted target is raw-compatible before several updates (raw dot > 0) but becomes strongly anti-aligned after the registered projection (post dot < 0).",
+    "Because the target is raw-nonnegative, it is not included in the registered selected conflict set. The observed sign reversal is therefore a direct example of no-new-conflict leakage by the projection geometry.",
+    "At exposure 12 this world is the only PROJECT world below both final-style floors while CONTROL and SHAM pass it.",
+    "The SHAM rows are contextual only because SHAM and PROJECT trajectories have diverged; they are not matched-state causal comparisons.",
+    "The temporal association between large leakage events and later same-exposure source-loss spikes is hypothesis-generating, not proof of a direct causal chain."
+  ],
+  "future_falsification_candidate": [
+    "A future distinct preregistered court may test a no-new-conflict half-space intervention against the exact registered subspace projector.",
+    "Such a court should preregister generator-heldout-abstract-transformation:3 as a diagnostic target only if this choice is frozen before any new execution.",
+    "The future court must preserve CONTROL/SHAM and compare new-conflict count/mass, target trajectory, and full 32-world final retention."
+  ],
+  "forbidden_inferences": [
+    "Do not alter EXP-335.",
+    "Do not infer the final EXP-335 disposition from exposure 12.",
+    "Do not claim the highlighted leakage event alone caused the final target failure.",
+    "Do not authorize C_NRS, EXP-302, EXP-320, scale, 30M, or 100M from this analysis."
+  ]
+}
