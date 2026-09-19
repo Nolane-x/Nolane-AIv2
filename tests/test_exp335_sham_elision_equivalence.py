@@ -101,3 +101,32 @@ def test_symmetric_gram_reuse_is_exactly_equivalent_to_registered_projector():
         torch.equal(reference, repaired)
         for reference, repaired in zip(reference_projected, repaired_projected)
     )
+
+
+@pytest.mark.parametrize("seed", range(16))
+def test_symmetric_gram_randomized_exact_equivalence(seed):
+    torch.manual_seed(seed)
+    source = (
+        torch.randn(37, dtype=torch.float32),
+        torch.randn(19, dtype=torch.float32),
+        torch.randn(5, dtype=torch.float32),
+    )
+    targets = [
+        (
+            f"target-{index:02d}",
+            (
+                torch.randn(37, dtype=torch.float32),
+                torch.randn(19, dtype=torch.float32),
+                torch.randn(5, dtype=torch.float32),
+            ),
+        )
+        for index in range(31)
+    ]
+
+    reference = _reference_project_source(source, targets)
+    repaired = _project_source(source, targets)
+
+    assert repaired[1] == reference[1]
+    assert repaired[2] == reference[2]
+    assert repaired[3] == reference[3]
+    assert all(torch.equal(a, b) for a, b in zip(reference[0], repaired[0]))
