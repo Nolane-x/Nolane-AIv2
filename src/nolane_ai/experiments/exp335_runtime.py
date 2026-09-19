@@ -243,11 +243,15 @@ def _project_source(
     targets: list[tuple[str, tuple[torch.Tensor, ...]]],
 ) -> tuple[tuple[torch.Tensor, ...], list[str], dict[str, float], dict[str, float]]:
     raw = {world_id: _dot(source, grad) for world_id, grad in targets}
-    selected = [
-        (world_id, grad)
-        for world_id, grad in targets
-        if raw[world_id] < 0.0 and _norm_sq(grad) > TARGET_NORM_SQUARED_FLOOR
-    ]
+    selected: list[tuple[str, tuple[torch.Tensor, ...]]] = []
+    selected_norm_sq: list[float] = []
+    for world_id, grad in targets:
+        if raw[world_id] >= 0.0:
+            continue
+        norm_sq = _norm_sq(grad)
+        if norm_sq > TARGET_NORM_SQUARED_FLOOR:
+            selected.append((world_id, grad))
+            selected_norm_sq.append(norm_sq)
     if not selected:
         cloned = tuple(x.clone() for x in source)
         return cloned, [], raw, raw.copy()
@@ -255,10 +259,14 @@ def _project_source(
     count = len(selected)
     gram = torch.empty((count, count), dtype=torch.float64)
     rhs = torch.empty((count,), dtype=torch.float64)
-    for i, (_, gi) in enumerate(selected):
-        rhs[i] = _dot(gi, source)
-        for j, (_, gj) in enumerate(selected):
-            gram[i, j] = _dot(gi, gj)
+    for i, (world_id, gi) in enumerate(selected):
+        rhs[i] = raw[world_id]
+        gram[i, i] = selected_norm_sq[i]
+        for j in range(i + 1, count):
+            gj = selected[j][1]
+            value = _dot(gi, gj)
+            gram[i, j] = value
+            gram[j, i] = value
     alpha = torch.linalg.pinv(gram, rtol=PINV_RTOL) @ rhs
 
     result: list[torch.Tensor] = []
@@ -299,18 +307,27 @@ def _measured_step(
     targets: list[tuple[str, tuple[torch.Tensor, ...]]] = []
     target_nonfinite = 0
     target_losses: dict[str, float] = {}
+    raw_dots: dict[str, float] = {}
     for target_id, target_world in target_worlds:
         optimizer.zero_grad(set_to_none=True)
         torch.set_rng_state(rng_start)
         target_loss, target_grads, observed = _backward_grads(compiled, target_world, effort)
-        targets.append((target_id, target_grads))
+        if project:
+            targets.append((target_id, target_grads))
+        else:
+            raw_dots[target_id] = _dot(source_grads, target_grads)
         target_losses[target_id] = target_loss
         target_nonfinite += observed
 
     torch.set_rng_state(rng_after_source)
     optimizer.zero_grad(set_to_none=True)
-    projected, selected, raw_dots, post_dots = _project_source(source_grads, targets)
-    applied = projected if project else source_grads
+    if project:
+        projected, selected, raw_dots, post_dots = _project_source(source_grads, targets)
+        applied = projected
+    else:
+        selected = []
+        post_dots = {}
+        applied = source_grads
     for parameter, gradient in zip(params, applied):
         parameter.grad = gradient.clone()
 
