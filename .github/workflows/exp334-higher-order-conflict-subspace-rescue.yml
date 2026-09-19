@@ -1,0 +1,143 @@
+name: EXP-334 higher-order conflict-subspace rescue court
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  court:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: marker
+      - name: Resolve sealed source
+        id: identity
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          payload=json.loads(Path("marker/protocols/v017/exp334_execution_identity_v1.json").read_text())
+          with open(os.environ["GITHUB_OUTPUT"],"a") as out:
+              out.write(f"source_sha={payload['source_commit_sha']}\n")
+              out.write(f"workflow_sha256={payload['workflow_sha256']}\n")
+          PY
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.identity.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify workflow and immutable artifact metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum frozen/.github/workflows/exp334-higher-order-conflict-subspace-rescue.yml | awk '{print $1}')" = "${{ steps.identity.outputs.workflow_sha256 }}"
+          python - <<'PY'
+          import json, os, urllib.request
+          checks=(
+            (10547681681,"exp323r-reconstruction-candidate-35345351869-0","sha256:c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621"),
+            (10581761422,"exp333-complete-pair-lattice-final-35431490998","sha256:49ca57616fa99099dc24d39d0846a5f2fcfe3e55b5eec7156d5bf42c6e0236dd"),
+            (10578071604,"exp327-minimal-subset-final-35413434081","sha256:a5093c7b332f2a174336f3216ec878b09fc8fa0e5dcda9cd5f7651b796708b95"),
+            (10574301567,"exp326-iterative-grid-and-maze-35409935457","sha256:25545e871f16007ca5e7fb87abbe9b39b7c12c330feb640fb298ad55a8f87045"),
+          )
+          for artifact_id,name,digest in checks:
+              req=urllib.request.Request(
+                f"https://api.github.com/repos/Nolane-x/Nolane-AIv2/actions/artifacts/{artifact_id}",
+                headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json",
+                         "X-GitHub-Api-Version":"2022-11-28","User-Agent":"exp334"},
+              )
+              with urllib.request.urlopen(req) as response:item=json.load(response)
+              if item["name"]!=name or item.get("expired") is not False or item.get("digest")!=digest:
+                  raise SystemExit(f"artifact authority mismatch {artifact_id}: {item.get('name')} {item.get('digest')}")
+          PY
+      - name: Download reconstruction
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: "10547681681"
+          path: reconstruction
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: "35345351869"
+      - name: Download EXP-333 parent
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: "10581761422"
+          path: exp333-parent
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: "35431490998"
+      - name: Download EXP-327 replay witness
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: "10578071604"
+          path: exp327-parent
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: "35413434081"
+      - name: Download EXP-326 iterative family witness
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: "10574301567"
+          path: exp326-parent
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: "35409935457"
+      - name: Verify downloaded bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum reconstruction/reconstruction.pt | awk '{print $1}')" = "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5"
+          test "$(sha256sum reconstruction/reconstruction-receipt.json | awk '{print $1}')" = "617ba665149a366d00782df5c4457a6a3d01081fe847aa144465377ee164bba3"
+          test "$(sha256sum exp333-parent/exp333-final.json | awk '{print $1}')" = "50e53e3b45a454b7fbb2c3358f8a7284d60ec4b473c1929bbaa157dafbc4340b"
+          test "$(sha256sum exp327-parent/exp327-final.json | awk '{print $1}')" = "cc608361850a524f6e82c06c8f65a5a7c0cb321a90b2c6d4686238a82233540f"
+          test "$(sha256sum exp326-parent/evidence.json | awk '{print $1}')" = "04f8f89f33f3af0145076872bb845d80751c0f3406852309215114647f1b06a7"
+      - name: Install frozen runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+      - name: Run higher-order rescue court
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          python frozen/scripts/exp334_run.py \
+            --reconstruction-checkpoint reconstruction/reconstruction.pt \
+            --reconstruction-receipt reconstruction/reconstruction-receipt.json \
+            --selection-lock frozen/protocols/v017/exp323r_reconstruction_selection_lock_v1.json \
+            --parent-exp333 exp333-parent/exp333-final.json \
+            --parent-exp327 exp327-parent/exp327-final.json \
+            --parent-exp326-family exp326-parent/evidence.json \
+            --execution-identity marker/protocols/v017/exp334_execution_identity_v1.json \
+            --output evidence/exp334-final.json
+      - name: Fail closed
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/exp334-final.json").read_text())
+          for key in ("exp302_implementation_authorized","exp320_implementation_authorized","scale_authorized","authorized_30m","authorized_100m"):
+              if p.get(key) is not False: raise SystemExit(f"forbidden authorization {key}")
+          print("EXP-334 disposition:",p["decision"])
+          print("evidence digest:",p["evidence_digest"])
+          print("parent reproduced:",p["parent_higher_order_reproduced"])
+          print("baseline failures:",p["baseline_failures"])
+          print("rescued:",p["rescued_baseline_failures"])
+          print("unresolved:",p["unresolved_baseline_failures"])
+          print("regressions:",p["project_regressions"])
+          print("projection updates:",p["projection_update_counts"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp334-higher-order-rescue-final-${{ github.run_id }}
+          path: evidence/exp334-final.json
+          if-no-files-found: error
+          retention-days: 90
