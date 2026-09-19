@@ -25,6 +25,7 @@ from .exp335_contract import (
     validate_boundary,
 )
 from .exp323_evidence import expected_reconstruction_payload
+from .exp335_identity import Exp335ExecutionIdentity, validate_execution_identity
 
 CHUNK_RECEIPT_SCHEMA = "EXP335-CONTINUATION-RECEIPT-V1"
 CHUNK_SUMMARY_SCHEMA = "EXP335-CHUNK-SUMMARY-V1"
@@ -82,13 +83,15 @@ def _receipt_digest(receipt: Mapping[str, Any]) -> str:
 
 
 def _identity_fields(identity: Mapping[str, Any]) -> tuple[str, str]:
-    source_tree = identity.get("source_tree_digest")
-    execution = identity.get("exp335_execution_digest")
-    if not isinstance(source_tree, str):
-        raise ValueError("EXP-335 audit identity source tree")
-    if not isinstance(execution, str):
-        raise ValueError("EXP-335 audit identity execution digest")
-    return _normalize_digest(source_tree), _normalize_digest(execution)
+    try:
+        materialized = Exp335ExecutionIdentity(**dict(identity))
+        validate_execution_identity(materialized)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("EXP-335 audit execution identity") from exc
+    return (
+        _normalize_digest(materialized.source_tree_digest),
+        _normalize_digest(materialized.exp335_execution_digest),
+    )
 
 
 def _pass_count(boundary: BoundaryResult) -> int:
