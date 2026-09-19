@@ -30,4 +30,6 @@ def test_runtime_binds_continuation_receipts_fail_closed():
 def test_chunk_script_runs_all_arms_in_one_process():
     text = Path("src/nolane_ai/experiments/exp335_runtime.py").read_text()
     assert "for arm in ARMS:" in text
-    assert "sham_equivalent(control, sham)" in text
+    assert "sham_equivalent(" in text
+    assert 'boundaries["CONTROL_FULL32"]' in text
+    assert 'boundaries["SHAM_MEASURE_FULL32"]' in text
