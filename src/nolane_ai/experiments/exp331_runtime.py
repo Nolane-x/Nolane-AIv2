@@ -120,7 +120,7 @@ def _parent_anchor(parent:Mapping[str,Any],pair_id:str)->Mapping[str,Any]:
 
 def _control_matches(record:Mapping[str,Any],anchor:Mapping[str,Any])->bool:
     state=anchor["final_state"]
-    return record.get("mode")=="CONTROL" and record.get("members")==anchor["members"] and record.get("world_token_accuracies")==anchor["world_token_accuracies"] and record.get("world_full_answer_exact")==anchor["world_full_answer_exact"] and record.get("model_state_digest")==state["model_state_digest"] and record.get("optimizer_state_digest")==state["optimizer_state_digest"] and record.get("rng_state_digest")==state["rng_state_digest"] and record.get("nonfinite_events")==0 and arm_pass(_result(record)) is bool(anchor["passed"])
+    return record.get("mode")=="CONTROL" and record.get("members")==anchor["members"] and tuple(record.get("world_token_accuracies",()))==tuple(anchor["world_token_accuracies"]) and tuple(record.get("world_full_answer_exact",()))==tuple(anchor["world_full_answer_exact"]) and record.get("model_state_digest")==state["model_state_digest"] and record.get("optimizer_state_digest")==state["optimizer_state_digest"] and record.get("rng_state_digest")==state["rng_state_digest"] and record.get("nonfinite_events")==0 and arm_pass(_result(record)) is bool(anchor["passed"])
 
 def run_court(*,checkpoint_path,receipt_path,selection_lock_path,exp330_parent_path,exp327_parent_path,execution_identity:Exp331ExecutionIdentity)->dict[str,Any]:
     validate_execution_identity(execution_identity);p330=json.loads(Path(exp330_parent_path).read_text());p327=json.loads(Path(exp327_parent_path).read_text())

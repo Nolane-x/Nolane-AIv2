@@ -17,3 +17,10 @@ def test_parent_reproduction_is_exact_state_anchored():
 
 def test_runner_write_once_and_validates():
     text=RUNNER.read_text();assert 'open("x"' in text;assert "validate_final_evidence(payload)" in text
+
+
+
+def test_parent_anchor_metric_comparison_normalizes_json_sequence_types():
+    text=RUNTIME.read_text()
+    assert 'tuple(record.get("world_token_accuracies",()))==tuple(anchor["world_token_accuracies"])' in text
+    assert 'tuple(record.get("world_full_answer_exact",()))==tuple(anchor["world_full_answer_exact"])' in text
