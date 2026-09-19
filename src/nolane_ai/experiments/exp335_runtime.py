@@ -259,8 +259,8 @@ def _project_source(
     count = len(selected)
     gram = torch.empty((count, count), dtype=torch.float64)
     rhs = torch.empty((count,), dtype=torch.float64)
-    for i, (_, gi) in enumerate(selected):
-        rhs[i] = _dot(gi, source)
+    for i, (world_id, gi) in enumerate(selected):
+        rhs[i] = raw[world_id]
         gram[i, i] = selected_norm_sq[i]
         for j in range(i + 1, count):
             gj = selected[j][1]
