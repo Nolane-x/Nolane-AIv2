@@ -22,7 +22,9 @@ def test_control_uses_exact_inherited_training_primitive():
 
 def test_sham_and_projected_arms_are_independent_reconstructions():
     text=RUNTIME.read_text()
-    assert text.count("load_locked_reconstruction(checkpoint_path,receipt_path,selection_lock_path)")>=3
+    assert text.count("load_locked_reconstruction(checkpoint_path,receipt_path,selection_lock_path)")>=2
+    assert "arm_id=SHAM_ARM,project=False" in text
+    assert "arm_id=PROJECT_ARM,project=True" in text
     assert "sham_equivalent" in text
 
 def test_runner_is_write_once_and_validates():
