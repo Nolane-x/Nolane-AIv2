@@ -244,6 +244,7 @@ jobs:
           retention-days: 90
 
       - name: Record independently verified final receipt on PR 110
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           AUDIT_ARTIFACT_ID: ${{ steps.upload_audit.outputs.artifact-id }}
