@@ -1,0 +1,58 @@
+{
+  "schema": "EXP335-AUTHORITATIVE-PROGRESS-V1",
+  "experiment_id": "EXP-335",
+  "authoritative_run_id": 35445927525,
+  "scientific_source_sha": "d29e20e5af3467d16123e224462b37ef9a2ebf9d",
+  "sealed_marker_sha": "57fdf3a38b42b41951639a35dbb3c0d82055846b",
+  "execution_digest": "24d4e97ad3c7026881a122cd309d671d9999f3f84b5dcc04a11c468c4409d520",
+  "decisional": false,
+  "reducer_input": false,
+  "note": "Observed progress only. Final scientific authority remains exclusively the preregistered chunk-7 final reducer.",
+  "chunks": {
+    "0": {
+      "status": "SUCCESS",
+      "artifact_id": 10586346937,
+      "artifact_name": "exp335-chunk-0-35445927525",
+      "artifact_digest": "42db4c1f5389a9a566d02c212948df524fb0d1b74af87c0b778b4b2ce21461c9",
+      "artifact_created_at": "2026-09-19T14:17:15Z",
+      "artifact_size_bytes": 321031054,
+      "chunk_bundle_digest": "ee63050f95f69c1ff493cafc01ec11b56ea5c18b5214e9d4b51ef6e5b6bed7a4",
+      "cumulative_exposure_per_world": 4,
+      "cumulative_source_updates": 128,
+      "control_sham_exact": true,
+      "nonfinite_events": {
+        "CONTROL_FULL32": 0,
+        "SHAM_MEASURE_FULL32": 0,
+        "SUBSPACE_PROJECT_FULL32": 0
+      },
+      "threshold_snapshot": {
+        "CONTROL_FULL32": {
+          "worlds_passing_both": 14,
+          "world_count": 32
+        },
+        "SHAM_MEASURE_FULL32": {
+          "worlds_passing_both": 14,
+          "world_count": 32
+        },
+        "SUBSPACE_PROJECT_FULL32": {
+          "worlds_passing_both": 15,
+          "world_count": 32
+        }
+      },
+      "projection_snapshot": {
+        "negative_target_count": 1763,
+        "projection_update_count": 128,
+        "projected_target_count": 1692
+      },
+      "caution": "Intermediate boundary only. Mixed per-world deltas are present and must not be interpreted as the final EXP-335 disposition."
+    }
+  },
+  "duplicate_runs": {
+    "35447261711": "CANCELLED_NON_AUTHORITATIVE"
+  },
+  "exp302_implementation_authorized": false,
+  "exp320_implementation_authorized": false,
+  "scale_authorized": false,
+  "authorized_30m": false,
+  "authorized_100m": false
+}
