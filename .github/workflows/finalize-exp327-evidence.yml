@@ -1,0 +1,204 @@
+name: Finalize sealed EXP-327 evidence
+
+on:
+  workflow_run:
+    workflows:
+      - "EXP-327 iterative minimal failing subset"
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/finalize-exp327-evidence.yml"
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_HEAD: cf8cdd35750b90c402a274fb6c8327dfc5c70869
+      EXPECTED_BRANCH: exp327-iterative-minimal-failing-subset
+      EXPECTED_EXECUTION_DIGEST: e9e48638779f9c33772659adfe1f6db860e5966ca598958f75a606d149bb0b08
+      EXPECTED_SOURCE: 9753aa78f768ce6b6a20436f9b6729d9bf1c20af
+      EXPECTED_PREREG_DIGEST: f76f738d70ea24b1dd7044070de005513dbda4f867a3803826b190903bf8df9d
+      TARGET_WORKFLOW: exp327-iterative-minimal-subset.yml
+      TARGET_PR: "100"
+    steps:
+      - name: Resolve exact authoritative run
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            run_id="${{ github.event.workflow_run.id }}"
+            head_sha="${{ github.event.workflow_run.head_sha }}"
+            head_branch="${{ github.event.workflow_run.head_branch }}"
+            event="${{ github.event.workflow_run.event }}"
+            status="${{ github.event.workflow_run.status }}"
+            conclusion="${{ github.event.workflow_run.conclusion }}"
+            test "$head_sha" = "$EXPECTED_HEAD"
+            test "$head_branch" = "$EXPECTED_BRANCH"
+            test "$event" = "workflow_dispatch"
+          else
+            run_id=""
+            for _ in $(seq 1 120); do
+              payload="$(gh api "repos/${{ github.repository }}/actions/workflows/$TARGET_WORKFLOW/runs?event=workflow_dispatch&branch=$EXPECTED_BRANCH&per_page=20")"
+              run_id="$(jq -r --arg sha "$EXPECTED_HEAD" '[.workflow_runs[] | select(.head_sha==$sha and .event=="workflow_dispatch")] | sort_by(.id) | last | .id // empty' <<<"$payload")"
+              if [ -n "$run_id" ]; then break; fi
+              sleep 5
+            done
+            test -n "$run_id"
+            for _ in $(seq 1 240); do
+              run="$(gh api "repos/${{ github.repository }}/actions/runs/$run_id")"
+              status="$(jq -r '.status' <<<"$run")"
+              conclusion="$(jq -r '.conclusion // "null"' <<<"$run")"
+              head_sha="$(jq -r '.head_sha' <<<"$run")"
+              head_branch="$(jq -r '.head_branch' <<<"$run")"
+              event="$(jq -r '.event' <<<"$run")"
+              test "$head_sha" = "$EXPECTED_HEAD"
+              test "$head_branch" = "$EXPECTED_BRANCH"
+              test "$event" = "workflow_dispatch"
+              [ "$status" = "completed" ] && break
+              sleep 5
+            done
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "conclusion=$conclusion" >> "$GITHUB_OUTPUT"
+
+      - name: Report procedural failure without scientific claim
+        if: steps.resolve.outputs.status != 'completed' || steps.resolve.outputs.conclusion != 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.resolve.outputs.run_id }}
+          STATUS: ${{ steps.resolve.outputs.status }}
+          CONCLUSION: ${{ steps.resolve.outputs.conclusion }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="EXP-327 authoritative run \`$RUN_ID\` did not reach a successful completed state (status=\`$STATUS\`, conclusion=\`$CONCLUSION\`). No scientific disposition is sealed; all authorization remains false. This is a procedural failure report only."
+          gh api --method POST "repos/${{ github.repository }}/issues/$TARGET_PR/comments" -f body="$body"
+          exit 1
+
+      - name: Download exact final artifact
+        if: steps.resolve.outputs.status == 'completed' && steps.resolve.outputs.conclusion == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.resolve.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          meta="$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID/artifacts?per_page=100")"
+          name="exp327-minimal-subset-final-$RUN_ID"
+          count="$(jq --arg name "$name" '[.artifacts[] | select(.name==$name and .expired==false)] | length' <<<"$meta")"
+          test "$count" -eq 1
+          artifact_id="$(jq -r --arg name "$name" '.artifacts[] | select(.name==$name and .expired==false) | .id' <<<"$meta")"
+          artifact_digest="$(jq -r --arg name "$name" '.artifacts[] | select(.name==$name and .expired==false) | .digest' <<<"$meta")"
+          echo "$artifact_id" > artifact-id.txt
+          echo "$artifact_digest" > artifact-digest.txt
+          gh run download "$RUN_ID" --repo "${{ github.repository }}" --name "$name" --dir artifact
+          test -f artifact/exp327-final.json
+
+      - name: Validate immutable EXP-327 evidence
+        id: evidence
+        env:
+          RUN_ID: ${{ steps.resolve.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os
+          from pathlib import Path
+          path=Path("artifact/exp327-final.json")
+          raw=path.read_bytes()
+          p=json.loads(raw)
+          assert p["schema"]=="EXP327-FINAL-EVIDENCE-V1"
+          ident=p["execution_identity"]
+          assert ident["exp327_execution_digest"]==os.environ["EXPECTED_EXECUTION_DIGEST"]
+          assert ident["source_commit_sha"]==os.environ["EXPECTED_SOURCE"]
+          assert ident["approved_preregistration_digest"]==os.environ["EXPECTED_PREREG_DIGEST"]
+          expected_groups={"P01","P02","P03","P12","P13","P23","T012","T013","T023","T123","Q0123"}
+          assert set(p["group_pass"])==expected_groups
+          assert len(p["groups"])==11
+          for k in ("exp302_implementation_authorized","exp320_implementation_authorized","scale_authorized","authorized_30m","authorized_100m"):
+              assert p[k] is False
+          q=dict(p)
+          claimed=q.pop("evidence_digest")
+          canonical=json.dumps(q,sort_keys=True,separators=(",",":"),ensure_ascii=False,allow_nan=False).encode()
+          assert hashlib.sha256(canonical).hexdigest()==claimed
+          decision=p["decision"]
+          assert decision in {
+              "INVALID_SUBSET_COURT",
+              "PARENT_QUARTET_REPRODUCTION_MISMATCH",
+              "NONMONOTONIC_SUBSET_FIT",
+              "PAIR_MINIMAL_FAILURE_PRESENT",
+              "TRIPLE_MINIMAL_FAILURE_PRESENT",
+              "QUARTET_ONLY_FAILURE_CONFIRMED",
+          }
+          out=Path(os.environ["GITHUB_OUTPUT"])
+          with out.open("a",encoding="utf-8") as f:
+              f.write(f"decision={decision}\n")
+              f.write(f"evidence_digest={claimed}\n")
+              f.write(f"json_sha256={hashlib.sha256(raw).hexdigest()}\n")
+              f.write(f"minimal_size={p.get('minimal_failing_size')}\n")
+              f.write("minimal_groups="+json.dumps(p.get("minimal_failing_groups",[]),separators=(",",":"))+"\n")
+              f.write("failed_pairs="+json.dumps(p.get("failed_pairs",[]),separators=(",",":"))+"\n")
+              f.write("failed_triples="+json.dumps(p.get("failed_triples",[]),separators=(",",":"))+"\n")
+              f.write("monotonicity="+json.dumps(p.get("monotonicity_violations",[]),separators=(",",":"))+"\n")
+          PY
+
+      - name: Seal result on PR 100
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.resolve.outputs.run_id }}
+          DECISION: ${{ steps.evidence.outputs.decision }}
+          EVIDENCE_DIGEST: ${{ steps.evidence.outputs.evidence_digest }}
+          JSON_SHA256: ${{ steps.evidence.outputs.json_sha256 }}
+          MINIMAL_SIZE: ${{ steps.evidence.outputs.minimal_size }}
+          MINIMAL_GROUPS: ${{ steps.evidence.outputs.minimal_groups }}
+          FAILED_PAIRS: ${{ steps.evidence.outputs.failed_pairs }}
+          FAILED_TRIPLES: ${{ steps.evidence.outputs.failed_triples }}
+          MONOTONICITY: ${{ steps.evidence.outputs.monotonicity }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact_id="$(cat artifact-id.txt)"
+          artifact_digest="$(cat artifact-digest.txt)"
+          body="$(cat <<EOF
+EXP-327 authoritative execution is complete and independently fail-closed verified.
+
+Authoritative run:
+- run: \`$RUN_ID\` — SUCCESS
+- sealed marker/head: \`$EXPECTED_HEAD\`
+- frozen source: \`$EXPECTED_SOURCE\`
+- execution digest: \`$EXPECTED_EXECUTION_DIGEST\`
+- preregistration digest: \`$EXPECTED_PREREG_DIGEST\`
+- final artifact id: \`$artifact_id\`
+- final artifact ZIP digest: \`$artifact_digest\`
+- final JSON SHA-256: \`$JSON_SHA256\`
+- final evidence digest: \`$EVIDENCE_DIGEST\`
+- disposition: **\`$DECISION\`**
+
+Subset localization:
+- minimal failing size: \`$MINIMAL_SIZE\`
+- minimal failing groups: \`$MINIMAL_GROUPS\`
+- failed pairs: \`$FAILED_PAIRS\`
+- failed triples: \`$FAILED_TRIPLES\`
+- monotonicity violations: \`$MONOTONICITY\`
+
+The finalizer independently recomputed the canonical EXP-327 evidence digest and verified exact source/preregistration/execution identity, full 11-group coverage, and fail-closed authorization flags.
+
+All authorization remains false:
+- EXP-302 implementation
+- EXP-320 implementation
+- scale
+- 30M
+- 100M
+EOF
+)"
+          gh api --method POST "repos/${{ github.repository }}/issues/$TARGET_PR/comments" -f body="$body"
