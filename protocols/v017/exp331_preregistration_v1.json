@@ -1,0 +1,124 @@
+{
+  "schema_version": "EXP331-PAIR-LATTICE-PROJECTION-SAFETY-V1",
+  "experiment_id": "EXP-331",
+  "role": "post_exp330_complete_iterative_pair_lattice_projection_safety",
+  "authority": {
+    "parent_exp330_run_id": 35419828278,
+    "parent_exp330_marker_sha": "e01809d03af27d33956e0bafced66ef4f1667622",
+    "parent_exp330_source_sha": "8012ba908470038b85c05158c46b7794818f8c69",
+    "parent_exp330_disposition": "CONFLICT_PROJECTION_RESCUE",
+    "parent_exp330_final_artifact_id": 10577706134,
+    "parent_exp330_final_artifact_zip_digest": "cadf92521948973bb319e8280934e559526616097c75f74a1fc1a90d02c33ab7",
+    "parent_exp330_final_json_sha256": "8aefca4b8fa4b6f814da219a2e58a4e97bab849a4f3291f95a6b2d19c35f4b2d",
+    "parent_exp330_final_evidence_digest": "6a48ad66fbe9b07a54f1aca0ad8ed5b92759101817543d5fa4c228cddf37fae3",
+    "parent_exp327_run_id": 35413434081,
+    "parent_exp327_final_artifact_id": 10574837015,
+    "parent_exp327_final_artifact_zip_digest": "b4ddab033a85762c99451f6532f790fbf4cda9181ff67c1a2093613dd0156d77",
+    "parent_exp327_final_json_sha256": "27f8ef1fbe2bbb2a2a931d9dddd1409a6f3a0b9a8ecb06902f1e46bb07543279",
+    "parent_exp327_final_evidence_digest": "bc9999f3f6e366de8ec41b26ec265514546cf68cb82661295a31b202e3e907e2",
+    "reconstruction_run_id": 35345351869,
+    "reconstruction_artifact_id": 10547681681,
+    "reconstruction_artifact_name": "exp323r-reconstruction-candidate-35345351869-0",
+    "reconstruction_artifact_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+    "reconstruction_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+    "reconstruction_receipt_digest": "f8153c9f88d7d28b7e0240d994991c8d232b1d192b1688b901982610e266e03f"
+  },
+  "model": {
+    "arm": "A_FIXED",
+    "resident_trainable_parameters": 10000000,
+    "starting_cumulative_step": 2048,
+    "device": "cpu",
+    "architecture_change": false,
+    "tokenizer_change": false,
+    "objective_change": false,
+    "scale_change": false
+  },
+  "population": {
+    "stage": "A_SANITY",
+    "root": 0,
+    "family": "iterative-grid-and-maze",
+    "world_indices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "pair_ids": [
+      "P01",
+      "P02",
+      "P03",
+      "P12",
+      "P13",
+      "P23"
+    ],
+    "independent_clone_per_pair_mode": true
+  },
+  "training": {
+    "optimizer": "AdamW",
+    "inherited_optimizer_state": true,
+    "inherited_rng_state": true,
+    "learning_rate_decimal": "0.00005",
+    "weight_decay_decimal": "0.01",
+    "gradient_clip_norm_decimal": "1.0",
+    "exposures_per_world": 32,
+    "effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "within_exposure_order": "ascending world index within each pair",
+    "total_optimizer_updates_per_pair_arm": 64
+  },
+  "arms": {
+    "CONTROL": "exact EXP-327 pair schedule using inherited training primitive",
+    "SHAM": "same pair schedule; measure same-state partner gradient, restore source gradient/RNG, no projection; final state must exactly match CONTROL",
+    "PROJECT": "same measured path; when source-partner dot is negative and partner norm squared exceeds 1e-24, remove the source component along the partner gradient before inherited global clip and AdamW step"
+  },
+  "thresholds": {
+    "teacher_forced_token_accuracy_floor": 0.99,
+    "teacher_forced_full_answer_exact_floor": 0.9,
+    "nonfinite_events_max": 0,
+    "target_norm_squared_floor": 1e-24
+  },
+  "parent_pair_expectation": {
+    "P01": true,
+    "P02": false,
+    "P03": true,
+    "P12": true,
+    "P13": true,
+    "P23": true
+  },
+  "dispositions": [
+    "INVALID_PAIR_LATTICE_PROJECTION_COURT",
+    "PARENT_PAIR_LATTICE_REPRODUCTION_MISMATCH",
+    "SHAM_PAIR_LATTICE_MISMATCH",
+    "P02_PROJECTION_NOT_TRIGGERED",
+    "PAIR_LATTICE_PROJECTION_RESCUE_NO_REGRESSION",
+    "P02_RESCUE_WITH_PAIR_REGRESSION",
+    "P02_PROJECTION_NO_RESCUE"
+  ],
+  "decision_order": [
+    "INVALID_PAIR_LATTICE_PROJECTION_COURT",
+    "PARENT_PAIR_LATTICE_REPRODUCTION_MISMATCH",
+    "SHAM_PAIR_LATTICE_MISMATCH",
+    "P02_PROJECTION_NOT_TRIGGERED",
+    "PAIR_LATTICE_PROJECTION_RESCUE_NO_REGRESSION",
+    "P02_RESCUE_WITH_PAIR_REGRESSION",
+    "P02_PROJECTION_NO_RESCUE"
+  ],
+  "nonclaims": [
+    "EXP-331 does not establish universal projection safety outside the complete iterative 0..3 pair lattice",
+    "EXP-331 does not establish rescue of triples, quartets or octets",
+    "EXP-331 does not establish an architectural capacity ceiling",
+    "EXP-331 does not establish that scaling helps",
+    "EXP-331 does not authorize EXP-302 or EXP-320"
+  ],
+  "authorization": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
