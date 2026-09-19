@@ -18,7 +18,8 @@ jobs:
         with:
           python-version: "3.11"
       - run: python -m pip install pytest
-      - run: python -m pip install 'torch>=2.7' numpy
+      - run: python -m pip install numpy
+      - run: python -m pip install 'torch>=2.7' --index-url https://download.pytorch.org/whl/cpu
       - run: PYTHONPATH=src python -m pytest -q tests/test_exp335_contract.py tests/test_exp335_identity.py tests/test_exp335_runtime_surface.py tests/test_exp335_workflow.py tests/test_exp335_sham_elision_equivalence.py
       - name: Emit freeze inputs
         shell: bash
