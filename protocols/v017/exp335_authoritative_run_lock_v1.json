@@ -17,5 +17,12 @@
   "authorized_30m": false,
   "authorized_100m": false,
   "exp302_implementation_authorized": false,
-  "exp320_implementation_authorized": false
+  "exp320_implementation_authorized": false,
+  "duplicate_run_outcomes": {
+    "35447261711": "cancelled"
+  },
+  "duplicate_cancellation_workflow_run_id": 35447365580,
+  "duplicate_cancellation_workflow_conclusion": "success",
+  "dispatch_helper_retired_commit": "82de6b9b479877ba733640d331ceab580bb08eab",
+  "authority_lock_last_updated_at": "2026-09-19T14:05:00Z"
 }
