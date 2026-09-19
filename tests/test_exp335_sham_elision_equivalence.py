@@ -1,4 +1,6 @@
-import torch
+import pytest
+
+torch = pytest.importorskip("torch")
 
 from nolane_ai.experiments.exp335_runtime import _dot, _project_source
 
