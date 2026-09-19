@@ -307,11 +307,15 @@ def _measured_step(
     targets: list[tuple[str, tuple[torch.Tensor, ...]]] = []
     target_nonfinite = 0
     target_losses: dict[str, float] = {}
+    raw_dots: dict[str, float] = {}
     for target_id, target_world in target_worlds:
         optimizer.zero_grad(set_to_none=True)
         torch.set_rng_state(rng_start)
         target_loss, target_grads, observed = _backward_grads(compiled, target_world, effort)
-        targets.append((target_id, target_grads))
+        if project:
+            targets.append((target_id, target_grads))
+        else:
+            raw_dots[target_id] = _dot(source_grads, target_grads)
         target_losses[target_id] = target_loss
         target_nonfinite += observed
 
@@ -321,7 +325,6 @@ def _measured_step(
         projected, selected, raw_dots, post_dots = _project_source(source_grads, targets)
         applied = projected
     else:
-        raw_dots = {world_id: _dot(source_grads, grad) for world_id, grad in targets}
         selected = []
         post_dots = {}
         applied = source_grads
