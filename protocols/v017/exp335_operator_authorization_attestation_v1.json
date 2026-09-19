@@ -1,0 +1,78 @@
+{
+  "schema": "EXP335-OPERATOR-AUTHORIZATION-ATTESTATION-V1",
+  "experiment_id": "EXP-335",
+  "record_type": "POSTHOC_PROVENANCE_ATTESTATION_OF_PREEXISTING_EXTERNAL_AUTHORIZATION",
+  "recorded_after_execution_started": true,
+  "retroactive_authorization": false,
+  "scientific_source_changed": false,
+  "preregistration_changed": false,
+  "reducer_changed": false,
+  "historical_order": [
+    {
+      "event": "DESIGN_PREREGISTRATION_CHECKPOINT",
+      "github_pr": 110,
+      "design_head": "cfb7916077c8ffed97375a37ab2f9767d761a3cf",
+      "repository_comment_created_at": "2026-09-19T12:45:48Z",
+      "state": "EXP-335 implementation unauthorized pending separate operator transition"
+    },
+    {
+      "event": "EXTERNAL_OPERATOR_AUTHORIZATION",
+      "source_kind": "conversation continuation instruction artifact",
+      "source_last_modified_at": "2026-09-19T12:55:42Z",
+      "evidence": [
+        "If the repo is still at the checkpoint above, this prompt is my explicit authorization to begin the EXP-335 implementation phase using the frozen preregistration.",
+        "Continue working directly in the repo. Do not only describe what should be done: inspect, implement, test, commit, create/update PRs, run GitHub Actions, verify artifacts, and continue until the current valid transition is exhausted.",
+        "Prompt này là authorization riêng của tôi để tiếp tục triển khai EXP-335 theo preregistration đã khóa."
+      ],
+      "scope": [
+        "implement the already-frozen EXP-335 court",
+        "add tests and workflow plumbing without changing frozen scientific geometry",
+        "run CI",
+        "seal execution identity",
+        "execute the court",
+        "verify artifacts",
+        "continue only through transitions authorized by resulting evidence"
+      ],
+      "exclusions": [
+        "no change to frozen worlds/order/exposures/effort/thresholds/projector",
+        "no EXP-302 implementation authorization",
+        "no EXP-320 implementation authorization",
+        "no scale authorization",
+        "no 30M authorization",
+        "no 100M authorization"
+      ]
+    },
+    {
+      "event": "IMPLEMENTATION_COMMIT",
+      "commit_sha": "f80f765b8e5e79bed102dc138ce9575efac0ccf5",
+      "committed_at": "2026-09-19T13:09:51Z",
+      "message": "exp335: implement sealed full32 continuation court"
+    },
+    {
+      "event": "SCIENTIFIC_SOURCE_FINALIZATION",
+      "commit_sha": "d29e20e5af3467d16123e224462b37ef9a2ebf9d",
+      "committed_at": "2026-09-19T13:10:39Z",
+      "message": "test(exp335): make same-process sham surface assertion structural"
+    },
+    {
+      "event": "EXECUTION_IDENTITY_SEALED",
+      "marker_sha": "57fdf3a38b42b41951639a35dbb3c0d82055846b",
+      "execution_digest": "24d4e97ad3c7026881a122cd309d671d9999f3f84b5dcc04a11c468c4409d520",
+      "sealed_at": "2026-09-19T13:24:41Z"
+    },
+    {
+      "event": "AUTHORITATIVE_RUN",
+      "run_id": 35445927525,
+      "created_at": "2026-09-19T13:29:42Z"
+    }
+  ],
+  "interpretation": "The repository-local design preregistration correctly remained implementation_authorized=false because it froze the design-time state. A separate external operator authorization existed before implementation. This attestation records that pre-existing transition after the fact for repository auditability; it does not create a new authorization after result visibility and does not alter the sealed scientific execution.",
+  "authority_flags_after_attestation": {
+    "exp335_execution_authority": "BOUND_TO_PREEXISTING_EXTERNAL_OPERATOR_AUTHORIZATION_AND_SEALED_IDENTITY",
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}

@@ -1,0 +1,30 @@
+name: v017-exp335-contract
+on:
+  pull_request:
+    paths:
+      - "src/nolane_ai/experiments/exp335_*"
+      - "scripts/exp335_*"
+      - "protocols/v017/exp335_*"
+      - "tests/test_exp335_*"
+      - ".github/workflows/exp335-*"
+      - ".github/workflows/v017-exp335-contract.yml"
+  workflow_dispatch:
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest
+      - run: PYTHONPATH=src python -m pytest -q tests/test_exp335_contract.py tests/test_exp335_identity.py tests/test_exp335_runtime_surface.py tests/test_exp335_workflow.py
+      - name: Emit freeze inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python - <<'PY'
+          from nolane_ai.protocol.identity import source_tree_digest
+          print("EXP335_SOURCE_TREE_DIGEST=" + source_tree_digest("."))
+          PY
+          echo "EXP335_WORKFLOW_SHA256=$(sha256sum .github/workflows/exp335-full32-afixed-foundation-reentry.yml | awk '{print $1}')"

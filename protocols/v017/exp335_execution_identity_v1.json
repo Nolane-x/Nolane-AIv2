@@ -1,0 +1,18 @@
+{
+  "approved_preregistration_digest": "db73212d75770ae3a3c0b2a3fb6f60544672970cc3ad112063b1b5bb232021cb",
+  "exp335_execution_digest": "24d4e97ad3c7026881a122cd309d671d9999f3f84b5dcc04a11c468c4409d520",
+  "parent_exp334_artifact_id": 10583626513,
+  "parent_exp334_evidence_digest": "4cc1b2fa67610dc0614fcd6e03ac0aa122f5aa2c7f680dce01e2a29382105a05",
+  "parent_exp334_final_json_sha256": "a393bf8fc237e2f2a357666059011e468ba7de06db3f3c62ecc3090f2aa25354",
+  "parent_exp334_run_id": 35438656413,
+  "parent_exp334_zip_digest": "8339fd376a23b7daeb8f45087eff634893557f37c47a117f308c7f54692b8ee8",
+  "reconstruction_artifact_id": 10547681681,
+  "reconstruction_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+  "reconstruction_receipt_sha256": "617ba665149a366d00782df5c4457a6a3d01081fe847aa144465377ee164bba3",
+  "reconstruction_run_id": 35345351869,
+  "reconstruction_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+  "schema": "EXP335-FULL32-AFIXED-FOUNDATION-REENTRY-EXECUTION-IDENTITY-V1",
+  "source_commit_sha": "d29e20e5af3467d16123e224462b37ef9a2ebf9d",
+  "source_tree_digest": "4f39a06428f073a7ead40bc5d67e95d0681bf7a25ce5a060942189a88e33e864",
+  "workflow_sha256": "997eeb31733c7ee50f20f69001ba9fc75cba27ecca8f8bf94a520cff591d6e0e"
+}
