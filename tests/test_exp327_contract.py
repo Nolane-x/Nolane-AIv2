@@ -1,6 +1,9 @@
 from __future__ import annotations
 import pytest
 from nolane_ai.experiments.exp327_contract import *
+
+pytest.importorskip("torch")
+
 from nolane_ai.experiments.exp327_runtime import run_court
 from nolane_ai.experiments.exp327_identity import build_execution_identity
 
