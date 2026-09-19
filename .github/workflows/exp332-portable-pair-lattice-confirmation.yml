@@ -78,14 +78,24 @@ jobs:
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
           run-id: "35419828278"
-      - name: Download EXP-327 original artifact by ID
-        uses: actions/download-artifact@v5
-        with:
-          artifact-ids: "10574837015"
-          path: exp327-original
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: "35413434081"
+      - name: Download EXP-327 original artifact by exact artifact ID
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p exp327-original
+          headers="$(mktemp)"
+          curl --fail --silent --show-error --dump-header "$headers" --output /dev/null \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/10574837015/zip"
+          signed_url="$(awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/\r$/,""); sub(/^[^:]+:[[:space:]]*/, ""); print; exit}' "$headers")"
+          test -n "$signed_url"
+          curl --fail --silent --show-error --location "$signed_url" --output exp327-original.zip
+          unzip -q exp327-original.zip -d exp327-original
+          rm -f "$headers" exp327-original.zip
       - name: Download EXP-327 replay artifact by ID
         uses: actions/download-artifact@v5
         with:
