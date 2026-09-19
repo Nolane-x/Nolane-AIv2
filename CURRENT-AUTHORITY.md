@@ -1,154 +1,124 @@
 # Nolane-AIv2 V0.17 — Current Authority Snapshot
 
-> **Repository-process snapshot only.** This file is maintained on the active V0.17 experiment branch for continuity. It is not part of the sealed EXP-335 scientific source and cannot alter a frozen court.
+> **Repository-process snapshot only.** This file is maintained on the active V0.17 lineage for continuity. It is not part of any sealed scientific source.
 
 ## Active lineage
 
-The active research lineage is **V0.17 / A_FIXED 10M foundation recovery**.
+The active research lineage remains **V0.17 / 10M Native Recursive Substrate**.
 
-The repository root on `main` still preserves the terminal V0.16.1 closure snapshot. That historical V0.16.1 state must not be mistaken for the active V0.17 experiment authority on this branch.
+Resident scale remains exactly **10,000,000 trainable parameters**. No scale transition is authorized.
 
-Current resident under test:
+## EXP-335 — CLOSED
 
-- arm: `A_FIXED`
-- trainable parameters: exactly `10,000,000`
-- scale change: unauthorized
-- 30M: unauthorized
-- 100M: unauthorized
-
-## Active authoritative experiment
-
-**EXP-335 — Full-32 A_FIXED Stage-A Foundation Re-entry**
+**EXP-335 full-32 A_FIXED Stage-A foundation re-entry** is now scientifically closed.
 
 Authoritative execution:
 
-- PR: `#110`
-- frozen preregistration head: `cfb7916077c8ffed97375a37ab2f9767d761a3cf`
-- preregistration canonical digest: `db73212d75770ae3a3c0b2a3fb6f60544672970cc3ad112063b1b5bb232021cb`
-- preregistration JSON SHA-256: `cc9f245fba352e9607400a6316db987253ccc41cbaf00dc8af9cd8cfe5952d88`
-- implementation commit after separate operator authorization: `f80f765b8e5e79bed102dc138ce9575efac0ccf5`
+- run: `35445927525`
+- run conclusion: **SUCCESS**
+- sealed marker: `57fdf3a38b42b41951639a35dbb3c0d82055846b`
 - immutable scientific source: `d29e20e5af3467d16123e224462b37ef9a2ebf9d`
 - source-tree digest: `4f39a06428f073a7ead40bc5d67e95d0681bf7a25ce5a060942189a88e33e864`
-- scientific workflow SHA-256: `997eeb31733c7ee50f20f69001ba9fc75cba27ecca8f8bf94a520cff591d6e0e`
-- sealed marker: `57fdf3a38b42b41951639a35dbb3c0d82055846b`
 - execution digest: `24d4e97ad3c7026881a122cd309d671d9999f3f84b5dcc04a11c468c4409d520`
-- authoritative run: `35445927525`
+- final artifact: `10590026763`
+- final artifact ZIP SHA-256: `ae4ab3bc0b8ce064ece92655fd578a896fe3ed6f27fffd411b9b14d0fc1729a5`
+- final JSON SHA-256: `955d400eb4d590fe0399671dfadb37e8140be835451c5d7482a8928ed2686032`
+- evidence digest: `6fcabeb87971a0cb5d5ef0d14029f5ab248f3e353b21bb55f42ac977a4ffe1af`
 
-Only that run is scientifically authoritative. Duplicate run `35447261711` was cancelled and is explicitly non-authoritative.
+Final reducer disposition:
 
-## Current execution progress
+`AFIXED_FULL32_FOUNDATION_REENTRY_RESCUED_NO_REGRESSION`
 
-At the latest repository-process update:
+Final boundary:
 
-- `prepare`: **SUCCESS**
-- `chunk0`: **SUCCESS**
-- `chunk1`: **SUCCESS**
-- `chunk2`: **SUCCESS**
-- `chunk3`: **IN PROGRESS**
-- `chunk4..chunk7`: not yet authoritative evidence
-- `finalize`: not yet run
-- final EXP-335 disposition: **NOT YET AVAILABLE**
+- CONTROL: `30/32`
+- SHAM: `30/32`
+- PROJECT: `32/32`
+- CONTROL/SHAM exact equality: true across all eight chunks
+- CONTROL failed worlds:
+  - `iterative-grid-and-maze:2`
+  - `iterative-grid-and-maze:6`
+- PROJECT failed worlds: none
+- rescued CONTROL failures: exactly the two worlds above
+- PROJECT regressions: none
+- projection updates: `1024/1024`
+- projected targets: `12598`
+- nonfinite events: 0
 
-Verified immutable evidence so far:
+Pass trajectory by chunk (CONTROL / PROJECT):
 
-- chunk0 artifact `10586346937`, ZIP digest `42db4c1f5389a9a566d02c212948df524fb0d1b74af87c0b778b4b2ce21461c9`, bundle `ee63050f95f69c1ff493cafc01ec11b56ea5c18b5214e9d4b51ef6e5b6bed7a4`
-- chunk1 artifact `10586443959`, ZIP digest `3baa5c052874c71811ea7545bf4517e3f60f024caa84280d173ada72a08a466a`, bundle `9c1077e7802d97881d828129b4753f870a50089f98c6d2d57697edfd7fa59255`
-- chunk2 artifact `10587006784`, ZIP digest `f1d0c7c5e02c23cee61a2d77dfb5db67c0f9acd7537a924ebecfac75111df042`, bundle `fbaf4f545d03a9af6c604ed2e5315ea3161da90f2af2e2616363739e3954c6fe`
-- reconstruction → chunk0 → chunk1 → chunk2 parent-artifact chain: verified
-- checkpoint SHA / receipt digest / receipt-boundary state digests: independently verified for all 3 arms through chunk2
-- CONTROL/SHAM exact equality: true through all completed chunks
-- nonfinite events: 0 in all arms
+- exposure 4: `14 / 15`
+- exposure 8: `24 / 25`
+- exposure 12: `23 / 31`
+- exposure 16: `24 / 31`
+- exposure 20: `27 / 32`
+- exposure 24: `27 / 32`
+- exposure 28: `31 / 32`
+- exposure 32: `30 / 32`
 
-Diagnostic pass counts:
-- chunk0 / exposure 4: CONTROL `14/32`, SHAM `14/32`, PROJECT `15/32`
-- chunk1 / exposure 8: CONTROL `24/32`, SHAM `24/32`, PROJECT `25/32`
-- chunk2 / exposure 12: CONTROL `23/32`, SHAM `23/32`, PROJECT `31/32`
+## Frozen independent verification
 
-At exposure 12, PROJECT's only failing world is `generator-heldout-abstract-transformation:3` (token `0.5`, full-answer exact `0.0`). This remains intermediate evidence only.
+EXP-335 final closure is independently verified by the **pre-final frozen auditor**:
 
-Independent artifact audit through chunk2:
-- draft auditor PR: `#112`
-- frozen auditor head used: `bb629e90fd7dc0755b3f60842bba6bc0aa846d03`
-- real audit run: `35452153972` — SUCCESS
-- audit artifact: `10587292259`
-- audit artifact ZIP SHA-256: `bf915c7bf55608c534828bddcfc6d048ec64be64cb7b6705303e2e5b5dc92733`
-- audit report JSON SHA-256: `da56f34f000c99b356a54d5c13dfc04d85e692c9dab3a020811ab58e999f32ba`
+- auditor SHA: `bb629e90fd7dc0755b3f60842bba6bc0aa846d03`
+- audit workflow run: `35477337239` — **SUCCESS**
+- audit artifact: `10595335243`
+- audit artifact ZIP SHA-256: `0ae527b905d92e51d6ec62553fdaa0098ebde9432f7d0201baa6d773c2782b7d`
+- audit receipt JSON SHA-256: `50cbfe612b8debb208ae578c929dddbc94a94be618eab9047f1e5083247ac9a9`
+- independent audit report SHA-256: `6eec3678b0b00321a83fa69cc45add2111ec6524d6ace1c691dca2a6817900a0`
+- verified chunk count: `8/8`
+- complete reconstruction→chunk0→...→chunk7 artifact chain: true
+- final boundaries rebound to audited chunk7: true
+- `reduce_full32` independently recomputed: true
+- final evidence digest independently recomputed: true
 
-These chunk-level values are **diagnostic only**. They cannot authorize a successor or substitute for the final reducer.
+Machine-readable closure:
 
-## Frozen EXP-335 scientific geometry
+`protocols/v017/exp335_final_closure_v1.json`
 
-- complete Stage-A root-0 population: 4 families × 8 worlds = 32
-- 32 exposures/world
-- world-local effort cycle `1,2,4,8`
-- 8 immutable continuation chunks
-- 128 source updates/chunk
-- CONTROL / SHAM / SUBSPACE_PROJECT
-- measured arms use all other 31 worlds as targets from identical pre-update state
-- registered intervention:
-  `g' = g - T pinv(T^T T) T^T g`
-- float64 Gram
-- pseudoinverse `rtol=1e-12`
-- final per-world floors:
-  - teacher-forced answer-token accuracy >= `0.99`
-  - teacher-forced full-answer exact >= `0.90`
-  - nonfinite events = `0`
+## Selected successor transition
 
-No intermediate checkpoint can promote the experiment.
+The pre-result transition lock selects exactly one next scope for this disposition:
 
-## Authority provenance
+`C_NRS_CORE_FULL32_STAGE_A_DESIGN_ONLY`
 
-The design checkpoint intentionally recorded `exp335_implementation_authorized=false`.
+Allowed:
 
-A separate operator instruction existed before implementation and explicitly authorized implementation of the already-frozen EXP-335 design without changing its scientific geometry. Repository audit record:
+- create a new C_NRS_CORE full-32 Stage-A **design/preregistration**;
+- prospectively inherit the exact registered EXP-335 subspace-project repair;
+- keep C_NRS exactly 10M;
+- retain CONTROL/SHAM measurement-nonperturbation gates;
+- retain full 32-world simultaneous Stage-A floor;
+- retain post-hoc leakage observations as diagnostics only.
 
-`protocols/v017/exp335_operator_authorization_attestation_v1.json`
+Not allowed:
 
-This attestation records pre-existing provenance; it is not retroactive authorization and does not modify the sealed execution.
+- C_NRS execution before a separate implementation authorization;
+- changing the projector to the post-hoc half-space/no-new-conflict candidate;
+- jumping directly to Stage B or Stage C;
+- EXP-302 implementation;
+- EXP-320 implementation;
+- scaling;
+- 30M;
+- 100M.
 
-## Pre-result successor lock
+The applicable pre-result lock is:
 
-The allowed successor for every final reducer state was frozen before final-result visibility:
+`protocols/v017/exp335_post_result_transition_lock_v1.json`
 
-- machine-readable: `protocols/v017/exp335_post_result_transition_lock_v1.json`
-- human-readable: `docs/superpowers/specs/2026-09-19-exp335-post-result-transition-lock.md`
+## Historical EXP-319 context
 
-Only three positive foundation states can open the next lane, and even then only as **C_NRS_CORE full-32 Stage-A design/preregistration**:
+The prior EXP-319 Stage-A selection did **not** establish the foundation:
 
-- `AFIXED_FULL32_FOUNDATION_REENTERED_BOTH`
-- `AFIXED_FULL32_FOUNDATION_REENTERED_CONTROL_ONLY_PROJECT_REGRESSION`
-- `AFIXED_FULL32_FOUNDATION_REENTRY_RESCUED_NO_REGRESSION`
+- A_FIXED selected result: token `0.7711`, exact `0.28125`, fail
+- B_LOOP_SIMPLE: token `0.7324`, exact `0.3125`, fail
+- C_NRS_CORE selected LR `3e-4`: token `0.7007`, exact `0.25`, fail
 
-All other final states keep C_NRS blocked and require validity review or a distinct new causal hypothesis.
+EXP-319's repair run later failed in Stage-A gate artifact-upload plumbing, after all Stage-A training chains had completed. It does not constitute a positive C_NRS Stage-A result.
 
-## Post-hoc exploratory findings
+EXP-335 therefore repairs **A_FIXED foundation interference**, not C_NRS capability. C_NRS must now face its own prospectively frozen full-32 Stage-A court.
 
-Chunk geometry analysis shows that the registered projector nearly eliminates negative mass on selected conflicts, while most remaining negative mass is introduced on targets that had non-negative raw dots.
-
-Recorded **post-hoc, non-decisional** evidence:
-
-- `protocols/v017/exp335_chunk0_exploratory_geometry_v1.json`
-- `protocols/v017/exp335_chunk2_generator3_exploratory_localization_v1.json`
-
-At exposure 12, the only PROJECT failure (`generator-heldout-abstract-transformation:3`) has concrete within-PROJECT new-conflict examples where a raw-positive target dot is rotated strongly negative by projection. This is hypothesis-generating only and is not a reducer input.
-
-A possible half-space / no-new-conflict projection is documented only as a future distinct hypothesis:
-
-`docs/superpowers/specs/2026-09-19-post-exp335-no-new-conflict-halfspace-projection.md`
-
-It must not be substituted into EXP-335.
-
-## Engineering and audit support
-
-Draft PR `#111` is an execution-performance contingency, not authoritative science. Its EXP-335 contract and full generic CI are green. It preserves the registered scientific semantics while reducing redundant SHAM/projector compute. It may be used only if the authoritative execution becomes operationally unusable and a separate repair execution is explicitly authorized and resealed.
-
-Draft PR `#112` is the independent artifact/final auditor. Its contract and generic CI are green, and it has already verified the real chunk0→chunk2 artifact chain successfully.
-
-`main` contains `.github/workflows/exp335-postrun-independent-audit.yml`. When authoritative run `35445927525` completes successfully, this hook is bound to the sealed run/head, downloads all 8 raw chunk ZIPs plus the final artifact, independently recomputes the full chain + reducer + evidence digest, uploads an immutable audit receipt, and attempts to record that receipt on PR #110. PR commenting is non-critical; scientific audit success is not allowed to fail merely because comment permissions fail.
-
-Neither PR #111 nor PR #112 may be substituted for successful authoritative evidence.
-
-## Universal authorization guards
+## Current authorization guards
 
 The following remain **false**:
 
@@ -158,13 +128,12 @@ The following remain **false**:
 - 30M authorization
 - 100M authorization
 
-Even after a future positive C_NRS Stage-A result, Stage B and Stage C remain mandatory before any always-active persistent-state design can be justified.
+Stage B remains blocked until a future C_NRS Stage-A court closes positively. Stage C remains blocked until Stage B closes positively. Persistent always-active state remains blocked until all required foundation/Stage B/Stage C gates are satisfied.
 
-## What to do next
+## Next repository action
 
-1. Preserve run `35445927525` as the only authoritative EXP-335 execution.
-2. Continue validating its immutable chunk chain.
-3. Do not change EXP-335 scientific geometry based on intermediate evidence.
-4. Continue from chunk3 and verify every new immutable artifact against the previous artifact digest.
-5. When chunk7 + final reducer exist, require the independent post-run audit receipt: raw artifact ZIP digests, final JSON SHA, canonical evidence digest, CONTROL/SHAM integrity, chunk parent chain, and independently recomputed reducer.
-6. Apply exactly the pre-result successor transition lock.
+Create the next experiment as **design/preregistration only** for:
+
+**C_NRS_CORE full-32 Stage-A under the exact EXP-335 registered projection repair.**
+
+Do not implement or execute it without a separate explicit operator transition after the new preregistration is frozen and CI-green.
