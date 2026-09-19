@@ -47,3 +47,55 @@ def test_project_geometry_remains_available_and_distinct_from_sham_elision():
     assert selected
     assert set(post_dots) == {world_id for world_id, _ in targets}
     assert any(not torch.equal(before, after) for before, after in zip(source, projected))
+
+
+def _reference_project_source(source, targets):
+    from nolane_ai.experiments.exp335_contract import PINV_RTOL, TARGET_NORM_SQUARED_FLOOR
+
+    raw = {world_id: _dot(source, grad) for world_id, grad in targets}
+    selected = [
+        (world_id, grad)
+        for world_id, grad in targets
+        if raw[world_id] < 0.0 and _dot(grad, grad) > TARGET_NORM_SQUARED_FLOOR
+    ]
+    if not selected:
+        cloned = tuple(x.clone() for x in source)
+        return cloned, [], raw, raw.copy()
+
+    count = len(selected)
+    gram = torch.empty((count, count), dtype=torch.float64)
+    rhs = torch.empty((count,), dtype=torch.float64)
+    for i, (_, gi) in enumerate(selected):
+        rhs[i] = _dot(gi, source)
+        for j, (_, gj) in enumerate(selected):
+            gram[i, j] = _dot(gi, gj)
+    alpha = torch.linalg.pinv(gram, rtol=PINV_RTOL) @ rhs
+
+    result = []
+    for parameter_index, source_tensor in enumerate(source):
+        value = source_tensor.clone()
+        for coefficient, (_, target) in zip(alpha, selected):
+            value = value - target[parameter_index] * float(coefficient.item())
+        result.append(value)
+    projected = tuple(result)
+    post = {world_id: _dot(projected, grad) for world_id, grad in targets}
+    return projected, [world_id for world_id, _ in selected], raw, post
+
+
+def test_symmetric_gram_reuse_is_exactly_equivalent_to_registered_projector():
+    source, targets = _synthetic_geometry()
+
+    reference_projected, reference_selected, reference_raw, reference_post = (
+        _reference_project_source(source, targets)
+    )
+    repaired_projected, repaired_selected, repaired_raw, repaired_post = _project_source(
+        source, targets
+    )
+
+    assert repaired_selected == reference_selected
+    assert repaired_raw == reference_raw
+    assert repaired_post == reference_post
+    assert all(
+        torch.equal(reference, repaired)
+        for reference, repaired in zip(reference_projected, repaired_projected)
+    )
