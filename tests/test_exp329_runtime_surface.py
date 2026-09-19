@@ -9,6 +9,8 @@ def test_probes_are_cloned_and_rng_restored():
     assert "torch.get_rng_state().clone()" in text
     assert "torch.set_rng_state(rng)" in text
     assert "PROBE_ROUNDS" in text
+    assert "from .exp301_training import compute_answer_only_loss" in text
+    assert "from .exp319_training import model_state_digest,optimizer_state_digest,rng_state_digest" in text
 
 def test_main_replay_is_frozen_alt_0_2():
     text=RUNTIME.read_text()
