@@ -1,0 +1,150 @@
+{
+  "schema_version": "EXP332-PORTABLE-PAIR-LATTICE-PROJECTION-CONFIRMATION-V1",
+  "experiment_id": "EXP-332",
+  "role": "post_exp331r_cross_runner_reproducibility_normalized_pair_lattice_confirmation",
+  "authority": {
+    "parent_exp330_run_id": 35419828278,
+    "parent_exp330_artifact_id": 10577706134,
+    "parent_exp330_zip_digest": "cadf92521948973bb319e8280934e559526616097c75f74a1fc1a90d02c33ab7",
+    "parent_exp330_json_sha256": "8aefca4b8fa4b6f814da219a2e58a4e97bab849a4f3291f95a6b2d19c35f4b2d",
+    "parent_exp330_evidence_digest": "6a48ad66fbe9b07a54f1aca0ad8ed5b92759101817543d5fa4c228cddf37fae3",
+    "exp327_run_id": 35413434081,
+    "exp327_attempt1_artifact_id": 10574837015,
+    "exp327_attempt1_zip_digest": "b4ddab033a85762c99451f6532f790fbf4cda9181ff67c1a2093613dd0156d77",
+    "exp327_attempt1_json_sha256": "27f8ef1fbe2bbb2a2a931d9dddd1409a6f3a0b9a8ecb06902f1e46bb07543279",
+    "exp327_attempt1_evidence_digest": "bc9999f3f6e366de8ec41b26ec265514546cf68cb82661295a31b202e3e907e2",
+    "exp327_attempt2_artifact_id": 10578071604,
+    "exp327_attempt2_zip_digest": "a5093c7b332f2a174336f3216ec878b09fc8fa0e5dcda9cd5f7651b796708b95",
+    "exp327_attempt2_json_sha256": "cc608361850a524f6e82c06c8f65a5a7c0cb321a90b2c6d4686238a82233540f",
+    "exp327_attempt2_evidence_digest": "a9b9f06cfc05bc2dcca025d90ecbdd65c53b261437fedb178c63b23c3a8ebeb7",
+    "exp327_source_commit_sha": "9753aa78f768ce6b6a20436f9b6729d9bf1c20af",
+    "exp327_execution_digest": "e9e48638779f9c33772659adfe1f6db860e5966ca598958f75a606d149bb0b08",
+    "exp327_workflow_sha256": "11dbceedfb91135f4863b2f7efcad16948c70705d2a6a625988beca303065f5c",
+    "exp331r_run_id": 35422106962,
+    "exp331r_artifact_id": 10578445269,
+    "exp331r_zip_digest": "d65fc296be9c7e929062bc30d53d9332dc4c1e79c3d07bb65a2e72d57281f2a4",
+    "exp331r_evidence_digest": "e529877cd9af9d8dd43a341929ce4cc3ae6a16243eac28a78ef8fee3e2712962",
+    "reconstruction_artifact_id": 10547681681,
+    "reconstruction_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+    "reconstruction_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+    "reconstruction_receipt_sha256": "617ba665149a366d00782df5c4457a6a3d01081fe847aa144465377ee164bba3"
+  },
+  "reproducibility_contract": {
+    "witness_attempts": [
+      1,
+      2
+    ],
+    "required_witness_behavioral_equivalence": [
+      "pair membership",
+      "32-exposure token metrics",
+      "32-exposure full-answer exact metrics",
+      "pair pass/fail vector",
+      "RNG state digest",
+      "decision",
+      "failed-pair set"
+    ],
+    "required_witness_state_divergence": "for every registered pair, at least one of model-state or optimizer-state digest must differ between attempt 1 and attempt 2; this records demonstrated cross-run non-portability of historical bitwise state digests",
+    "historical_cross_run_model_optimizer_digest_required_for_control": false,
+    "control_parent_gate": "CONTROL must exactly reproduce both witnessed parent behaviors, pass/fail status and RNG digest; historical model/optimizer digest equality is not required across hosted-run boundaries",
+    "within_run_sham_gate": "SHAM must exactly equal its CONTROL in metrics, model digest, optimizer digest and RNG digest",
+    "reason": "immutable rerun of EXP-327 preserved scientific outcomes and RNG while changing model/optimizer bitwise digests; attempt-2 pair state digests exactly matched EXP-331R controls"
+  },
+  "model": {
+    "arm": "A_FIXED",
+    "resident_trainable_parameters": 10000000,
+    "starting_cumulative_step": 2048,
+    "device": "cpu",
+    "architecture_change": false,
+    "tokenizer_change": false,
+    "objective_change": false,
+    "scale_change": false
+  },
+  "population": {
+    "stage": "A_SANITY",
+    "root": 0,
+    "family": "iterative-grid-and-maze",
+    "world_indices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "pair_ids": [
+      "P01",
+      "P02",
+      "P03",
+      "P12",
+      "P13",
+      "P23"
+    ],
+    "independent_clone_per_pair_mode": true
+  },
+  "training": {
+    "optimizer": "AdamW",
+    "inherited_optimizer_state": true,
+    "inherited_rng_state": true,
+    "learning_rate_decimal": "0.00005",
+    "weight_decay_decimal": "0.01",
+    "gradient_clip_norm_decimal": "1.0",
+    "exposures_per_world": 32,
+    "effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "within_exposure_order": "ascending world index within pair",
+    "total_optimizer_updates_per_pair_arm": 64
+  },
+  "arms": {
+    "CONTROL": "exact inherited pair training primitive",
+    "SHAM": "same-state partner-gradient measurement with source gradient/RNG restored and no projection",
+    "PROJECT": "same EXP-330 projection: remove source component along partner gradient only when dot<0 and partner norm squared>1e-24"
+  },
+  "thresholds": {
+    "teacher_forced_token_accuracy_floor": 0.99,
+    "teacher_forced_full_answer_exact_floor": 0.9,
+    "nonfinite_events_max": 0,
+    "target_norm_squared_floor": 1e-24
+  },
+  "parent_pair_expectation": {
+    "P01": true,
+    "P02": false,
+    "P03": true,
+    "P12": true,
+    "P13": true,
+    "P23": true
+  },
+  "dispositions": [
+    "INVALID_PORTABLE_PAIR_LATTICE_COURT",
+    "PARENT_BEHAVIORAL_REPRODUCTION_MISMATCH",
+    "SHAM_PAIR_LATTICE_MISMATCH",
+    "P02_PROJECTION_NOT_TRIGGERED",
+    "PAIR_LATTICE_PROJECTION_RESCUE_NO_REGRESSION",
+    "P02_RESCUE_WITH_PAIR_REGRESSION",
+    "P02_PROJECTION_NO_RESCUE"
+  ],
+  "decision_order": [
+    "INVALID_PORTABLE_PAIR_LATTICE_COURT",
+    "PARENT_BEHAVIORAL_REPRODUCTION_MISMATCH",
+    "SHAM_PAIR_LATTICE_MISMATCH",
+    "P02_PROJECTION_NOT_TRIGGERED",
+    "PAIR_LATTICE_PROJECTION_RESCUE_NO_REGRESSION",
+    "P02_RESCUE_WITH_PAIR_REGRESSION",
+    "P02_PROJECTION_NO_RESCUE"
+  ],
+  "nonclaims": [
+    "EXP-332 does not establish universal projection safety outside iterative worlds 0..3 pair lattice",
+    "EXP-332 does not test triples, quartets or octets",
+    "EXP-332 does not establish an architectural capacity ceiling",
+    "EXP-332 does not establish that scaling helps",
+    "EXP-332 does not authorize EXP-302 or EXP-320"
+  ],
+  "authorization": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
