@@ -38,7 +38,7 @@ def test_chunk_script_runs_all_arms_in_one_process():
 def test_sham_elides_unused_projection_solve_but_keeps_all_raw_dots():
     text = Path("src/nolane_ai/experiments/exp335_runtime.py").read_text()
     assert "if project:\n        projected, selected, raw_dots, post_dots = _project_source(source_grads, targets)" in text
-    assert "else:\n        raw_dots = {world_id: _dot(source_grads, grad) for world_id, grad in targets}" in text
+    assert "raw_dots[target_id] = _dot(source_grads, target_grads)" in text
     assert "selected = []" in text
     assert "post_dots = {}" in text
     assert "applied = source_grads" in text
