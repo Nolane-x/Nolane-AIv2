@@ -60,13 +60,48 @@
   "population": {
     "family": "iterative-grid-and-maze",
     "groups": {
-      "O01234567": [0,1,2,3,4,5,6,7],
-      "Q0123": [0,1,2,3],
-      "Q4567": [4,5,6,7],
-      "T012": [0,1,2],
-      "T013": [0,1,3],
-      "T023": [0,2,3],
-      "T123": [1,2,3]
+      "O01234567": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "Q0123": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "Q4567": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "T012": [
+        0,
+        1,
+        2
+      ],
+      "T013": [
+        0,
+        1,
+        3
+      ],
+      "T023": [
+        0,
+        2,
+        3
+      ],
+      "T123": [
+        1,
+        2,
+        3
+      ]
     },
     "historical_control_pass": {
       "O01234567": false,
@@ -97,11 +132,20 @@
   },
   "training": {
     "effort_assignment": "world-local exposure index",
-    "effort_cycle": [1,2,4,8],
+    "effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
     "exposures_per_world": 32,
     "gradient_clip_norm_decimal": "1.0",
     "learning_rate_decimal": "0.00005",
-    "modes": ["CONTROL","SHAM","SUBSPACE_PROJECT"],
+    "modes": [
+      "CONTROL",
+      "SHAM",
+      "SUBSPACE_PROJECT"
+    ],
     "optimizer": "AdamW",
     "weight_decay_decimal": "0.01",
     "within_exposure_order": "ascending world index within group"
