@@ -1,0 +1,23 @@
+name: v017-exp328-contract
+on:
+  pull_request:
+    paths:
+      - "src/nolane_ai/experiments/exp328_*.py"
+      - "scripts/exp328_run.py"
+      - "protocols/v017/exp328_*"
+      - "tests/test_exp328_*.py"
+      - ".github/workflows/exp328-p02-order-geometry.yml"
+      - ".github/workflows/v017-exp328-contract.yml"
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev]'
+      - run: pytest -q tests/test_exp328_contract.py tests/test_exp328_runtime_surface.py tests/test_exp328_workflow.py
