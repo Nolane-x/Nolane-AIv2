@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import asdict, replace
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -19,7 +20,15 @@ from nolane_ai.experiments.exp335_contract import (
     ARMS,
     AUTHORIZATION_FLAGS,
     EXPOSURES_PER_CHUNK,
+    PARENT_EXP334_ARTIFACT_ID,
     PARENT_EXP334_EVIDENCE_DIGEST,
+    PARENT_EXP334_JSON_SHA256,
+    PARENT_EXP334_RUN_ID,
+    PARENT_EXP334_ZIP_DIGEST,
+    RECONSTRUCTION_ARTIFACT_ID,
+    RECONSTRUCTION_CHECKPOINT_SHA256,
+    RECONSTRUCTION_RECEIPT_SHA256,
+    RECONSTRUCTION_RUN_ID,
     RECONSTRUCTION_ZIP_DIGEST,
     WORLD_IDS,
     BoundaryResult,
@@ -28,12 +37,37 @@ from nolane_ai.experiments.exp335_contract import (
     reduce_full32,
 )
 from nolane_ai.experiments.exp323_evidence import expected_reconstruction_payload
+from nolane_ai.experiments.exp335_identity import (
+    SCHEMA as IDENTITY_SCHEMA,
+    Exp335ExecutionIdentity,
+    execution_digest,
+)
 
 
-IDENTITY = {
-    "source_tree_digest": "1" * 64,
-    "exp335_execution_digest": "2" * 64,
-}
+_IDENTITY_SEED = Exp335ExecutionIdentity(
+    schema=IDENTITY_SCHEMA,
+    source_commit_sha="0" * 40,
+    source_tree_digest="1" * 64,
+    workflow_sha256="3" * 64,
+    approved_preregistration_digest=APPROVED_PREREGISTRATION_DIGEST,
+    parent_exp334_run_id=PARENT_EXP334_RUN_ID,
+    parent_exp334_artifact_id=PARENT_EXP334_ARTIFACT_ID,
+    parent_exp334_zip_digest=PARENT_EXP334_ZIP_DIGEST,
+    parent_exp334_final_json_sha256=PARENT_EXP334_JSON_SHA256,
+    parent_exp334_evidence_digest=PARENT_EXP334_EVIDENCE_DIGEST,
+    reconstruction_run_id=RECONSTRUCTION_RUN_ID,
+    reconstruction_artifact_id=RECONSTRUCTION_ARTIFACT_ID,
+    reconstruction_zip_digest=RECONSTRUCTION_ZIP_DIGEST,
+    reconstruction_checkpoint_sha256=RECONSTRUCTION_CHECKPOINT_SHA256,
+    reconstruction_receipt_sha256=RECONSTRUCTION_RECEIPT_SHA256,
+    exp335_execution_digest="0" * 64,
+)
+IDENTITY = asdict(
+    replace(
+        _IDENTITY_SEED,
+        exp335_execution_digest=execution_digest(_IDENTITY_SEED),
+    )
+)
 
 _STEMS = {
     "CONTROL_FULL32": "control",
