@@ -1,0 +1,114 @@
+{
+  "schema_version": "EXP330-P02-PARAMETER-GROUP-LOCALIZATION-V1",
+  "experiment_id": "EXP-330",
+  "role": "post_exp329_p02_parameter_group_interference_localization",
+  "authority": {
+    "parent_exp329_marker_sha": "b55749e6feb4126253a0e73b6458d901b542c380",
+    "parent_exp329_source_sha": "1c406c45526b2e7c90b9afc3e37d452e0a77e092",
+    "parent_exp329_run_id": 35417293679,
+    "parent_exp329_disposition": "BIDIRECTIONAL_LOCAL_CROSS_DAMAGE",
+    "parent_exp329_final_artifact_id": 10576262539,
+    "parent_exp329_final_artifact_zip_digest": "d95a36e7305617b3b07232f18072ea99ef766a68161c6dbd9a707545253ae6a9",
+    "parent_exp329_final_json_sha256": "f59682e2a08d3fd55437bfa3bfa6f4c3a88e950c4bc8a2ee7526774161be6e7f",
+    "parent_exp329_final_evidence_digest": "719b0c35b8538ef379a912448d7539bbdf1ef6e856e036a986b7c64b7a648cd7",
+    "parent_world0_damage_rounds": [4, 8, 16, 24, 31],
+    "parent_world2_damage_rounds": [1, 4, 8, 16, 24, 31],
+    "reconstruction_run_id": 35345351869,
+    "reconstruction_artifact_id": 10547681681,
+    "reconstruction_artifact_name": "exp323r-reconstruction-candidate-35345351869-0",
+    "reconstruction_artifact_zip_digest": "c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621",
+    "reconstruction_checkpoint_sha256": "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5",
+    "reconstruction_receipt_digest": "f8153c9f88d7d28b7e0240d994991c8d232b1d192b1688b901982610e266e03f"
+  },
+  "model": {
+    "arm": "A_FIXED",
+    "resident_trainable_parameters": 10000000,
+    "starting_cumulative_step": 2048,
+    "device": "cpu",
+    "architecture_change": false,
+    "tokenizer_change": false,
+    "objective_change": false,
+    "optimizer_change": false,
+    "learning_rate_change": false,
+    "scale_change": false
+  },
+  "population": {
+    "stage": "A_SANITY",
+    "root": 0,
+    "family": "iterative-grid-and-maze",
+    "world_indices": [0, 2]
+  },
+  "authoritative_replay": {
+    "schedule": "ALT_0_2",
+    "exposures_per_world": 32,
+    "effort_cycle": [1, 2, 4, 8],
+    "effort_assignment": "world-local exposure index; round k updates world 0 then world 2 with effort_cycle[k mod 4]",
+    "probe_rounds_before_update": [1, 4, 8, 16, 24, 31],
+    "probe_round_selection": "exact union of parent EXP-329 direct-damage rounds",
+    "main_replay_mutated_by_probe": false,
+    "parent_reproduction_requirement": "final model, optimizer and RNG digests plus registered world outcomes must exactly match EXP-329"
+  },
+  "parameter_partition": {
+    "partition_rule": "every trainable A_FIXED named parameter belongs to exactly one registered group; unknown or empty groups invalidate the court",
+    "groups": {
+      "embedding_output": ["backbone.token_embedding.weight"],
+      "layer0": ["backbone.layers.0.*"],
+      "layer1": ["backbone.layers.1.*"],
+      "layer2": ["backbone.layers.2.*"],
+      "final_norm": ["backbone.final_norm.*"],
+      "capacity_exchange": ["capacity_exchange.*"]
+    },
+    "tied_output_note": "A_FIXED logits use backbone.token_embedding.weight as output weight; the tied matrix remains one resident parameter and is assigned only to embedding_output"
+  },
+  "probe": {
+    "clone_per_directed_group_update": true,
+    "preserve_and_restore_torch_cpu_rng": true,
+    "gradient_measurement": "answer-only world0/world2 gradients from the identical pre-round state, decomposed by registered parameter group",
+    "gradient_metrics_per_group": ["dot_product", "cosine_similarity", "world0_gradient_norm", "world2_gradient_norm"],
+    "masked_update_measurement": "deep-clone model+optimizer, compute the ordinary full source gradient, apply the ordinary global clip, clear gradients outside one registered group so AdamW skips those parameters, then apply one optimizer step and evaluate source/target at the same effort",
+    "masked_update_is_authoritative_training": false,
+    "cross_damage_epsilon": 0.000001,
+    "self_improvement_epsilon": 0.000001,
+    "directed_damage_rule": "selected-group source update must improve source loss by at least self_improvement_epsilon and increase target loss by at least cross_damage_epsilon"
+  },
+  "dispositions": [
+    "INVALID_PARAMETER_GROUP_COURT",
+    "PARENT_REPRODUCTION_MISMATCH",
+    "SINGLE_GROUP_BIDIRECTIONAL_CROSS_DAMAGE",
+    "MULTI_GROUP_CROSS_DAMAGE",
+    "DIRECTIONALLY_SPLIT_GROUP_CROSS_DAMAGE",
+    "ONE_DIRECTION_GROUP_CROSS_DAMAGE",
+    "NO_GROUP_LOCAL_CROSS_DAMAGE"
+  ],
+  "decision_order": [
+    "INVALID_PARAMETER_GROUP_COURT",
+    "PARENT_REPRODUCTION_MISMATCH",
+    "SINGLE_GROUP_BIDIRECTIONAL_CROSS_DAMAGE",
+    "MULTI_GROUP_CROSS_DAMAGE",
+    "DIRECTIONALLY_SPLIT_GROUP_CROSS_DAMAGE",
+    "ONE_DIRECTION_GROUP_CROSS_DAMAGE",
+    "NO_GROUP_LOCAL_CROSS_DAMAGE"
+  ],
+  "interpretation": {
+    "SINGLE_GROUP_BIDIRECTIONAL_CROSS_DAMAGE": "exactly one registered parameter group exhibits at least one direct-damage event in each direction and no other group exhibits registered direct damage",
+    "MULTI_GROUP_CROSS_DAMAGE": "multiple registered groups are implicated, including at least one group with bidirectional direct damage",
+    "DIRECTIONALLY_SPLIT_GROUP_CROSS_DAMAGE": "both directions are represented across registered groups but no single group is bidirectionally damaging",
+    "ONE_DIRECTION_GROUP_CROSS_DAMAGE": "registered group-isolated damage appears in only one source direction",
+    "NO_GROUP_LOCAL_CROSS_DAMAGE": "the parent full-update interference reproduces but no isolated registered group independently meets the direct-damage rule"
+  },
+  "nonclaims": [
+    "EXP-330 does not intervene on authoritative training",
+    "EXP-330 does not establish that freezing, projecting or routing any group would improve learning",
+    "EXP-330 does not establish universal gradient conflict outside the registered P02 trajectory",
+    "EXP-330 does not establish an architectural capacity ceiling",
+    "EXP-330 does not establish that scaling would help",
+    "EXP-330 does not authorize EXP-302 or EXP-320"
+  ],
+  "authorization": {
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
