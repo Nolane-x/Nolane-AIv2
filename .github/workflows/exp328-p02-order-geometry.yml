@@ -1,0 +1,109 @@
+name: EXP-328 P02 order geometry
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  localize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: marker
+      - name: Resolve sealed source
+        id: identity
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=json.loads(Path("marker/protocols/v017/exp328_execution_identity_v1.json").read_text())
+          with open(os.environ["GITHUB_OUTPUT"],"a") as out:
+              out.write(f"source_sha={p['source_commit_sha']}\n")
+              out.write(f"workflow_sha256={p['workflow_sha256']}\n")
+          PY
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.identity.outputs.source_sha }}
+          path: frozen
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify immutable artifact metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum frozen/.github/workflows/exp328-p02-order-geometry.yml | awk '{print $1}')" = "${{ steps.identity.outputs.workflow_sha256 }}"
+          python - <<'PY'
+          import json,os,urllib.request
+          checks=(
+            (35413434081,10574837015,"exp327-minimal-subset-final-35413434081","sha256:b4ddab033a85762c99451f6532f790fbf4cda9181ff67c1a2093613dd0156d77"),
+            (35345351869,10547681681,"exp323r-reconstruction-candidate-35345351869-0","sha256:c0862235302243e6d9ef689ea6ef7214431ce44f41575aea12954524ad1ac621"),
+          )
+          for run,aid,name,digest in checks:
+              req=urllib.request.Request(
+                  f"https://api.github.com/repos/Nolane-x/Nolane-AIv2/actions/runs/{run}/artifacts",
+                  headers={"Authorization":f"Bearer {os.environ['GH_TOKEN']}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"exp328"},
+              )
+              with urllib.request.urlopen(req) as r:p=json.load(r)
+              m=[x for x in p["artifacts"] if int(x["id"])==aid]
+              if len(m)!=1 or m[0]["name"]!=name or m[0].get("expired") is not False or m[0].get("digest")!=digest:
+                  raise SystemExit(f"artifact authority mismatch {aid}")
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp323r-reconstruction-candidate-35345351869-0
+          path: reconstruction
+          github-token: ${{ github.token }}
+          repository: Nolane-x/Nolane-AIv2
+          run-id: 35345351869
+      - uses: actions/download-artifact@v4
+        with:
+          name: exp327-minimal-subset-final-35413434081
+          path: parent-final
+          github-token: ${{ github.token }}
+          repository: Nolane-x/Nolane-AIv2
+          run-id: 35413434081
+      - name: Verify downloaded bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum reconstruction/reconstruction.pt | awk '{print $1}')" = "4aa03459b5266a3455bcfbc8cb070d9ceaeb0e7b8390944e7d483b0953e567c5"
+          test "$(sha256sum reconstruction/reconstruction-receipt.json | awk '{print $1}')" = "617ba665149a366d00782df5c4457a6a3d01081fe847aa144465377ee164bba3"
+          test "$(sha256sum parent-final/exp327-final.json | awk '{print $1}')" = "27f8ef1fbe2bbb2a2a931d9dddd1409a6f3a0b9a8ecb06902f1e46bb07543279"
+      - name: Install frozen runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e './frozen[dev,model]'
+      - name: Run P02 order geometry court
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$GITHUB_WORKSPACE/frozen/src"
+          python frozen/scripts/exp328_run.py --reconstruction-checkpoint reconstruction/reconstruction.pt --reconstruction-receipt reconstruction/reconstruction-receipt.json --selection-lock frozen/protocols/v017/exp323r_reconstruction_selection_lock_v1.json --parent-final parent-final/exp327-final.json --execution-identity marker/protocols/v017/exp328_execution_identity_v1.json --output evidence/exp328-final.json
+      - name: Fail closed
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path("evidence/exp328-final.json").read_text())
+          for k in ("exp302_implementation_authorized","exp320_implementation_authorized","scale_authorized","authorized_30m","authorized_100m"):
+              if p.get(k) is not False:raise SystemExit(f"forbidden authorization: {k}")
+          print("EXP-328 disposition:",p["decision"])
+          print("EXP-328 evidence digest:",p["evidence_digest"])
+          print("arm pass:",p["arm_pass"])
+          print("rescued arms:",p["rescued_arms"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp328-p02-order-geometry-final-${{ github.run_id }}
+          path: evidence/exp328-final.json
+          if-no-files-found: error
+          retention-days: 90
