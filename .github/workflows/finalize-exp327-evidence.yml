@@ -169,36 +169,41 @@ jobs:
           set -euo pipefail
           artifact_id="$(cat artifact-id.txt)"
           artifact_digest="$(cat artifact-digest.txt)"
-          body="$(cat <<EOF
-EXP-327 authoritative execution is complete and independently fail-closed verified.
+          export ARTIFACT_ID="$artifact_id"
+          export ARTIFACT_DIGEST="$artifact_digest"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          body = f"""EXP-327 authoritative execution is complete and independently fail-closed verified.
 
-Authoritative run:
-- run: \`$RUN_ID\` — SUCCESS
-- sealed marker/head: \`$EXPECTED_HEAD\`
-- frozen source: \`$EXPECTED_SOURCE\`
-- execution digest: \`$EXPECTED_EXECUTION_DIGEST\`
-- preregistration digest: \`$EXPECTED_PREREG_DIGEST\`
-- final artifact id: \`$artifact_id\`
-- final artifact ZIP digest: \`$artifact_digest\`
-- final JSON SHA-256: \`$JSON_SHA256\`
-- final evidence digest: \`$EVIDENCE_DIGEST\`
-- disposition: **\`$DECISION\`**
+          Authoritative run:
+          - run: `{os.environ['RUN_ID']}` — SUCCESS
+          - sealed marker/head: `{os.environ['EXPECTED_HEAD']}`
+          - frozen source: `{os.environ['EXPECTED_SOURCE']}`
+          - execution digest: `{os.environ['EXPECTED_EXECUTION_DIGEST']}`
+          - preregistration digest: `{os.environ['EXPECTED_PREREG_DIGEST']}`
+          - final artifact id: `{os.environ['ARTIFACT_ID']}`
+          - final artifact ZIP digest: `{os.environ['ARTIFACT_DIGEST']}`
+          - final JSON SHA-256: `{os.environ['JSON_SHA256']}`
+          - final evidence digest: `{os.environ['EVIDENCE_DIGEST']}`
+          - disposition: **`{os.environ['DECISION']}`**
 
-Subset localization:
-- minimal failing size: \`$MINIMAL_SIZE\`
-- minimal failing groups: \`$MINIMAL_GROUPS\`
-- failed pairs: \`$FAILED_PAIRS\`
-- failed triples: \`$FAILED_TRIPLES\`
-- monotonicity violations: \`$MONOTONICITY\`
+          Subset localization:
+          - minimal failing size: `{os.environ['MINIMAL_SIZE']}`
+          - minimal failing groups: `{os.environ['MINIMAL_GROUPS']}`
+          - failed pairs: `{os.environ['FAILED_PAIRS']}`
+          - failed triples: `{os.environ['FAILED_TRIPLES']}`
+          - monotonicity violations: `{os.environ['MONOTONICITY']}`
 
-The finalizer independently recomputed the canonical EXP-327 evidence digest and verified exact source/preregistration/execution identity, full 11-group coverage, and fail-closed authorization flags.
+          The finalizer independently recomputed the canonical EXP-327 evidence digest and verified exact source/preregistration/execution identity, full 11-group coverage, and fail-closed authorization flags.
 
-All authorization remains false:
-- EXP-302 implementation
-- EXP-320 implementation
-- scale
-- 30M
-- 100M
-EOF
-)"
-          gh api --method POST "repos/${{ github.repository }}/issues/$TARGET_PR/comments" -f body="$body"
+          All authorization remains false:
+          - EXP-302 implementation
+          - EXP-320 implementation
+          - scale
+          - 30M
+          - 100M
+          """
+          Path("comment.md").write_text(body, encoding="utf-8")
+          PY
+          gh api --method POST "repos/${{ github.repository }}/issues/$TARGET_PR/comments" -f body="$(cat comment.md)"
