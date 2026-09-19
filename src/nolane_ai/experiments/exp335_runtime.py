@@ -309,8 +309,14 @@ def _measured_step(
 
     torch.set_rng_state(rng_after_source)
     optimizer.zero_grad(set_to_none=True)
-    projected, selected, raw_dots, post_dots = _project_source(source_grads, targets)
-    applied = projected if project else source_grads
+    if project:
+        projected, selected, raw_dots, post_dots = _project_source(source_grads, targets)
+        applied = projected
+    else:
+        raw_dots = {world_id: _dot(source_grads, grad) for world_id, grad in targets}
+        selected = []
+        post_dots = {}
+        applied = source_grads
     for parameter, gradient in zip(params, applied):
         parameter.grad = gradient.clone()
 
