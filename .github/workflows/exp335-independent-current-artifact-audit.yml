@@ -28,6 +28,7 @@ jobs:
           mkdir -p audit-input
           python - <<'PY'
           import os
+          import urllib.error
           import urllib.request
 
           repo = os.environ["GITHUB_REPOSITORY"]
@@ -43,13 +44,38 @@ jobs:
               "X-GitHub-Api-Version": "2022-11-28",
               "User-Agent": "exp335-independent-auditor",
           }
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, response_headers, newurl):
+                  return None
+
+          api_opener = urllib.request.build_opener(NoRedirect)
+
           for index, artifact_id in artifacts.items():
               request = urllib.request.Request(
                   f"https://api.github.com/repos/{repo}/actions/artifacts/{artifact_id}/zip",
                   headers=headers,
               )
-              with urllib.request.urlopen(request) as response:
+              try:
+                  api_opener.open(request)
+              except urllib.error.HTTPError as exc:
+                  if exc.code not in (301, 302, 303, 307, 308):
+                      raise
+                  location = exc.headers.get("Location")
+              else:
+                  raise RuntimeError("artifact endpoint unexpectedly did not redirect")
+              if not location:
+                  raise RuntimeError(f"artifact {artifact_id} redirect missing Location")
+
+              # The redirect is a signed storage URL. Do not forward GitHub auth
+              # to the storage host; doing so causes a 401.
+              storage_request = urllib.request.Request(
+                  location,
+                  headers={"User-Agent": "exp335-independent-auditor"},
+              )
+              with urllib.request.urlopen(storage_request) as response:
                   payload = response.read()
+
               path = f"audit-input/chunk{index}.zip"
               with open(path, "wb") as handle:
                   handle.write(payload)
