@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from nolane_ai.experiments.exp335_artifact_audit import audit_chunk_chain
+from nolane_ai.experiments.exp335_artifact_audit import audit_chunk_chain, audit_final_evidence
 
 
 def main() -> None:
@@ -22,6 +22,10 @@ def main() -> None:
         required=True,
         help="Chunk artifact ZIP in chain order. Repeat once per chunk.",
     )
+    parser.add_argument(
+        "--final-json",
+        help="Optional EXP-335 final evidence JSON; requires a complete 8-chunk chain.",
+    )
     parser.add_argument("--output", help="Optional JSON report path")
     args = parser.parse_args()
 
@@ -29,7 +33,14 @@ def main() -> None:
     if not isinstance(identity, dict):
         raise SystemExit("EXP-335 execution identity must be a JSON object")
 
-    report = audit_chunk_chain(args.chunk_zip, identity=identity)
+    chain_report = audit_chunk_chain(args.chunk_zip, identity=identity)
+    report: dict[str, object] = {"chain": chain_report}
+    if args.final_json:
+        report["final"] = audit_final_evidence(
+            args.final_json,
+            chain_report=chain_report,
+            identity=identity,
+        )
     rendered = json.dumps(report, sort_keys=True, indent=2) + "\n"
     if args.output:
         output = Path(args.output)
