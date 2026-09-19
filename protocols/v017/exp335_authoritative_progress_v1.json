@@ -120,6 +120,110 @@
         ]
       },
       "caution": "Intermediate boundary only. Rescue/regression vectors here are diagnostic and MUST NOT be passed to the final reducer or used to select a successor."
+    },
+    "2": {
+      "status": "SUCCESS",
+      "artifact_id": 10587006784,
+      "artifact_name": "exp335-chunk-2-35445927525",
+      "artifact_digest": "f1d0c7c5e02c23cee61a2d77dfb5db67c0f9acd7537a924ebecfac75111df042",
+      "artifact_created_at": "2026-09-19T15:27:08Z",
+      "artifact_size_bytes": 320712669,
+      "chunk_bundle_digest": "fbaf4f545d03a9af6c604ed2e5315ea3161da90f2af2e2616363739e3954c6fe",
+      "parent_artifact_digest": "3baa5c052874c71811ea7545bf4517e3f60f024caa84280d173ada72a08a466a",
+      "cumulative_exposure_per_world": 12,
+      "cumulative_source_updates": 384,
+      "control_sham_exact": true,
+      "independent_integrity_checks": {
+        "artifact_sha256_matches_github_digest": true,
+        "canonical_bundle_digest_recomputed": true,
+        "checkpoint_sha256_matches_receipt_all_arms": true,
+        "receipt_digest_recomputed_all_arms": true,
+        "receipt_boundary_state_digests_match_all_arms": true,
+        "parent_artifact_chain_matches_chunk1": true
+      },
+      "nonfinite_events": {
+        "CONTROL_FULL32": 0,
+        "SHAM_MEASURE_FULL32": 0,
+        "SUBSPACE_PROJECT_FULL32": 0
+      },
+      "threshold_snapshot": {
+        "CONTROL_FULL32": {
+          "worlds_passing_both": 23,
+          "world_count": 32
+        },
+        "SHAM_MEASURE_FULL32": {
+          "worlds_passing_both": 23,
+          "world_count": 32
+        },
+        "SUBSPACE_PROJECT_FULL32": {
+          "worlds_passing_both": 31,
+          "world_count": 32
+        }
+      },
+      "family_threshold_snapshot": {
+        "CONTROL_FULL32": {
+          "iterative-grid-and-maze": 4,
+          "algorithmic-sequence-transform": 5,
+          "generator-heldout-abstract-transformation": 8,
+          "language-sequence-control": 6
+        },
+        "SUBSPACE_PROJECT_FULL32": {
+          "iterative-grid-and-maze": 8,
+          "algorithmic-sequence-transform": 8,
+          "generator-heldout-abstract-transformation": 7,
+          "language-sequence-control": 8
+        }
+      },
+      "projection_snapshot": {
+        "cumulative_negative_target_count": 5298,
+        "cumulative_projection_update_count": 384,
+        "cumulative_projected_target_count": 4969
+      },
+      "interim_comparison": {
+        "rescued_control_failures": [
+          "iterative-grid-and-maze:0",
+          "iterative-grid-and-maze:3",
+          "iterative-grid-and-maze:5",
+          "iterative-grid-and-maze:7",
+          "algorithmic-sequence-transform:2",
+          "algorithmic-sequence-transform:3",
+          "algorithmic-sequence-transform:7",
+          "language-sequence-control:0",
+          "language-sequence-control:7"
+        ],
+        "project_regressions": [
+          "generator-heldout-abstract-transformation:3"
+        ],
+        "project_transition_from_chunk1": {
+          "gained_passes": [
+            "algorithmic-sequence-transform:5",
+            "iterative-grid-and-maze:0",
+            "iterative-grid-and-maze:2",
+            "iterative-grid-and-maze:6",
+            "language-sequence-control:3",
+            "language-sequence-control:7"
+          ],
+          "lost_passes": []
+        },
+        "control_transition_from_chunk1": {
+          "gained_passes": [],
+          "lost_passes": [
+            "algorithmic-sequence-transform:2"
+          ]
+        }
+      },
+      "chunk_local_projection_geometry": {
+        "raw_negative_target_count": 1711,
+        "raw_negative_mass": 36885.07198844311,
+        "selected_target_negative_residual_count": 913,
+        "selected_target_negative_residual_mass": 0.009966325331656142,
+        "new_conflict_count_raw_nonnegative_to_post_negative": 267,
+        "new_conflict_negative_mass": 456.4658742862721,
+        "total_post_negative_count": 1313,
+        "total_post_negative_mass": 456.47584061160546,
+        "new_conflict_share_of_post_negative_mass": 0.9999781668065498
+      },
+      "caution": "Intermediate boundary only. The 31/32 PROJECT snapshot and all rescue/regression/leakage diagnostics are exploratory and MUST NOT select a successor or replace the chunk-7 final reducer."
     }
   },
   "duplicate_runs": {
@@ -130,6 +234,6 @@
   "scale_authorized": false,
   "authorized_30m": false,
   "authorized_100m": false,
-  "current_authoritative_job": "chunk2",
+  "current_authoritative_job": "chunk3",
   "final_disposition_available": false
 }
