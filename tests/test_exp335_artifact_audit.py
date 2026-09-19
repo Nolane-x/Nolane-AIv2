@@ -12,17 +12,22 @@ from nolane_ai.experiments.exp335_artifact_audit import (
     CHUNK_SUMMARY_SCHEMA,
     audit_chunk_chain,
     audit_chunk_zip,
+    audit_final_evidence,
 )
 from nolane_ai.experiments.exp335_contract import (
     APPROVED_PREREGISTRATION_DIGEST,
     ARMS,
     AUTHORIZATION_FLAGS,
     EXPOSURES_PER_CHUNK,
+    PARENT_EXP334_EVIDENCE_DIGEST,
     RECONSTRUCTION_ZIP_DIGEST,
     WORLD_IDS,
+    BoundaryResult,
     canonical_digest,
     data_order_digest,
+    reduce_full32,
 )
+from nolane_ai.experiments.exp323_evidence import expected_reconstruction_payload
 
 
 IDENTITY = {
@@ -220,3 +225,95 @@ def test_independent_auditor_rejects_parent_chain_splice(tmp_path: Path):
 
     with pytest.raises(ValueError, match="parent artifact chain"):
         audit_chunk_chain([chunk0, chunk1], identity=IDENTITY)
+
+
+
+def _build_complete_chain(tmp_path: Path) -> tuple[list[Path], dict[str, object]]:
+    chunks: list[Path] = []
+    parent = RECONSTRUCTION_ZIP_DIGEST
+    for index in range(8):
+        path = _build_chunk_zip(
+            tmp_path / f"chunk{index}.zip",
+            chunk_index=index,
+            parent_digest=parent,
+        )
+        chunks.append(path)
+        parent = _sha256_file(path)
+    report = audit_chunk_chain(chunks, identity=IDENTITY)
+    assert report["complete_chunk_chain"] is True
+    return chunks, report
+
+
+def _build_final_payload(chain_report: dict[str, object]) -> dict[str, object]:
+    chunks = chain_report["chunks"]
+    assert isinstance(chunks, list)
+    final_boundaries = chunks[-1]["boundaries"]
+    control = BoundaryResult(**final_boundaries["CONTROL_FULL32"])
+    sham = BoundaryResult(**final_boundaries["SHAM_MEASURE_FULL32"])
+    project = BoundaryResult(**final_boundaries["SUBSPACE_PROJECT_FULL32"])
+    decision, vectors = reduce_full32(
+        control,
+        sham,
+        project,
+        parent_authority_valid=True,
+        invalid=False,
+    )
+    payload: dict[str, object] = {
+        "schema": "EXP335-FINAL-EVIDENCE-V1",
+        "execution_identity": dict(IDENTITY),
+        "preregistration_digest": APPROVED_PREREGISTRATION_DIGEST,
+        "parent_exp334_evidence_digest": PARENT_EXP334_EVIDENCE_DIGEST,
+        "reconstruction": expected_reconstruction_payload(),
+        "chunk_bundle_digests": [row["bundle_digest"] for row in chunks],
+        "chunk_artifact_digests": [row["artifact_sha256"] for row in chunks],
+        "chunk_parent_artifact_digests": [row["parent_artifact_digest"] for row in chunks],
+        "control_sham_exact_by_chunk": [True] * 8,
+        "final_boundaries": final_boundaries,
+        "decision": decision,
+        **vectors,
+        **AUTHORIZATION_FLAGS,
+    }
+    payload["evidence_digest"] = canonical_digest(payload)
+    return payload
+
+
+def test_independent_final_auditor_recomputes_reducer_from_chunk7(tmp_path: Path):
+    _, chain_report = _build_complete_chain(tmp_path)
+    final_payload = _build_final_payload(chain_report)
+    final_path = tmp_path / "final.json"
+    final_path.write_text(
+        json.dumps(final_payload, sort_keys=True, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
+
+    report = audit_final_evidence(
+        final_path,
+        chain_report=chain_report,
+        identity=IDENTITY,
+    )
+
+    assert report["decision"] == "AFIXED_FULL32_FOUNDATION_REENTERED_BOTH"
+    assert report["evidence_digest"] == final_payload["evidence_digest"]
+    assert len(report["chunk_artifact_digests"]) == 8
+    assert report["authorization_flags"] == AUTHORIZATION_FLAGS
+
+
+def test_independent_final_auditor_rejects_forged_decision(tmp_path: Path):
+    _, chain_report = _build_complete_chain(tmp_path)
+    final_payload = _build_final_payload(chain_report)
+    final_payload["decision"] = "AFIXED_FULL32_FOUNDATION_REENTRY_NOT_ESTABLISHED"
+    final_payload["evidence_digest"] = canonical_digest(
+        {key: value for key, value in final_payload.items() if key != "evidence_digest"}
+    )
+    final_path = tmp_path / "forged-final.json"
+    final_path.write_text(
+        json.dumps(final_payload, sort_keys=True, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="reducer decision"):
+        audit_final_evidence(
+            final_path,
+            chain_report=chain_report,
+            identity=IDENTITY,
+        )
