@@ -1,0 +1,34 @@
+name: dispatch-exp335-sealed-once
+
+on:
+  push:
+    branches: [exp335-authoritative-dispatch-helper]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: exp335-full32-afixed-foundation-reentry-design
+      EXPECTED_HEAD: 57fdf3a38b42b41951639a35dbb3c0d82055846b
+      WORKFLOW_FILE: exp335-full32-afixed-foundation-reentry.yml
+    steps:
+      - name: Verify target branch still points to sealed marker
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          actual="$(gh api "repos/${GITHUB_REPOSITORY}/branches/${TARGET_BRANCH}" --jq '.commit.sha')"
+          test "$actual" = "$EXPECTED_HEAD"
+      - name: Verify registered workflow matches frozen workflow bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git ls-remote https://github.com/${GITHUB_REPOSITORY}.git refs/heads/main | awk '{print $1}')" != ""
+      - name: Dispatch exactly one authoritative EXP-335 run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST             "repos/${GITHUB_REPOSITORY}/actions/workflows/${WORKFLOW_FILE}/dispatches"             -f ref="${TARGET_BRANCH}"
