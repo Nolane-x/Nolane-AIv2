@@ -331,15 +331,20 @@
   },
   "post_seal_branch_drift_audit": {
     "sealed_marker_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
-    "audited_process_head_before_auditor_lock": "57471d65217a8032c8b892890dd3edbb164afa10",
+    "audited_process_head": "a946553fbfeb91c4ea51caed7b99ef5e61cb7a64",
+    "ahead_by": 15,
+    "behind_by": 0,
     "scientific_runtime_or_workflow_changed": false,
+    "preregistration_or_reducer_changed": false,
     "changed_scope": [
       "CURRENT-AUTHORITY.md",
       "protocols/v017/exp336_authoritative_progress_v1.json",
       "protocols/v017/exp336_authoritative_run_lock_v1.json",
-      "protocols/v017/exp336_chunk0_1_exploratory_geometry_v1.json"
+      "protocols/v017/exp336_chunk0_1_exploratory_geometry_v1.json",
+      "protocols/v017/exp336_chunk2_exploratory_geometry_v1.json",
+      "protocols/v017/exp336_independent_audit_lock_v1.json"
     ],
-    "note": "Only authority/evidence/documentation files changed after the sealed marker at the audited checkpoint."
+    "note": "All post-seal changes remain process/evidence/documentation only; sealed science is unchanged."
   },
   "current_authoritative_job": "chunk3",
   "final_disposition_available": false,
