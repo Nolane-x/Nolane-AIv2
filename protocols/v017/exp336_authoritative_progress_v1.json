@@ -251,5 +251,17 @@
       }
     },
     "note": "Primary frozen auditor was explicitly checked out at SHA 208be21e... by the live-audit workflow. Intermediate evidence only; not reducer input."
+  },
+  "frozen_runtime_validity_audit": {
+    "scientific_source_sha": "5220e50adec7f6f048510aac44a077a4ddfdaf44",
+    "teacher_forced_effort_verified": 4,
+    "aggregate_gating_effort_verified": 4,
+    "aggregate_generation_token_cap_verified": 96,
+    "source_and_target_same_current_exposure_effort": true,
+    "target_count_per_measured_update": 31,
+    "source_rng_restored_before_parameter_update": true,
+    "evaluation_rng_restored_after_measurement": true,
+    "runtime_drift_detected": false,
+    "note": "Read-only source audit against frozen preregistration; no scientific bytes changed."
   }
 }
