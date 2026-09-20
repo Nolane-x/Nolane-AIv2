@@ -127,6 +127,7 @@
     "chunk2_job_id": 106009912454,
     "chunk2_status": "in_progress",
     "chunk2_active_step": "Execute EXP-336 chunk 2 court",
+    "chunk2_partial_logs_available": false,
     "final_reducer_available": false
   },
   "interpretation_guard": "Intermediate chunk metrics and exploratory trajectory are non-decisional and may not select a transition. Only the preregistered final reducer after a complete verified 8-chunk chain may do so.",
@@ -138,5 +139,51 @@
     "scale_authorized": false,
     "authorized_30m": false,
     "authorized_100m": false
+  },
+  "parent_cnrs_baseline": {
+    "cumulative_step": 1024,
+    "artifact_id": 10534076546,
+    "artifact_zip_sha256": "d88a9d85584476ec5226321479560a1255f0d015122827d4be75f67a6f337755",
+    "answer_only_loss": 2.149582388769822,
+    "answer_token_accuracy": 0.7007042253521126,
+    "greedy_exact_match": 0.25,
+    "eos_correctness": 1,
+    "invalid_output_rate": 0,
+    "nonfinite_events": 0,
+    "family_exact": {
+      "algorithmic-sequence-transform": 0,
+      "generator-heldout-abstract-transformation": 0.625,
+      "iterative-grid-and-maze": 0.375,
+      "language-sequence-control": 0
+    },
+    "verified_from_immutable_parent_artifact": true
+  },
+  "independent_auditor": {
+    "pr_number": 114,
+    "frozen_auditor_sha": "208be21e035a5064eb9d60a9269154768717f5b1",
+    "dedicated_contract_run_id": 35485512043,
+    "dedicated_contract_conclusion": "success",
+    "dedicated_test_count": 19,
+    "parent_smoke": "success",
+    "generic_ci_run_id": 35485512067,
+    "generic_ci_conclusion": "success",
+    "core_311": "success",
+    "core_313": "success",
+    "model_smoke": "success",
+    "postrun_workflow_registration_commit": "4f6d29e5da76815fbbb02f58edc0d9823e6829a1",
+    "postrun_workflow": ".github/workflows/exp336-postrun-independent-audit.yml"
+  },
+  "validity_checks": {
+    "teacher_forced_effort_verified": 4,
+    "aggregate_gating_effort_verified": 4,
+    "exp319_stage_a_floor_verified": {
+      "greedy_exact_min": 0.9,
+      "answer_token_accuracy_min": 0.99,
+      "eos_correctness_min": 0.95,
+      "loss_fraction_max": 0.25,
+      "invalid_output_rate_max": 0.01,
+      "nonfinite_events_max": 0
+    },
+    "duplicate_authoritative_dispatches_observed": 0
   }
 }
