@@ -1,0 +1,109 @@
+name: EXP-337 post-run verifier lock enforcement
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/exp337-postrun-independent-audit.yml"
+      - ".github/workflows/exp337-postrun-verifier-lock.yml"
+      - "protocols/v017/exp337_final_closure_requirements_v1.json"
+      - "protocols/v017/exp337_independent_audit_lock_v1.json"
+      - "protocols/v017/exp337_postrun_verifier_lock_v1.json"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/exp337-postrun-independent-audit.yml"
+      - ".github/workflows/exp337-postrun-verifier-lock.yml"
+      - "protocols/v017/exp337_final_closure_requirements_v1.json"
+      - "protocols/v017/exp337_independent_audit_lock_v1.json"
+      - "protocols/v017/exp337_postrun_verifier_lock_v1.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Enforce frozen EXP-337 post-run verifier objects
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, subprocess, urllib.request
+          from pathlib import Path
+
+          expected={
+              ".github/workflows/exp337-postrun-independent-audit.yml":"4188610ee403cbe76b62fce683228f992081dd4a",
+              "protocols/v017/exp337_final_closure_requirements_v1.json":"2cd7013bc5cd1d6b80c3ef2e2e4c0af33190eba2",
+              "protocols/v017/exp337_independent_audit_lock_v1.json":"ff6980318e7216280b6eccb785be985bb594d219",
+              "protocols/v017/exp337_postrun_verifier_lock_v1.json":"aefe8b32fcec8bf92c1e3ec0e54df7dee3e89668",
+          }
+          for path, blob in expected.items():
+              observed=subprocess.check_output(["git","rev-parse",f"HEAD:{path}"],text=True).strip()
+              assert observed == blob, (path,observed,blob)
+
+          lock=json.loads(Path("protocols/v017/exp337_postrun_verifier_lock_v1.json").read_text())
+          assert lock["schema"] == "EXP337-POSTRUN-VERIFIER-LOCK-V1"
+          assert lock["created_before_scientific_dispatch"] is True
+          assert lock["created_before_exp337_result_visibility"] is True
+          assert lock["scientific_authority"]["sealed_marker_sha"] == "ec5f98a636e9395a76509493800b6b9f06a33271"
+          assert lock["scientific_authority"]["scientific_source_sha"] == "5a0fa8da3e3906a712bcb027d8d4e40ed60f026b"
+          assert lock["scientific_authority"]["scientific_workflow_git_blob_sha"] == "e3a147183acdbca7a9bec1de40dfec34ea303141"
+          assert lock["frozen_auditor"]["commit_sha"] == "debc13fd4ec8f8ed443302ef0352d751661faafc"
+          assert lock["frozen_auditor"]["independent_audit_lock_git_blob_sha"] == "ff6980318e7216280b6eccb785be985bb594d219"
+          assert lock["postrun_verifier"]["workflow_git_blob_sha"] == "4188610ee403cbe76b62fce683228f992081dd4a"
+          assert lock["postrun_verifier"]["contract_run_id"] == 35503198974
+          assert lock["postrun_verifier"]["contract_conclusion"] == "success"
+          assert lock["postrun_verifier"]["scientific_dispatch_count_at_contract"] == 0
+          assert lock["closure_control"]["closure_requirements_git_blob_sha"] == "2cd7013bc5cd1d6b80c3ef2e2e4c0af33190eba2"
+          assert lock["scientific_dispatch_authorized"] is False
+          assert all(v is False for v in lock["downstream_authority"].values())
+
+          subprocess.check_call(["git","fetch","origin","ec5f98a636e9395a76509493800b6b9f06a33271","--depth=1"])
+          subprocess.check_call(["git","fetch","origin","debc13fd4ec8f8ed443302ef0352d751661faafc","--depth=1"])
+          subprocess.check_call(["git","cat-file","-e","ec5f98a636e9395a76509493800b6b9f06a33271^{commit}"])
+          subprocess.check_call(["git","cat-file","-e","debc13fd4ec8f8ed443302ef0352d751661faafc^{commit}"])
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
+          headers={"Authorization":f"Bearer {token}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"exp337-lock-enforcement"}
+          scientific=[]
+          page=1
+          while True:
+              req=urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs?event=workflow_dispatch&branch=exp337-cnrs-self-rollin-sequence-recovery-design&per_page=100&page={page}",headers=headers)
+              with urllib.request.urlopen(req) as response: listing=json.load(response)
+              batch=listing.get("workflow_runs",[])
+              scientific.extend(r for r in batch if r.get("path")==".github/workflows/exp337-self-rollin-stage-a.yml")
+              if len(batch)<100: break
+              page+=1
+          assert scientific == [], scientific
+
+          receipt={
+              "schema":"EXP337-POSTRUN-VERIFIER-LOCK-ENFORCEMENT-RECEIPT-V1",
+              "commit_sha":os.environ["GITHUB_SHA"],
+              "verifier_git_blob_sha":expected[".github/workflows/exp337-postrun-independent-audit.yml"],
+              "closure_requirements_git_blob_sha":expected["protocols/v017/exp337_final_closure_requirements_v1.json"],
+              "independent_audit_lock_git_blob_sha":expected["protocols/v017/exp337_independent_audit_lock_v1.json"],
+              "verifier_lock_git_blob_sha":expected["protocols/v017/exp337_postrun_verifier_lock_v1.json"],
+              "scientific_sealed_marker_sha":"ec5f98a636e9395a76509493800b6b9f06a33271",
+              "frozen_auditor_sha":"debc13fd4ec8f8ed443302ef0352d751661faafc",
+              "scientific_dispatch_count":0,
+              "downstream_authority":lock["downstream_authority"],
+          }
+          Path("exp337-postrun-verifier-lock-enforcement-receipt.json").write_text(json.dumps(receipt,sort_keys=True,indent=2)+"\n")
+          print(json.dumps(receipt,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp337-postrun-verifier-lock-enforcement-${{ github.run_id }}
+          path: exp337-postrun-verifier-lock-enforcement-receipt.json
+          if-no-files-found: error
+          retention-days: 90
