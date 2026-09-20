@@ -1,0 +1,56 @@
+{
+  "schema": "EXP336-POSTRUN-VERIFIER-LOCK-RECEIPT-V1",
+  "experiment_id": "EXP-336",
+  "authoritative_run_id": 35481336946,
+  "authoritative_run_attempt": 1,
+  "authoritative_head_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+  "lock_commit_sha": "7bca307b1600b5175292817b8a450d10b89ca56a",
+  "lock_blob_sha": "b5a2a64c835424a22fd7de7af362093679750090",
+  "locked_verifier_commit_sha": "fb237efb887bc3767349b02d3b4c0abb5faa3fcb",
+  "locked_verifier_workflow_blob_sha": "c44d3adcaa202b88c6c69b986af536b5dcb34905",
+  "frozen_auditor_sha": "208be21e035a5064eb9d60a9269154768717f5b1",
+  "closure_control_commit_sha": "7c3102a15d5e5eb48b3bf6ebeed5f14c24e569ed",
+  "closure_requirements_blob_sha": "c242dd78bb710aca9aa66ead22d0d5e7b889dbfa",
+  "verifier_full_ci": {
+    "run_id": 35493539177,
+    "conclusion": "success",
+    "jobs": {
+      "core (3.11)": "success",
+      "core (3.13)": "success",
+      "model-smoke": "success"
+    }
+  },
+  "lock_enforcement": {
+    "enforcement_commit_sha": "b5a38cc96c3d8ebc9ecb20af0d78f6dd3bfd155b",
+    "workflow_run_id": 35493990910,
+    "conclusion": "success",
+    "job_id": 106033634309,
+    "job_name": "verify-lock",
+    "job_conclusion": "success"
+  },
+  "enforcement_commit_generic_ci": {
+    "run_id": 35493990858,
+    "jobs": {
+      "core (3.11)": "success",
+      "core (3.13)": "success",
+      "model-smoke": "success"
+    }
+  },
+  "sealed_head_dispatch_uniqueness": {
+    "checked": true,
+    "matching_workflow_dispatch_count": 1,
+    "matching_run_ids": [
+      35481336946
+    ]
+  },
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  },
+  "interpretation": "This receipt proves that the pre-final-result EXP-336 post-run verifier lock and its enforcement checks were green before scientific closure. It does not assign an EXP-336 scientific disposition."
+}
