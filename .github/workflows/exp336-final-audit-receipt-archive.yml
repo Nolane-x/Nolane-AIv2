@@ -1,4 +1,5 @@
 name: EXP-336 final audit receipt archive
+# recovery-trigger: exact-report-restored
 
 on:
   push:
