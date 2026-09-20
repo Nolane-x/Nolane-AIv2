@@ -1,0 +1,55 @@
+{
+  "schema": "EXP337-POSTSEAL-DISPATCH-AUTHORIZATION-V1",
+  "experiment_id": "EXP-337",
+  "authorization_created_from_user_message_after_seal": true,
+  "operator_message_timestamp_utc": "2026-09-20T09:55:21Z",
+  "operator_message_text": "Tiếp tục hoàn thành đi nhé",
+  "seal_completed_at_utc": "2026-09-20T09:32:36Z",
+  "sealed_marker_sha": "ec5f98a636e9395a76509493800b6b9f06a33271",
+  "scientific_source_sha": "5a0fa8da3e3906a712bcb027d8d4e40ed60f026b",
+  "scientific_source_tree_digest": "211179cb6c95308aa936efeb144ee8c9729e468b13cf7e13cdaf67ea3dbf1520",
+  "scientific_workflow_path": ".github/workflows/exp337-self-rollin-stage-a.yml",
+  "scientific_workflow_git_blob_sha": "e3a147183acdbca7a9bec1de40dfec34ea303141",
+  "scientific_workflow_sha256": "705319c2ab640308cbb36e8d118f7f1038644796d5099eb2f6964cee73860c9d",
+  "preregistration_digest": "5172c3f85d15d71e7fc4a16e3f00ae5d9a5031f09a97c1529f8fa6e25822c53a",
+  "execution_digest": "c7d9b0ad756a2417d5675a9203b3dd95b4ba3e2596a3a5c91b34b8dfd73e20d2",
+  "frozen_auditor_sha": "debc13fd4ec8f8ed443302ef0352d751661faafc",
+  "postrun_verifier_git_blob_sha": "4188610ee403cbe76b62fce683228f992081dd4a",
+  "dispatcher_gate_git_blob_sha": "36e6f5b03714e007c87459f928039dd9daa2253e",
+  "dispatcher_gate_contract": {
+    "run_id": 35503652646,
+    "conclusion": "success",
+    "artifact_id": 10603256389,
+    "artifact_zip_sha256": "812a67ba949838c2d9e30abc476e2eed4f170f6a98cb66eb16082734dcf2116d"
+  },
+  "authorize_exact_sealed_scientific_dispatch": true,
+  "scientific_dispatch_authorized": true,
+  "maximum_authoritative_dispatches": 1,
+  "authorization_scope": [
+    "dispatch exactly the sealed EXP-337 scientific workflow on the exact sealed marker once",
+    "bind the earliest successfully created exact sealed-head workflow_dispatch as the sole authoritative EXP-337 run",
+    "archive authoritative run lock and run-lock receipt before the first EXP-337 chunk artifact exists",
+    "allow the already-frozen post-run independent verifier to audit and close the authoritative run"
+  ],
+  "explicitly_not_authorized": [
+    "modifying sealed EXP-337 scientific source",
+    "modifying preregistration, self-roll-in construction, loss mixture, schedule, learning rate, projector, thresholds, reducer, world population, or parent authority",
+    "creating a second authoritative EXP-337 dispatch",
+    "Stage-B implementation",
+    "Stage-C implementation",
+    "EXP-302 implementation",
+    "EXP-320 implementation",
+    "scaling",
+    "30M",
+    "100M"
+  ],
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
