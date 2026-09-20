@@ -378,6 +378,87 @@ jobs:
           PY
           sha256sum audit-input/exp336-final-closure-v1.json
 
+      - name: Verify consolidated EXP-336 final closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          path=Path("audit-input/exp336-final-closure-v1.json")
+          closure=json.loads(path.read_text(encoding="utf-8"))
+          required={
+              "authoritative_run",
+              "scientific_source",
+              "sealed_identity",
+              "parent_authority",
+              "authoritative_artifacts",
+              "independent_audit",
+              "final_reducer",
+              "transition_selected_from_frozen_matrix",
+              "downstream_authority",
+          }
+          missing=sorted(required-set(closure))
+          if missing:
+              raise SystemExit(f"closure missing required fields: {missing}")
+          if closure.get("schema") != "EXP336-FINAL-CLOSURE-V1":
+              raise SystemExit("closure schema mismatch")
+          expected_digest=closure.pop("closure_digest",None)
+          if not expected_digest:
+              raise SystemExit("closure digest missing")
+          canonical=json.dumps(
+              closure,sort_keys=True,separators=(",",":"),ensure_ascii=False
+          ).encode()
+          observed=hashlib.sha256(canonical).hexdigest()
+          if observed != expected_digest:
+              raise SystemExit(f"closure digest mismatch: {observed} != {expected_digest}")
+          if closure["authoritative_run"] != {
+              "id":35481336946,
+              "status":"completed",
+              "conclusion":"success",
+              "run_attempt":1,
+              "head_sha":"08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+          }:
+              raise SystemExit("closure authoritative-run identity mismatch")
+          audit=closure["independent_audit"]
+          if audit.get("auditor_sha") != "208be21e035a5064eb9d60a9269154768717f5b1":
+              raise SystemExit("closure frozen-auditor mismatch")
+          if audit.get("verified_chunk_count") != 8 or audit.get("complete_chunk_chain") is not True:
+              raise SystemExit("closure incomplete independent chain")
+          if audit.get("control_sham_exact_by_chunk") != [True]*8:
+              raise SystemExit("closure CONTROL/SHAM chain mismatch")
+          transition=closure["transition_selected_from_frozen_matrix"]
+          if transition.get("decision") != closure["final_reducer"].get("decision"):
+              raise SystemExit("closure transition/reducer decision mismatch")
+          selected=transition.get("selected_transition",{})
+          if selected.get("next_scope") is None:
+              raise SystemExit("closure selected transition missing next_scope")
+          guards=closure["downstream_authority"]
+          forbidden=(
+              "stage_b_implementation_authorized",
+              "stage_c_implementation_authorized",
+              "exp302_implementation_authorized",
+              "exp320_implementation_authorized",
+              "scale_authorized",
+              "authorized_30m",
+              "authorized_100m",
+          )
+          bad={key:guards.get(key) for key in forbidden if guards.get(key) is not False}
+          if bad:
+              raise SystemExit(f"closure forbidden authorization open: {bad}")
+          print(json.dumps({
+              "schema":"EXP336-FINAL-CLOSURE-VERIFICATION-V1",
+              "closure_digest":expected_digest,
+              "decision":closure["final_reducer"]["decision"],
+              "next_scope":selected["next_scope"],
+              "verified_chunk_count":audit["verified_chunk_count"],
+              "complete_chunk_chain":audit["complete_chunk_chain"],
+              "downstream_guards_closed":True,
+          },sort_keys=True,indent=2))
+          PY
+
       - uses: actions/upload-artifact@v4
         id: upload_audit
         with:
