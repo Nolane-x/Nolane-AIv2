@@ -1,0 +1,39 @@
+{
+  "schema": "EXP336-AUTHORITATIVE-RUN-LOCK-V1",
+  "experiment_id": "EXP-336",
+  "created_before_scientific_result_visibility": true,
+  "frozen_preregistration_head": "fe457d51ab8c01dc0c5d1831d9c83ce13e627c3c",
+  "scientific_source_sha": "5220e50adec7f6f048510aac44a077a4ddfdaf44",
+  "sealed_marker_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+  "source_tree_digest": "6485fdc131dbf0358f8e6548b3ec510ce96bb80b8fbaf2858a97d5bade62a911",
+  "workflow_sha256": "b29710b206fb028f9064040f593ffd79ef4cdf6082fd820b3869d624b447de97",
+  "preregistration_digest": "491899f5f613b3d80b36689e7882e8c72875fb268a6886e1a40542eb09dc33ce",
+  "execution_digest": "f81f382846d1c128934be40717e6eee33c48fe00dde00fd736a2ad2fdb15d5db",
+  "dispatcher": {
+    "workflow_run_id": 35481328168,
+    "conclusion": "success",
+    "main_commit_sha": "a92b256ad4d038c8ae704fcc635b02efece2fb9e"
+  },
+  "authoritative_run": {
+    "id": 35481336946,
+    "workflow_name": "EXP-336 C_NRS full-32 Stage-A projection-inheritance court",
+    "workflow_path": ".github/workflows/exp336-cnrs-full32-stage-a.yml",
+    "event": "workflow_dispatch",
+    "head_branch": "exp336-cnrs-full32-stage-a-projection-inheritance-design",
+    "head_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+    "run_attempt": 1,
+    "created_at": "2026-09-20T01:25:10Z"
+  },
+  "selection_rule": "The earliest successfully created workflow_dispatch run bound to the sealed marker and exact EXP-336 workflow is the sole authoritative scientific execution. Later duplicate runs, if any, are non-authoritative and may not be substituted, pooled, outcome-selected, or interpreted as confirmation.",
+  "duplicate_policy": "Any later EXP-336 workflow_dispatch run is excluded regardless of outcome and should be canceled when operationally possible.",
+  "result_visibility_policy": "Only this locked run may produce reducer evidence. Intermediate chunks remain non-decisional; only the preregistered final reducer may select the pre-result transition.",
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}

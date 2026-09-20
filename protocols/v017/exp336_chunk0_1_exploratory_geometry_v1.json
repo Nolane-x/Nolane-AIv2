@@ -1,0 +1,131 @@
+{
+  "schema": "EXP336-CHUNK0-1-EXPLORATORY-GEOMETRY-V1",
+  "experiment_id": "EXP-336",
+  "authoritative_run_id": 35481336946,
+  "scientific_source_sha": "5220e50adec7f6f048510aac44a077a4ddfdaf44",
+  "reducer_input": false,
+  "purpose": "Post-hoc diagnostic of inherited projector geometry. This artifact cannot alter the preregistered reducer, transition lock, or scientific interpretation.",
+  "chunks": [
+    {
+      "chunk_index": 0,
+      "cumulative_exposure_per_world": 4,
+      "measurements": 128,
+      "raw_negative_count": 1384,
+      "raw_negative_mass": 189583.0948209787,
+      "selected_target_count": 1384,
+      "selected_residual_negative_count": 657,
+      "selected_residual_negative_mass": 0.016082334390068315,
+      "selected_resolved_nonnegative_count": 727,
+      "new_conflict_count": 458,
+      "new_conflict_mass": 12928.032309177861,
+      "total_post_negative_count": 1115,
+      "total_post_negative_mass": 12928.048391512239,
+      "new_conflict_share_of_post_negative_mass": 0.9999987560122077,
+      "new_conflict_source_family": {
+        "iterative-grid-and-maze": {
+          "count": 139,
+          "mass": 7382.608157181317
+        },
+        "generator-heldout-abstract-transformation": {
+          "count": 131,
+          "mass": 2718.975917496562
+        },
+        "algorithmic-sequence-transform": {
+          "count": 124,
+          "mass": 2490.972577362856
+        },
+        "language-sequence-control": {
+          "count": 64,
+          "mass": 335.4756571371146
+        }
+      },
+      "dominant_new_conflict_pairs": [
+        {
+          "source": "iterative-grid-and-maze",
+          "target": "iterative-grid-and-maze",
+          "count": 50,
+          "mass": 3445.5390870818005
+        },
+        {
+          "source": "iterative-grid-and-maze",
+          "target": "generator-heldout-abstract-transformation",
+          "count": 44,
+          "mass": 2238.7350880786057
+        },
+        {
+          "source": "iterative-grid-and-maze",
+          "target": "algorithmic-sequence-transform",
+          "count": 36,
+          "mass": 1655.2334554977024
+        },
+        {
+          "source": "generator-heldout-abstract-transformation",
+          "target": "iterative-grid-and-maze",
+          "count": 40,
+          "mass": 1249.5017140162724
+        }
+      ]
+    },
+    {
+      "chunk_index": 1,
+      "cumulative_exposure_per_world": 8,
+      "measurements": 128,
+      "raw_negative_count": 1555,
+      "raw_negative_mass": 170103.43458964574,
+      "selected_target_count": 1533,
+      "selected_residual_negative_count": 753,
+      "selected_residual_negative_mass": 0.012810420037269711,
+      "selected_resolved_nonnegative_count": 780,
+      "new_conflict_count": 390,
+      "new_conflict_mass": 9558.748153341925,
+      "total_post_negative_count": 1158,
+      "total_post_negative_mass": 9558.76096376197,
+      "new_conflict_share_of_post_negative_mass": 0.999998659824208,
+      "new_conflict_source_family": {
+        "iterative-grid-and-maze": {
+          "count": 104,
+          "mass": 6739.883891556437
+        },
+        "algorithmic-sequence-transform": {
+          "count": 100,
+          "mass": 1805.1032990372996
+        },
+        "generator-heldout-abstract-transformation": {
+          "count": 130,
+          "mass": 859.5483900417289
+        },
+        "language-sequence-control": {
+          "count": 56,
+          "mass": 154.21257270644927
+        }
+      },
+      "dominant_new_conflict_pairs": [
+        {
+          "source": "iterative-grid-and-maze",
+          "target": "iterative-grid-and-maze",
+          "count": 34,
+          "mass": 3905.6725722703964
+        },
+        {
+          "source": "iterative-grid-and-maze",
+          "target": "generator-heldout-abstract-transformation",
+          "count": 36,
+          "mass": 1577.6853058127788
+        },
+        {
+          "source": "algorithmic-sequence-transform",
+          "target": "iterative-grid-and-maze",
+          "count": 40,
+          "mass": 1080.7011132060402
+        },
+        {
+          "source": "iterative-grid-and-maze",
+          "target": "algorithmic-sequence-transform",
+          "count": 25,
+          "mass": 787.1713677399568
+        }
+      ]
+    }
+  ],
+  "observation": "The inherited orthogonal-subspace projector nearly annihilates selected raw conflicts, but almost all remaining post-projection negative mass in chunks 0-1 comes from newly induced conflicts on targets whose raw dot was nonnegative. This is diagnostic only and does not authorize a projector change."
+}

@@ -1,0 +1,490 @@
+{
+  "schema": "EXP336-AUTHORITATIVE-PROGRESS-V1",
+  "experiment_id": "EXP-336",
+  "authoritative_run_id": 35481336946,
+  "authoritative_run_attempt": 1,
+  "authoritative_run_head_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+  "scientific_source_sha": "5220e50adec7f6f048510aac44a077a4ddfdaf44",
+  "preregistration_digest": "491899f5f613b3d80b36689e7882e8c72875fb268a6886e1a40542eb09dc33ce",
+  "execution_digest": "f81f382846d1c128934be40717e6eee33c48fe00dde00fd736a2ad2fdb15d5db",
+  "identity_artifact": {
+    "id": 10595334487,
+    "name": "exp336-identity-35481336946",
+    "github_zip_sha256": "fcf481c6850c83d5f730bd0c2bc3cb2cc6ffcce55abfc15eec527a72dc41b5f7",
+    "exact_identity_json_sha256": "a8f81a0494ba00658d0e8eeea4c0112f1a0547e436783a557b1e70ec9091a190",
+    "verified": true
+  },
+  "verified_chunks": [
+    {
+      "chunk_index": 0,
+      "artifact_id": 10596866141,
+      "name": "exp336-chunk-0-35481336946",
+      "github_zip_sha256": "176eedc34450c7e843ff4a21c218c82dea7fbc3fc15239559d4941e60bf69dbf",
+      "size_in_bytes": 327150437,
+      "parent_artifact_digest": "d88a9d85584476ec5226321479560a1255f0d015122827d4be75f67a6f337755",
+      "bundle_digest": "08ea7ad3f43281d31b687c92e7dd9927e73b14797e52fa9575295e89bb56bc6e",
+      "cumulative_exposure_per_world": 4,
+      "cumulative_source_updates": 128,
+      "cumulative_training_step": 1152,
+      "control_sham_exact": true,
+      "nonfinite_events_all_arms": 0,
+      "control_world_pass_count": 9,
+      "project_world_pass_count": 8,
+      "control_aggregate": {
+        "answer_only_loss": 1.87784635028997,
+        "answer_token_accuracy": 0.7288732394366197,
+        "greedy_exact_match": 0.28125,
+        "eos_correctness": 1,
+        "invalid_output_rate": 0,
+        "loss_fraction_of_original_initial": 0.011411885487109358
+      },
+      "project_aggregate": {
+        "answer_only_loss": 3.723126723312996,
+        "answer_token_accuracy": 0.7077464788732394,
+        "greedy_exact_match": 0.25,
+        "eos_correctness": 1,
+        "invalid_output_rate": 0,
+        "loss_fraction_of_original_initial": 0.022625863832727196
+      },
+      "sham_negative_target_count": 1417,
+      "project_negative_target_count": 1384,
+      "project_projection_update_count": 128,
+      "project_projected_target_count": 1384,
+      "reducer_input": false,
+      "integrity_verified": {
+        "raw_zip_sha_matches_github": true,
+        "canonical_bundle_digest": true,
+        "all_receipt_digests": true,
+        "all_checkpoint_member_sha256": true,
+        "root_parent_digest": true,
+        "source_tree_digest": true,
+        "preregistration_digest": true,
+        "execution_digest": true,
+        "authorization_flags_false": true
+      }
+    },
+    {
+      "chunk_index": 1,
+      "artifact_id": 10597253461,
+      "name": "exp336-chunk-1-35481336946",
+      "github_zip_sha256": "7fd5d9536438109896eca9922ff80704483aee452dc1061f28c58dede88a6a36",
+      "size_in_bytes": 327814364,
+      "parent_artifact_digest": "176eedc34450c7e843ff4a21c218c82dea7fbc3fc15239559d4941e60bf69dbf",
+      "bundle_digest": "9ff533a3e56298f5a955cfda081ec4cf4b69668b9da8bc5e418afcdc4bc9b9a2",
+      "cumulative_exposure_per_world": 8,
+      "cumulative_source_updates": 256,
+      "cumulative_training_step": 1280,
+      "control_sham_exact": true,
+      "nonfinite_events_all_arms": 0,
+      "control_world_pass_count": 10,
+      "project_world_pass_count": 11,
+      "control_aggregate": {
+        "answer_only_loss": 1.44927179292299,
+        "answer_token_accuracy": 0.7605633802816901,
+        "greedy_exact_match": 0.3125,
+        "eos_correctness": 1,
+        "invalid_output_rate": 0,
+        "loss_fraction_of_original_initial": 0.008807389240328927
+      },
+      "project_aggregate": {
+        "answer_only_loss": 1.7291283414688474,
+        "answer_token_accuracy": 0.8028169014084507,
+        "greedy_exact_match": 0.34375,
+        "eos_correctness": 1,
+        "invalid_output_rate": 0,
+        "loss_fraction_of_original_initial": 0.010508109261607466
+      },
+      "sham_negative_target_count": 2804,
+      "project_negative_target_count": 2939,
+      "project_projection_update_count": 256,
+      "project_projected_target_count": 2917,
+      "interim_project_rescues_vs_control": [
+        "iterative-grid-and-maze:7",
+        "generator-heldout-abstract-transformation:0",
+        "generator-heldout-abstract-transformation:2",
+        "generator-heldout-abstract-transformation:3"
+      ],
+      "interim_project_regressions_vs_control": [
+        "generator-heldout-abstract-transformation:1",
+        "generator-heldout-abstract-transformation:6",
+        "language-sequence-control:4"
+      ],
+      "reducer_input": false,
+      "integrity_verified": {
+        "raw_zip_sha_matches_github": true,
+        "canonical_bundle_digest": true,
+        "all_receipt_digests": true,
+        "all_checkpoint_member_sha256": true,
+        "parent_equals_actual_chunk0_zip_sha256": true,
+        "source_tree_digest": true,
+        "preregistration_digest": true,
+        "execution_digest": true,
+        "authorization_flags_false": true
+      }
+    },
+    {
+      "chunk_index": 2,
+      "artifact_id": 10597562011,
+      "name": "exp336-chunk-2-35481336946",
+      "github_zip_sha256": "8063277a4f0a99c34d8c4491eb57606717f68ee93f46212eea582f21c696c784",
+      "size_in_bytes": 328268754,
+      "parent_artifact_digest": "7fd5d9536438109896eca9922ff80704483aee452dc1061f28c58dede88a6a36",
+      "bundle_digest": "0ea40a712dd355921a588a1cbc453f8384308613bb5194d80112cb492369521e",
+      "cumulative_exposure_per_world": 12,
+      "cumulative_source_updates": 384,
+      "cumulative_training_step": 1408,
+      "control_sham_exact": true,
+      "nonfinite_events_all_arms": 0,
+      "control_world_pass_count": 9,
+      "sham_world_pass_count": 9,
+      "project_world_pass_count": 14,
+      "family_world_pass_counts": {
+        "CONTROL_CNRS_FULL32": {
+          "iterative-grid-and-maze": 4,
+          "algorithmic-sequence-transform": 0,
+          "generator-heldout-abstract-transformation": 5,
+          "language-sequence-control": 0
+        },
+        "SUBSPACE_PROJECT_CNRS_FULL32": {
+          "iterative-grid-and-maze": 6,
+          "algorithmic-sequence-transform": 0,
+          "generator-heldout-abstract-transformation": 8,
+          "language-sequence-control": 0
+        }
+      },
+      "control_aggregate": {
+        "answer_only_loss": 1.0926180365873785,
+        "answer_token_accuracy": 0.7816901408450704,
+        "greedy_exact_match": 0.28125,
+        "eos_correctness": 1,
+        "invalid_output_rate": 0,
+        "loss_fraction_of_original_initial": 0.006639963867523046,
+        "aggregate_pass": false
+      },
+      "project_aggregate": {
+        "answer_only_loss": 1.5820700958576457,
+        "answer_token_accuracy": 0.7535211267605634,
+        "greedy_exact_match": 0.4375,
+        "eos_correctness": 1,
+        "invalid_output_rate": 0,
+        "loss_fraction_of_original_initial": 0.009614419605586838,
+        "aggregate_pass": false
+      },
+      "sham_negative_target_count": 4128,
+      "project_negative_target_count": 4490,
+      "project_projection_update_count": 382,
+      "project_projected_target_count": 4362,
+      "control_failed_worlds": [
+        "iterative-grid-and-maze:0",
+        "iterative-grid-and-maze:3",
+        "iterative-grid-and-maze:5",
+        "iterative-grid-and-maze:7",
+        "algorithmic-sequence-transform:0",
+        "algorithmic-sequence-transform:1",
+        "algorithmic-sequence-transform:2",
+        "algorithmic-sequence-transform:3",
+        "algorithmic-sequence-transform:4",
+        "algorithmic-sequence-transform:5",
+        "algorithmic-sequence-transform:6",
+        "algorithmic-sequence-transform:7",
+        "generator-heldout-abstract-transformation:0",
+        "generator-heldout-abstract-transformation:2",
+        "generator-heldout-abstract-transformation:3",
+        "language-sequence-control:0",
+        "language-sequence-control:1",
+        "language-sequence-control:2",
+        "language-sequence-control:3",
+        "language-sequence-control:4",
+        "language-sequence-control:5",
+        "language-sequence-control:6",
+        "language-sequence-control:7"
+      ],
+      "project_failed_worlds": [
+        "iterative-grid-and-maze:0",
+        "iterative-grid-and-maze:3",
+        "algorithmic-sequence-transform:0",
+        "algorithmic-sequence-transform:1",
+        "algorithmic-sequence-transform:2",
+        "algorithmic-sequence-transform:3",
+        "algorithmic-sequence-transform:4",
+        "algorithmic-sequence-transform:5",
+        "algorithmic-sequence-transform:6",
+        "algorithmic-sequence-transform:7",
+        "language-sequence-control:0",
+        "language-sequence-control:1",
+        "language-sequence-control:2",
+        "language-sequence-control:3",
+        "language-sequence-control:4",
+        "language-sequence-control:5",
+        "language-sequence-control:6",
+        "language-sequence-control:7"
+      ],
+      "interim_project_rescues_vs_control": [
+        "iterative-grid-and-maze:5",
+        "iterative-grid-and-maze:7",
+        "generator-heldout-abstract-transformation:0",
+        "generator-heldout-abstract-transformation:2",
+        "generator-heldout-abstract-transformation:3"
+      ],
+      "interim_project_regressions_vs_control": [],
+      "checkpoint_sha256": {
+        "CONTROL_CNRS_FULL32": "d864e6f6b1e2bbc9ff179da91165b493151542a73b348e48635470cf122af890",
+        "SHAM_MEASURE_CNRS_FULL32": "e4b554691284b1f4a095685338094e1d51506442563648fd40ac557ed961d492",
+        "SUBSPACE_PROJECT_CNRS_FULL32": "3252127c6dda9e5455951a24871e026aa59c7c44f4f0cf8ff98ee4c963bd8ee9"
+      },
+      "receipt_digests": {
+        "CONTROL_CNRS_FULL32": "d35e30c7838b29016334464edec69336cf6c1a920c49cd5050c4a23f838d23a9",
+        "SHAM_MEASURE_CNRS_FULL32": "18e6ceeaf460ebc72c20adb07d9fc04682f335c2642eef57ca3a17d22c28b36d",
+        "SUBSPACE_PROJECT_CNRS_FULL32": "cb2b84037350d8ab41561620bc1f4800764ae274d1bb82b77cca1fb8bc582930"
+      },
+      "reducer_input": false,
+      "integrity_verified": {
+        "raw_zip_sha_matches_github": true,
+        "canonical_bundle_digest": true,
+        "all_receipt_digests": true,
+        "all_checkpoint_member_sha256": true,
+        "receipt_boundary_state_digests": true,
+        "parent_equals_actual_chunk1_zip_sha256": true,
+        "source_tree_digest": true,
+        "preregistration_digest": true,
+        "execution_digest": true,
+        "authorization_flags_false": true
+      }
+    }
+  ],
+  "current_execution_state": {
+    "chunk2_job_id": 106009912454,
+    "chunk2_status": "completed",
+    "chunk2_conclusion": "success",
+    "chunk3_job_id": 106014853802,
+    "chunk3_status": "in_progress",
+    "chunk3_active_step": "Execute EXP-336 chunk 3 court",
+    "final_reducer_available": false
+  },
+  "interpretation_guard": "Intermediate chunk metrics and exploratory trajectory are non-decisional and may not select a transition. Only the preregistered final reducer after a complete verified 8-chunk chain may do so.",
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  },
+  "parent_cnrs_baseline": {
+    "cumulative_step": 1024,
+    "artifact_id": 10534076546,
+    "artifact_zip_sha256": "d88a9d85584476ec5226321479560a1255f0d015122827d4be75f67a6f337755",
+    "answer_only_loss": 2.149582388769822,
+    "answer_token_accuracy": 0.7007042253521126,
+    "greedy_exact_match": 0.25,
+    "eos_correctness": 1,
+    "invalid_output_rate": 0,
+    "nonfinite_events": 0,
+    "family_exact": {
+      "algorithmic-sequence-transform": 0,
+      "generator-heldout-abstract-transformation": 0.625,
+      "iterative-grid-and-maze": 0.375,
+      "language-sequence-control": 0
+    },
+    "verified_from_immutable_parent_artifact": true
+  },
+  "independent_auditor": {
+    "pr_number": 114,
+    "frozen_auditor_sha": "208be21e035a5064eb9d60a9269154768717f5b1",
+    "dedicated_contract_run_id": 35485512043,
+    "dedicated_contract_conclusion": "success",
+    "dedicated_test_count": 19,
+    "parent_smoke": "success",
+    "generic_ci_run_id": 35485512067,
+    "generic_ci_conclusion": "success",
+    "core_311": "success",
+    "core_313": "success",
+    "model_smoke": "success",
+    "postrun_workflow_registration_commit": "4f6d29e5da76815fbbb02f58edc0d9823e6829a1",
+    "postrun_workflow": ".github/workflows/exp336-postrun-independent-audit.yml"
+  },
+  "validity_checks": {
+    "teacher_forced_effort_verified": 4,
+    "aggregate_gating_effort_verified": 4,
+    "exp319_stage_a_floor_verified": {
+      "greedy_exact_min": 0.9,
+      "answer_token_accuracy_min": 0.99,
+      "eos_correctness_min": 0.95,
+      "loss_fraction_max": 0.25,
+      "invalid_output_rate_max": 0.01,
+      "nonfinite_events_max": 0
+    },
+    "duplicate_authoritative_dispatches_observed": 0
+  },
+  "independent_final_audit_lock": {
+    "path": "protocols/v017/exp336_independent_audit_lock_v1.json",
+    "auditor_pr": 114,
+    "frozen_auditor_sha": "208be21e035a5064eb9d60a9269154768717f5b1",
+    "dedicated_contract_run_id": 35485512043,
+    "dedicated_contract_conclusion": "success",
+    "generic_ci_run_id": 35485512067,
+    "generic_ci_conclusion": "success",
+    "postrun_workflow_path": ".github/workflows/exp336-postrun-independent-audit.yml",
+    "postrun_registration_commit": "4f6d29e5da76815fbbb02f58edc0d9823e6829a1",
+    "frozen_before_final_result_visibility": true
+  },
+  "post_seal_branch_drift_audit": {
+    "sealed_marker_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+    "audited_process_head": "23c50039138bb5124465dcad1c65a90620ec2098",
+    "ahead_by": 21,
+    "behind_by": 0,
+    "scientific_runtime_or_workflow_changed": false,
+    "preregistration_or_reducer_changed": false,
+    "changed_scope": [
+      "CURRENT-AUTHORITY.md",
+      "protocols/v017/exp336_authoritative_progress_v1.json",
+      "protocols/v017/exp336_authoritative_run_lock_v1.json",
+      "protocols/v017/exp336_chunk0_1_exploratory_geometry_v1.json",
+      "protocols/v017/exp336_chunk2_exploratory_geometry_v1.json",
+      "protocols/v017/exp336_chunk2_failure_surface_diagnostic_v1.json",
+      "protocols/v017/exp336_final_closure_requirements_v1.json",
+      "protocols/v017/exp336_independent_audit_lock_v1.json"
+    ],
+    "sealed_science_drift": [],
+    "note": "All post-seal changes remain authority/evidence/documentation only. No src/, frozen scientific workflow, preregistration, or reducer bytes changed."
+  },
+  "current_authoritative_job": "chunk3",
+  "final_disposition_available": false,
+  "independent_audit_through_chunk1": {
+    "frozen_auditor_sha": "208be21e035a5064eb9d60a9269154768717f5b1",
+    "workflow_run_id": 35486210011,
+    "audit_artifact_id": 10597830566,
+    "audit_artifact_zip_sha256": "699115d89a91c2431b216addf10555f803f49e3026a75d9991adb1dd63fcd717",
+    "audit_report_json_sha256": "87dcaf3fb25ddcffa1420bb3c9a6e5d0d2184be91c002fbb6f5934f5cf324668",
+    "verified_chunk_count": 2,
+    "complete_chunk_chain": false,
+    "first_parent_cnrs_zip_digest": "d88a9d85584476ec5226321479560a1255f0d015122827d4be75f67a6f337755",
+    "last_artifact_sha256": "7fd5d9536438109896eca9922ff80704483aee452dc1061f28c58dede88a6a36",
+    "control_sham_exact_by_chunk": [
+      true,
+      true
+    ],
+    "pass_counts_by_chunk": {
+      "0": {
+        "CONTROL_CNRS_FULL32": 9,
+        "SHAM_MEASURE_CNRS_FULL32": 9,
+        "SUBSPACE_PROJECT_CNRS_FULL32": 8
+      },
+      "1": {
+        "CONTROL_CNRS_FULL32": 10,
+        "SHAM_MEASURE_CNRS_FULL32": 10,
+        "SUBSPACE_PROJECT_CNRS_FULL32": 11
+      }
+    },
+    "aggregate_pass_by_chunk": {
+      "0": {
+        "CONTROL_CNRS_FULL32": false,
+        "SHAM_MEASURE_CNRS_FULL32": false,
+        "SUBSPACE_PROJECT_CNRS_FULL32": false
+      },
+      "1": {
+        "CONTROL_CNRS_FULL32": false,
+        "SHAM_MEASURE_CNRS_FULL32": false,
+        "SUBSPACE_PROJECT_CNRS_FULL32": false
+      }
+    },
+    "note": "Primary frozen auditor was explicitly checked out at SHA 208be21e... by the live-audit workflow. Intermediate evidence only; not reducer input."
+  },
+  "frozen_runtime_validity_audit": {
+    "scientific_source_sha": "5220e50adec7f6f048510aac44a077a4ddfdaf44",
+    "teacher_forced_effort_verified": 4,
+    "aggregate_gating_effort_verified": 4,
+    "aggregate_generation_token_cap_verified": 96,
+    "source_and_target_same_current_exposure_effort": true,
+    "target_count_per_measured_update": 31,
+    "source_rng_restored_before_parameter_update": true,
+    "evaluation_rng_restored_after_measurement": true,
+    "runtime_drift_detected": false,
+    "note": "Read-only source audit against frozen preregistration; no scientific bytes changed."
+  },
+  "independent_audit_through_chunk2": {
+    "frozen_auditor_sha": "208be21e035a5064eb9d60a9269154768717f5b1",
+    "workflow_run_id": 35486348709,
+    "workflow_run_attempt": 2,
+    "conclusion": "success",
+    "audit_artifact_id": 10598291494,
+    "audit_artifact_zip_sha256": "ddc7c708d8a078046bb33ef16e7103ec8a3ac33b818b6b83f2c3e6af01906176",
+    "audit_report_json_sha256": "10cc46e0d5dd826fafd1415b913a81217b8b89ded62842614141cc269c52a3d8",
+    "discovered_chunks_json_sha256": "cf861114b03092bfab6a043fa5a90e967d231b63f43d0b97db69ee93568bcb7e",
+    "verified_chunk_count": 3,
+    "complete_chunk_chain": false,
+    "first_parent_cnrs_zip_digest": "d88a9d85584476ec5226321479560a1255f0d015122827d4be75f67a6f337755",
+    "last_artifact_sha256": "8063277a4f0a99c34d8c4491eb57606717f68ee93f46212eea582f21c696c784",
+    "control_sham_exact_by_chunk": [
+      true,
+      true,
+      true
+    ],
+    "pass_counts_by_chunk": {
+      "0": {
+        "CONTROL_CNRS_FULL32": 9,
+        "SHAM_MEASURE_CNRS_FULL32": 9,
+        "SUBSPACE_PROJECT_CNRS_FULL32": 8
+      },
+      "1": {
+        "CONTROL_CNRS_FULL32": 10,
+        "SHAM_MEASURE_CNRS_FULL32": 10,
+        "SUBSPACE_PROJECT_CNRS_FULL32": 11
+      },
+      "2": {
+        "CONTROL_CNRS_FULL32": 9,
+        "SHAM_MEASURE_CNRS_FULL32": 9,
+        "SUBSPACE_PROJECT_CNRS_FULL32": 14
+      }
+    },
+    "aggregate_pass_by_chunk": {
+      "0": {
+        "CONTROL_CNRS_FULL32": false,
+        "SHAM_MEASURE_CNRS_FULL32": false,
+        "SUBSPACE_PROJECT_CNRS_FULL32": false
+      },
+      "1": {
+        "CONTROL_CNRS_FULL32": false,
+        "SHAM_MEASURE_CNRS_FULL32": false,
+        "SUBSPACE_PROJECT_CNRS_FULL32": false
+      },
+      "2": {
+        "CONTROL_CNRS_FULL32": false,
+        "SHAM_MEASURE_CNRS_FULL32": false,
+        "SUBSPACE_PROJECT_CNRS_FULL32": false
+      }
+    },
+    "project_projection_updates_by_chunk": [
+      128,
+      256,
+      382
+    ],
+    "project_projected_targets_by_chunk": [
+      1384,
+      2917,
+      4362
+    ],
+    "note": "Frozen auditor SHA 208be21e... independently verified the consecutive authoritative chain through chunk2. Intermediate evidence only; reducer_input=false."
+  },
+  "default_branch_ops_lineage": {
+    "dispatcher_initial_commit": "dc9208caf9aacd042af8d57ec5de2aae9de96da7",
+    "scientific_workflow_registration_commit": "deb7b4f19fde40d03ff59cc9deeedce92c7d59e4",
+    "guarded_dispatch_retry_commit": "a92b256ad4d038c8ae704fcc635b02efece2fb9e",
+    "postrun_verifier_registration_commit": "4f6d29e5da76815fbbb02f58edc0d9823e6829a1",
+    "current_main_head": "4f6d29e5da76815fbbb02f58edc0d9823e6829a1",
+    "lineage_order_verified": true,
+    "postrun_hook_on_current_default_branch": true,
+    "note": "The one-shot dispatcher is historical ops provenance only. The current main head contains the registered scientific workflow and the hard-bound post-run verifier."
+  },
+  "transition_lock_coverage_audit": {
+    "reducer_label_count": 8,
+    "transition_label_count": 8,
+    "exact_label_coverage": true,
+    "missing_labels": [],
+    "extra_labels": [],
+    "universal_guards_all_closed": true,
+    "audited_against_scientific_source_sha": "5220e50adec7f6f048510aac44a077a4ddfdaf44",
+    "note": "Every frozen EXP-336 reducer disposition has exactly one pre-result repository transition mapping."
+  }
+}

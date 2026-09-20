@@ -1,0 +1,135 @@
+{
+  "schema": "EXP336-CHUNK2-EXPLORATORY-GEOMETRY-V1",
+  "experiment_id": "EXP-336",
+  "authoritative_run_id": 35481336946,
+  "chunk_index": 2,
+  "cumulative_exposure_per_world": 12,
+  "artifact_id": 10597562011,
+  "artifact_zip_sha256": "8063277a4f0a99c34d8c4491eb57606717f68ee93f46212eea582f21c696c784",
+  "posthoc": true,
+  "decisional": false,
+  "reducer_input": false,
+  "measurement_count": 128,
+  "geometry": {
+    "raw_negative_count": 1551,
+    "raw_negative_mass": 189145.2942263506,
+    "selected_projected_count": 1445,
+    "selected_residual_negative_count": 810,
+    "selected_residual_negative_mass": 0.01679766488024951,
+    "selected_resolved_nonnegative": 635,
+    "raw_negative_excluded": 106,
+    "new_conflict_count": 228,
+    "new_conflict_mass": 3649.789006425569,
+    "total_post_negative_count": 1120,
+    "total_post_negative_mass": 3649.805804090446,
+    "new_conflict_share_post_negative_mass": 0.9999953976551689
+  },
+  "source_family_new_conflict": {
+    "iterative-grid-and-maze": {
+      "count": 44,
+      "mass": 2605.078114500755
+    },
+    "algorithmic-sequence-transform": {
+      "count": 69,
+      "mass": 398.69149098054606
+    },
+    "generator-heldout-abstract-transformation": {
+      "count": 76,
+      "mass": 561.7097019244319
+    },
+    "language-sequence-control": {
+      "count": 39,
+      "mass": 84.30969901983482
+    }
+  },
+  "target_family_new_conflict": {
+    "iterative-grid-and-maze": {
+      "count": 94,
+      "mass": 2977.895067942647
+    },
+    "algorithmic-sequence-transform": {
+      "count": 31,
+      "mass": 395.6233711535738
+    },
+    "generator-heldout-abstract-transformation": {
+      "count": 74,
+      "mass": 220.24813497439138
+    },
+    "language-sequence-control": {
+      "count": 29,
+      "mass": 56.022432354955214
+    }
+  },
+  "dominant_new_conflict_pairs": [
+    {
+      "source_family": "iterative-grid-and-maze",
+      "target_family": "iterative-grid-and-maze",
+      "count": 21,
+      "mass": 2341.925569567892
+    },
+    {
+      "source_family": "generator-heldout-abstract-transformation",
+      "target_family": "iterative-grid-and-maze",
+      "count": 30,
+      "mass": 561.0815783663791
+    },
+    {
+      "source_family": "algorithmic-sequence-transform",
+      "target_family": "algorithmic-sequence-transform",
+      "count": 10,
+      "mass": 255.17078485777478
+    },
+    {
+      "source_family": "iterative-grid-and-maze",
+      "target_family": "algorithmic-sequence-transform",
+      "count": 5,
+      "mass": 137.7182275335791
+    },
+    {
+      "source_family": "iterative-grid-and-maze",
+      "target_family": "generator-heldout-abstract-transformation",
+      "count": 12,
+      "mass": 120.95959187017866
+    }
+  ],
+  "interpretation": [
+    "The inherited projector nearly annihilates selected raw-negative target mass at this chunk boundary.",
+    "Nearly all remaining post-projection negative mass is newly induced on targets whose raw source-target dot was nonnegative.",
+    "This diagnostic does not alter the preregistered reducer and cannot select a repository transition.",
+    "Boundary-level PROJECT has zero world-pass regressions versus CONTROL at exposure 12 despite internal gradient-space leakage."
+  ],
+  "no_projection_updates": [
+    {
+      "exposure_index": 8,
+      "source_world_id": "iterative-grid-and-maze:1",
+      "effort": 1,
+      "raw_negative_count": 0,
+      "source_loss": 0,
+      "interpretation": "No raw-negative target existed; projector correctly did not engage."
+    },
+    {
+      "exposure_index": 8,
+      "source_world_id": "iterative-grid-and-maze:4",
+      "effort": 1,
+      "raw_negative_count": 0,
+      "source_loss": 0,
+      "interpretation": "No raw-negative target existed; projector correctly did not engage."
+    }
+  ],
+  "boundary_transition_from_chunk1": {
+    "CONTROL_CNRS_FULL32": {
+      "gained_passes": [],
+      "lost_passes": [
+        "language-sequence-control:4"
+      ]
+    },
+    "SUBSPACE_PROJECT_CNRS_FULL32": {
+      "gained_passes": [
+        "iterative-grid-and-maze:5",
+        "generator-heldout-abstract-transformation:1",
+        "generator-heldout-abstract-transformation:6"
+      ],
+      "lost_passes": []
+    }
+  }
+}

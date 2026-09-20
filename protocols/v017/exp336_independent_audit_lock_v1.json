@@ -1,0 +1,54 @@
+{
+  "schema": "EXP336-INDEPENDENT-AUDIT-LOCK-V1",
+  "experiment_id": "EXP-336",
+  "created_before_final_result_visibility": true,
+  "authoritative_run_id": 35481336946,
+  "authoritative_head_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+  "scientific_source_sha": "5220e50adec7f6f048510aac44a077a4ddfdaf44",
+  "execution_digest": "f81f382846d1c128934be40717e6eee33c48fe00dde00fd736a2ad2fdb15d5db",
+  "frozen_independent_auditor": {
+    "pull_request": 114,
+    "commit_sha": "208be21e035a5064eb9d60a9269154768717f5b1",
+    "dedicated_contract_run_id": 35485512043,
+    "dedicated_contract_conclusion": "success",
+    "dedicated_contract_test_count": 19,
+    "generic_ci_run_id": 35485512067,
+    "generic_ci_conclusion": "success",
+    "parent_cnrs_reconstruction_smoke": "success"
+  },
+  "postrun_hook": {
+    "workflow_path": ".github/workflows/exp336-postrun-independent-audit.yml",
+    "registration_commit": "4f6d29e5da76815fbbb02f58edc0d9823e6829a1",
+    "target_authoritative_run_id": 35481336946,
+    "target_authoritative_head_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+    "target_run_attempt": 1,
+    "frozen_auditor_sha": "208be21e035a5064eb9d60a9269154768717f5b1"
+  },
+  "final_audit_requirements": [
+    "re-download and SHA-256 verify identity artifact, all 8 authoritative chunk ZIPs, and final artifact against GitHub artifact metadata",
+    "validate the full sealed EXP-336 execution identity and fixed EXP-319/EXP-335 parent authority",
+    "verify each chunk canonical bundle digest, checkpoint member SHA-256, receipt digest, receipt/boundary state digests, and CONTROL/SHAM exactness",
+    "verify selected C_NRS parent -> chunk0 -> ... -> chunk7 raw artifact parent chain",
+    "bind final boundaries exactly to independently audited chunk7 boundaries",
+    "independently rerun the preregistered EXP-336 reducer and compare decision plus every reducer vector",
+    "independently recompute the final evidence digest",
+    "require all downstream authorization flags to remain false",
+    "emit an immutable independent audit report and receipt"
+  ],
+  "anti_outcome_selection_rules": [
+    "The frozen auditor SHA 208be21e... is the required primary independent verifier for EXP-336.",
+    "Do not change the required auditor after final-result visibility and call the new code the preregistered verifier.",
+    "Later auditor improvements may be supplemental only.",
+    "Do not substitute any duplicate scientific run for authoritative run 35481336946.",
+    "Do not promote intermediate chunks or post-hoc geometry into reducer input."
+  ],
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}

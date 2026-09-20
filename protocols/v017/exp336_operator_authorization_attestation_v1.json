@@ -1,0 +1,42 @@
+{
+  "schema": "EXP336-OPERATOR-AUTHORIZATION-ATTESTATION-V1",
+  "experiment_id": "EXP-336",
+  "authorization_type": "external_operator_transition_after_frozen_preregistration_and_green_exact_head_ci",
+  "operator_message_timestamp_utc": "2026-09-20T01:01:00Z",
+  "operator_message": "Tiếp tục hoàn thành đi nhé",
+  "frozen_design_head": "fe457d51ab8c01dc0c5d1831d9c83ce13e627c3c",
+  "preregistration_canonical_digest": "491899f5f613b3d80b36689e7882e8c72875fb268a6886e1a40542eb09dc33ce",
+  "preregistration_exact_json_sha256": "6090e7423332756998b8199cc77d56b7e40a296b401f63dbcc6cabecf97feeab",
+  "exact_head_gates": [
+    {
+      "workflow_run_id": 35477927126,
+      "name": "ci",
+      "conclusion": "success",
+      "completed_at": "2026-09-20T00:14:13Z"
+    },
+    {
+      "workflow_run_id": 35477927114,
+      "name": "v017-exp301-contract",
+      "conclusion": "success",
+      "completed_at": "2026-09-20T00:12:16Z"
+    }
+  ],
+  "authorized_scope": [
+    "implement the already-frozen EXP-336 preregistration without changing scientific geometry",
+    "add contract tests and CI",
+    "seal immutable execution identity",
+    "dispatch one authoritative scientific execution after sealing",
+    "verify artifacts and apply only the preregistered reducer"
+  ],
+  "explicitly_not_authorized": [
+    "altering the frozen EXP-336 projector, thresholds, parent checkpoint, world population, schedule, learning rate, effort geometry, or reducer",
+    "Stage B implementation",
+    "Stage C implementation",
+    "EXP-302 implementation",
+    "EXP-320 implementation",
+    "scaling",
+    "30M",
+    "100M"
+  ],
+  "note": "This attestation records the separate post-freeze operator transition supplied after the frozen preregistration had exact-head green CI. It does not modify the preregistration itself."
+}
