@@ -89,6 +89,7 @@
     }
   },
   "exp319_cnrs_start_authority": {
+    "authority_scope": "immutable Stage-A selection artifact plus selected C_NRS chunk-3 artifact only",
     "checkpoint_member_sha256": "bd58607a0e49bb32f45124689d11880a13040afa702bf0524cce115d947f650b",
     "checkpoint_receipt": {
       "arm_id": "C_NRS_CORE",
@@ -110,7 +111,9 @@
       "stage": "A_SANITY",
       "training_contract_digest": "bb9a26a3c49f0acb2d6b470aea19c60a1816215f84da8b1af81fdc524ef2682a"
     },
+    "overall_run_success_required_for_selected_checkpoint_authority": false,
     "receipt_member_sha256": "cea3fb3d0b94e5d7cbec59813cfa3a1611dec0883a14acd6b2d0e46a23db3e4d",
+    "run_conclusion": "failure",
     "run_id": 35311529822,
     "run_identity": "github-run-35311529822-exp319-v1",
     "selected_arm": "C_NRS_CORE",
@@ -129,6 +132,11 @@
       "nonfinite_events": 0,
       "step": 1024
     },
+    "stage_a_gate_failure_boundary": "post-selection artifact-upload plumbing; Stage B was not opened",
+    "stage_a_gate_job_conclusion": "failure",
+    "stage_a_gate_job_id": 105499052525,
+    "stage_a_select_job_conclusion": "success",
+    "stage_a_select_job_id": 105498710455,
     "stage_a_selection_artifact_id": 10533822077,
     "stage_a_selection_artifact_zip_sha256": "ee65f07a5f63c5b7f472eba5aea5ab17a624697138c23266d515810024bfb559",
     "stage_a_selection_authority_digest": "39e5e846dbe87f3d5b34e438f0c8864626caa7049148fac934f2c893032e623f",
