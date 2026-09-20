@@ -1,0 +1,100 @@
+name: v017-exp337-independent-auditor-seal
+
+on:
+  push:
+    branches: [exp337-independent-artifact-auditor]
+    paths:
+      - ".github/workflows/v017-exp337-independent-auditor-seal.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  seal-auditor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify and fingerprint independent auditor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python - <<'PY'
+          import json, os, subprocess, urllib.request
+          from pathlib import Path
+          from nolane_ai.protocol.identity import source_tree_digest
+
+          exact={
+            "src/nolane_ai/experiments/exp337_artifact_audit.py":"e02833350720e8b737f41e8c7ef2225a297be385",
+            "scripts/exp337_audit_chain.py":"0ff527f6d92aeb9f00a4d00b4f6249be113f422b",
+            "tests/test_exp337_artifact_audit.py":"417d4c328f655e40997041561dae230db04175e9",
+            ".github/workflows/v017-exp337-independent-auditor-ci.yml":"5a495ec41acb1aa11521f9994f995d60b48f911a",
+          }
+          for path, expected in exact.items():
+              observed=subprocess.check_output(["git","rev-parse",f"HEAD:{path}"],text=True).strip()
+              assert observed == expected, (path,observed,expected)
+
+          scientific={
+            "src/nolane_ai/experiments/exp337_runtime.py":"d15ef4078b24429935097393691a119c3468f92f",
+            "src/nolane_ai/experiments/exp337_contract.py":"4521989bbf46c2e795adeba7c8bae3383132ec2b",
+            "src/nolane_ai/experiments/exp337_identity.py":"c8dd280d837a09ec22d28caf4178cb34caa82301",
+            ".github/workflows/exp337-self-rollin-stage-a.yml":"e3a147183acdbca7a9bec1de40dfec34ea303141",
+            "protocols/v017/exp337_preregistration_v1.json":"37afa42cf66e874c457f31415c5f426d318e9804",
+            "protocols/v017/EXP337_SELF_ROLLIN_SEQUENCE_RECOVERY_DESIGN_V1.md":"1e8097d4fc56686b7bd24c561811540d8d4c5321",
+            "protocols/v017/exp337_execution_identity_v1.json":"ca29c92e80089dce5b1f2206a92b3dd15810b5bb",
+          }
+          for path, expected in scientific.items():
+              observed=subprocess.check_output(["git","rev-parse",f"HEAD:{path}"],text=True).strip()
+              assert observed == expected, (path,observed,expected)
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
+          req=urllib.request.Request(
+              f"https://api.github.com/repos/{repo}/actions/runs/35502811494",
+              headers={"Authorization":f"Bearer {token}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"exp337-auditor-seal"},
+          )
+          with urllib.request.urlopen(req) as response: ci=json.load(response)
+          assert ci["status"] == "completed" and ci["conclusion"] == "success"
+          assert ci["head_sha"] == "a5083f18a0161e8336d15e270786598d4b571470"
+
+          changed=subprocess.check_output(["git","diff","--name-only","ec5f98a636e9395a76509493800b6b9f06a33271...HEAD"],text=True).splitlines()
+          forbidden=[]
+          for path in changed:
+              if path in scientific:
+                  forbidden.append(path)
+          assert not forbidden, forbidden
+
+          receipt={
+              "schema":"EXP337-INDEPENDENT-AUDITOR-SEAL-V1",
+              "auditor_commit_sha":os.environ["GITHUB_SHA"],
+              "auditor_source_tree_digest":source_tree_digest("."),
+              "scientific_sealed_marker_sha":"ec5f98a636e9395a76509493800b6b9f06a33271",
+              "scientific_source_commit_sha":"5a0fa8da3e3906a712bcb027d8d4e40ed60f026b",
+              "scientific_source_tree_digest":"211179cb6c95308aa936efeb144ee8c9729e468b13cf7e13cdaf67ea3dbf1520",
+              "auditor_module_blob_sha":exact["src/nolane_ai/experiments/exp337_artifact_audit.py"],
+              "auditor_cli_blob_sha":exact["scripts/exp337_audit_chain.py"],
+              "auditor_test_blob_sha":exact["tests/test_exp337_artifact_audit.py"],
+              "auditor_ci_run_id":35502811494,
+              "auditor_ci_conclusion":"success",
+              "auditor_falsification_tests_passed":6,
+              "sealed_contract_runtime_tests_passed":14,
+              "scientific_bytes_unchanged":True,
+              "scientific_dispatch_authorized":False,
+          }
+          Path("exp337-independent-auditor-seal.json").write_text(json.dumps(receipt,sort_keys=True,indent=2)+"\n")
+          print(json.dumps(receipt,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp337-independent-auditor-seal-${{ github.run_id }}
+          path: exp337-independent-auditor-seal.json
+          if-no-files-found: error
+          retention-days: 90
