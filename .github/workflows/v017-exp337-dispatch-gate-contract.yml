@@ -1,0 +1,112 @@
+name: v017-exp337-dispatch-gate-contract
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/v017-exp337-dispatch-gate-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  dispatch-gate-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install YAML parser
+        run: python -m pip install pyyaml
+      - name: Verify dispatch-once gate and zero-dispatch boundary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, subprocess, urllib.request
+          from pathlib import Path
+          import yaml
+
+          dispatcher=Path(".github/workflows/dispatch-exp337-sealed-once.yml")
+          assert subprocess.check_output(["git","rev-parse","HEAD:.github/workflows/dispatch-exp337-sealed-once.yml"],text=True).strip() == "36e6f5b03714e007c87459f928039dd9daa2253e"
+          doc=yaml.load(dispatcher.read_text(),Loader=yaml.BaseLoader)
+          assert doc["name"] == "Dispatch sealed EXP-337 once"
+          assert set(doc["on"]) == {"push"}
+          push=doc["on"]["push"]
+          assert push["branches"] == ["main"]
+          assert push["paths"] == ["protocols/v017/exp337_postseal_dispatch_authorization_v1.json"]
+          assert doc["permissions"] == {"actions":"write","contents":"write"}
+          job=doc["jobs"]["dispatch-and-lock"]
+          env=job["env"]
+          assert env["TARGET_BRANCH"] == "exp337-cnrs-self-rollin-sequence-recovery-design"
+          assert env["SEALED_MARKER_SHA"] == "ec5f98a636e9395a76509493800b6b9f06a33271"
+          assert env["SCIENTIFIC_WORKFLOW_PATH"] == ".github/workflows/exp337-self-rollin-stage-a.yml"
+          assert env["FROZEN_AUDITOR_SHA"] == "debc13fd4ec8f8ed443302ef0352d751661faafc"
+          assert env["POSTRUN_VERIFIER_BLOB_SHA"] == "4188610ee403cbe76b62fce683228f992081dd4a"
+          text=dispatcher.read_text()
+          for required in (
+              "authorization_created_from_user_message_after_seal",
+              "maximum_authoritative_dispatches",
+              "before == []",
+              "chunk0 artifact already exists before run lock",
+              "EXP337-AUTHORITATIVE-RUN-LOCK-V1",
+              "EXP337-AUTHORITATIVE-RUN-LOCK-RECEIPT-V1",
+              "observed_chunk0_artifact_count_at_lock",
+          ):
+              assert required in text, required
+
+          frozen={
+              "protocols/v017/exp337_sealed_marker_receipt_v1.json":"361e757e05961099a29c76dc386e26149c552c01",
+              "protocols/v017/exp337_postrun_verifier_lock_v1.json":"aefe8b32fcec8bf92c1e3ec0e54df7dee3e89668",
+              "protocols/v017/exp337_final_closure_requirements_v1.json":"2cd7013bc5cd1d6b80c3ef2e2e4c0af33190eba2",
+              "protocols/v017/exp337_independent_audit_lock_v1.json":"ff6980318e7216280b6eccb785be985bb594d219",
+              ".github/workflows/exp337-postrun-independent-audit.yml":"4188610ee403cbe76b62fce683228f992081dd4a",
+          }
+          for path, expected in frozen.items():
+              observed=subprocess.check_output(["git","rev-parse",f"HEAD:{path}"],text=True).strip()
+              assert observed == expected, (path,observed,expected)
+
+          assert not Path("protocols/v017/exp337_postseal_dispatch_authorization_v1.json").exists()
+          assert not Path("protocols/v017/exp337_authoritative_run_lock_v1.json").exists()
+          assert not Path("protocols/v017/exp337_authoritative_run_lock_receipt_v1.json").exists()
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
+          headers={"Authorization":f"Bearer {token}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"exp337-dispatch-contract"}
+          req=urllib.request.Request(f"https://api.github.com/repos/{repo}/git/ref/heads/exp337-cnrs-self-rollin-sequence-recovery-design",headers=headers)
+          with urllib.request.urlopen(req) as response: ref=json.load(response)
+          assert ref["object"]["sha"] == "ec5f98a636e9395a76509493800b6b9f06a33271"
+
+          req=urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs?event=workflow_dispatch&branch=exp337-cnrs-self-rollin-sequence-recovery-design&per_page=100",headers=headers)
+          with urllib.request.urlopen(req) as response: listing=json.load(response)
+          scientific=[r for r in listing.get("workflow_runs",[]) if r.get("path")==".github/workflows/exp337-self-rollin-stage-a.yml"]
+          assert scientific == [], scientific
+
+          receipt={
+              "schema":"EXP337-DISPATCH-GATE-CONTRACT-RECEIPT-V1",
+              "commit_sha":os.environ["GITHUB_SHA"],
+              "dispatcher_git_blob_sha":"36e6f5b03714e007c87459f928039dd9daa2253e",
+              "sealed_marker_sha":"ec5f98a636e9395a76509493800b6b9f06a33271",
+              "frozen_auditor_sha":"debc13fd4ec8f8ed443302ef0352d751661faafc",
+              "postrun_verifier_git_blob_sha":"4188610ee403cbe76b62fce683228f992081dd4a",
+              "scientific_dispatch_count":0,
+              "postseal_authorization_present":False,
+              "run_lock_present":False,
+              "gate_contract_verified":True,
+          }
+          Path("exp337-dispatch-gate-contract-receipt.json").write_text(json.dumps(receipt,sort_keys=True,indent=2)+"\n")
+          print(json.dumps(receipt,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp337-dispatch-gate-contract-${{ github.run_id }}
+          path: exp337-dispatch-gate-contract-receipt.json
+          if-no-files-found: error
+          retention-days: 90
