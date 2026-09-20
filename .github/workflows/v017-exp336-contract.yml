@@ -9,6 +9,9 @@ on:
       - ".github/workflows/exp336-*"
       - ".github/workflows/v017-exp336-contract.yml"
   workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
 jobs:
   contract:
     runs-on: ubuntu-latest
@@ -28,3 +31,75 @@ jobs:
           print("EXP336_SOURCE_TREE_DIGEST=" + source_tree_digest("."))
           PY
           echo "EXP336_WORKFLOW_SHA256=$(sha256sum .github/workflows/exp336-cnrs-full32-stage-a.yml | awk '{print $1}')"
+
+  parent-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Download frozen EXP-319 Stage-A selection
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: "10533822077"
+          path: parent-selection
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: "35311529822"
+      - name: Download selected C_NRS checkpoint
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: "10534076546"
+          path: parent-cnrs
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: "35311529822"
+      - name: Verify exact parent member bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum parent-selection/stage-a-selection.json | awk '{print $1}')" = "4da236ea06a76df94ab6aa3e8141c6855a97f427f0b8614fc380d5c71e88e34a"
+          test "$(sha256sum parent-cnrs/checkpoint.pt | awk '{print $1}')" = "bd58607a0e49bb32f45124689d11880a13040afa702bf0524cce115d947f650b"
+          test "$(sha256sum parent-cnrs/receipt.json | awk '{print $1}')" = "cea3fb3d0b94e5d7cbec59813cfa3a1611dec0883a14acd6b2d0e46a23db3e4d"
+          test "$(sha256sum parent-cnrs/summary.json | awk '{print $1}')" = "32131c058049a27c24ac215cc04b77d5e1432cbda41fda71f8724f6723dfea23"
+      - name: Install model runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy
+          python -m pip install -e '.[dev,model]'
+      - name: Load exact selected C_NRS model, optimizer and RNG state
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python - <<'PY'
+          from nolane_ai.experiments.exp336_contract import (
+              PARENT_CNRS_MODEL_STATE_DIGEST,
+              PARENT_CNRS_OPTIMIZER_STATE_DIGEST,
+              PARENT_CNRS_RNG_STATE_DIGEST,
+          )
+          from nolane_ai.experiments.exp336_runtime import _parent_arm, _state_digests
+
+          compiled, optimizer, counters = _parent_arm(
+              checkpoint_path="parent-cnrs/checkpoint.pt",
+              receipt_path="parent-cnrs/receipt.json",
+              summary_path="parent-cnrs/summary.json",
+              selection_path="parent-selection/stage-a-selection.json",
+          )
+          observed = _state_digests(compiled, optimizer)
+          assert observed["model_state_digest"] == PARENT_CNRS_MODEL_STATE_DIGEST
+          assert observed["optimizer_state_digest"] == PARENT_CNRS_OPTIMIZER_STATE_DIGEST
+          assert observed["rng_state_digest"] == PARENT_CNRS_RNG_STATE_DIGEST
+          assert counters == {
+              "nonfinite_events": 0,
+              "negative_target_count": 0,
+              "projection_update_count": 0,
+              "projected_target_count": 0,
+          }
+          count=sum(p.numel() for p in compiled.model.parameters() if p.requires_grad)
+          assert count == 10_000_000
+          print("EXP336_PARENT_CNRS_RECONSTRUCTION=PASS")
+          print("EXP336_PARENT_MODEL_DIGEST=" + observed["model_state_digest"])
+          print("EXP336_PARENT_OPTIMIZER_DIGEST=" + observed["optimizer_state_digest"])
+          print("EXP336_PARENT_RNG_DIGEST=" + observed["rng_state_digest"])
+          PY
