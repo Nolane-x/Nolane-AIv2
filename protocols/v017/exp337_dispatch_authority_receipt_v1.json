@@ -1,0 +1,64 @@
+{
+  "schema": "EXP337-DISPATCH-AUTHORITY-RECEIPT-V1",
+  "experiment_id": "EXP-337",
+  "operator_authorization": {
+    "commit_sha": "679f262b6f18e3cd7ba6a68e0df30e7153dcf2e3",
+    "git_blob_sha": "f6da2c87b200a883847ff3d83c25235f8f05a6f3",
+    "operator_message_timestamp_utc": "2026-09-20T09:55:21Z",
+    "operator_message_text": "Tiếp tục hoàn thành đi nhé",
+    "after_seal": true
+  },
+  "workflow_registration": {
+    "scientific_workflow_path": ".github/workflows/exp337-self-rollin-stage-a.yml",
+    "exact_git_blob_sha": "e3a147183acdbca7a9bec1de40dfec34ea303141",
+    "main_registration_commit_sha": "18894d0fe2f28dc5e0e39b9b29f29948f8475393",
+    "sealed_branch_sha": "ec5f98a636e9395a76509493800b6b9f06a33271",
+    "sealed_source_sha": "5a0fa8da3e3906a712bcb027d8d4e40ed60f026b"
+  },
+  "dispatcher": {
+    "workflow_run_id": 35503673903,
+    "workflow_run_attempt": 2,
+    "conclusion": "success",
+    "head_sha": "679f262b6f18e3cd7ba6a68e0df30e7153dcf2e3",
+    "first_attempt_failed_before_scientific_dispatch": true,
+    "first_attempt_failure_reason": "GitHub Actions workflow registration endpoint returned 404 because exact scientific workflow had not yet been mirrored byte-for-byte to the default branch.",
+    "retry_changed_scientific_bytes": false,
+    "artifact_id": 10603251622,
+    "artifact_zip_sha256": "4ba55c363b9831c74b0d47d453b13b944a75fa3eb998e226612505648872740c"
+  },
+  "authoritative_scientific_run": {
+    "id": 35503733893,
+    "workflow_id": 362574875,
+    "event": "workflow_dispatch",
+    "run_attempt": 1,
+    "head_branch": "exp337-cnrs-self-rollin-sequence-recovery-design",
+    "head_sha": "ec5f98a636e9395a76509493800b6b9f06a33271",
+    "created_at": "2026-09-20T09:58:01Z",
+    "sole_sealed_head_dispatch_at_lock": true
+  },
+  "authoritative_run_lock": {
+    "commit_sha": "ba1d5307e1fa23e959b803edb851c71900ba4476",
+    "git_blob_sha": "f9d96d59628eea8765814c1fba1d7cb8898ea221",
+    "receipt_commit_sha": "048a49099f2e07f498687020755f658a100d291d",
+    "receipt_git_blob_sha": "a79de8c91f5e1dbf89d211b92515b2bd5130c7d3",
+    "lock_commit_created_at": "2026-09-20T09:58:03Z",
+    "observed_chunk0_artifact_count_at_lock": 0,
+    "sealed_head_matching_dispatch_ids_at_lock": [
+      35503733893
+    ]
+  },
+  "frozen_auditor_sha": "debc13fd4ec8f8ed443302ef0352d751661faafc",
+  "postrun_verifier_git_blob_sha": "4188610ee403cbe76b62fce683228f992081dd4a",
+  "scientific_result_visible_at_receipt": false,
+  "current_authoritative_artifact_count_at_receipt": 0,
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  },
+  "interpretation": "This is process/provenance evidence only. It records the authorized exact one-shot dispatch and pre-result authoritative run binding; it assigns no scientific disposition."
+}
