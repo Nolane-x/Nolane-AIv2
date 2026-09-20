@@ -1,0 +1,21 @@
+{
+  "approved_preregistration_digest": "5172c3f85d15d71e7fc4a16e3f00ae5d9a5031f09a97c1529f8fa6e25822c53a",
+  "exp337_execution_digest": "c7d9b0ad756a2417d5675a9203b3dd95b4ba3e2596a3a5c91b34b8dfd73e20d2",
+  "parent_chunk7_artifact_id": 10601286249,
+  "parent_chunk7_bundle_digest": "c5c72c4919077b0d1647939d4335cea79f579090af27fb2ff0a5e82e91d8cae8",
+  "parent_chunk7_zip_sha256": "5a12a2e59e399bec993ee1597ddbf4f85546e1d5de0b26635cb1d7def5a9666d",
+  "parent_exp336_closure_digest": "c291b3f8f0af0952ce8bbbda8fd107e29d8bd916e4656f2d13cc2e9b70a53d48",
+  "parent_exp336_evidence_digest": "c89f70f3555ad95892794821eddbcc158a2e7e9d7c4ef4fa02082a00acd6ccf7",
+  "parent_exp336_head_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+  "parent_exp336_run_id": 35481336946,
+  "parent_project_checkpoint_sha256": "a9e638f3029e4af05a685dd4cfba096da6107221ca3a31cb26e5422b4d394208",
+  "parent_project_model_state_digest": "e122331caa2e6924c13d4c479574dc8d3e4e1de823adfc02604158ec3ad7fc38",
+  "parent_project_optimizer_state_digest": "44db727abdf9edca155ebd1a3d9e697a4d0b0e1b82e70371e3a77768b72932a7",
+  "parent_project_receipt_digest": "6831373eb293c6c32281e0c94059610af62f11e1da85cf7f80950d1cb415c04f",
+  "parent_project_receipt_json_sha256": "0efb7d92bd3a75676c0a3c7f5326031f9916101fd1809b0fd87c0217cff7a0f1",
+  "parent_project_rng_state_digest": "3d2d8e928c4e09f880efbd2edaac3df47c88bace04c0e270c4ec0639e65bdb95",
+  "schema": "EXP337-CNRS-SELF-ROLLIN-EXECUTION-IDENTITY-V1",
+  "source_commit_sha": "5a0fa8da3e3906a712bcb027d8d4e40ed60f026b",
+  "source_tree_digest": "211179cb6c95308aa936efeb144ee8c9729e468b13cf7e13cdaf67ea3dbf1520",
+  "workflow_sha256": "705319c2ab640308cbb36e8d118f7f1038644796d5099eb2f6964cee73860c9d"
+}
