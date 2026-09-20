@@ -1,0 +1,29 @@
+{
+  "schema": "EXP337-AUTHORITATIVE-RUN-LOCK-ENFORCEMENT-RECEIPT-V1",
+  "experiment_id": "EXP-337",
+  "authoritative_run_id": 35503733893,
+  "enforcement_workflow_run_id": 35503787864,
+  "enforcement_conclusion": "success",
+  "artifact_id": 10602953302,
+  "artifact_zip_sha256": "8c4462ef133e28e08e5ec32198aacf1c1a3ade25b8696efa51a69b75a0e0aa32",
+  "run_lock_commit_sha": "ba1d5307e1fa23e959b803edb851c71900ba4476",
+  "run_lock_git_blob_sha": "f9d96d59628eea8765814c1fba1d7cb8898ea221",
+  "run_lock_receipt_commit_sha": "048a49099f2e07f498687020755f658a100d291d",
+  "run_lock_receipt_git_blob_sha": "a79de8c91f5e1dbf89d211b92515b2bd5130c7d3",
+  "sealed_marker_sha": "ec5f98a636e9395a76509493800b6b9f06a33271",
+  "sealed_head_matching_dispatch_ids": [
+    35503733893
+  ],
+  "observed_chunk0_artifact_count_during_enforcement": 0,
+  "lock_before_chunk0_verified": true,
+  "scientific_disposition_assigned": false,
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
