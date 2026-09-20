@@ -1,0 +1,74 @@
+{
+  "schema": "EXP337-SOURCE-SEAL-V1",
+  "experiment_id": "EXP-337",
+  "program": "Nolane-AIv2 V0.17 10M Native Recursive Substrate",
+  "status": "IMPLEMENTATION_SEALED_SCIENTIFIC_DISPATCH_CLOSED",
+  "created_before_exp337_scientific_result_visibility": true,
+  "scientific_source": {
+    "commit_sha": "5a0fa8da3e3906a712bcb027d8d4e40ed60f026b",
+    "source_tree_digest": "211179cb6c95308aa936efeb144ee8c9729e468b13cf7e13cdaf67ea3dbf1520",
+    "workflow_path": ".github/workflows/exp337-self-rollin-stage-a.yml",
+    "workflow_git_blob_sha": "e3a147183acdbca7a9bec1de40dfec34ea303141",
+    "workflow_sha256": "705319c2ab640308cbb36e8d118f7f1038644796d5099eb2f6964cee73860c9d"
+  },
+  "execution_identity": {
+    "path": "protocols/v017/exp337_execution_identity_v1.json",
+    "git_blob_sha": "ca29c92e80089dce5b1f2206a92b3dd15810b5bb",
+    "raw_sha256": "ddd1f9616e78e6c1f8adba123f4595dade9089abd1a1c58c7394cee99860f480",
+    "sidecar_path": "protocols/v017/exp337_execution_identity_v1.sha256",
+    "sidecar_git_blob_sha": "95db6de536505aadb0c1ad7e97d952921cec9a29",
+    "execution_digest": "c7d9b0ad756a2417d5675a9203b3dd95b4ba3e2596a3a5c91b34b8dfd73e20d2"
+  },
+  "frozen_preregistration": {
+    "canonical_digest": "5172c3f85d15d71e7fc4a16e3f00ae5d9a5031f09a97c1529f8fa6e25822c53a",
+    "raw_sha256": "95857497dcc0cc264e5e9c76e1f8cb3a15a6b05f1e3bab90795a5f9be7f84423",
+    "git_blob_sha": "37afa42cf66e874c457f31415c5f426d318e9804",
+    "design_git_blob_sha": "1e8097d4fc56686b7bd24c561811540d8d4c5321",
+    "design_raw_sha256": "2b251900e435f219a8d2cb48ecf486674bbb1831cf99b9e41d0396c8b0ef19bf",
+    "preregistration_lock_v2_blob_sha": "f200c69090cdb8c0f8e1b7f72b63ce3f227b2bc8"
+  },
+  "operator_implementation_authority": {
+    "attestation_path": "protocols/v017/exp337_operator_authorization_attestation_v1.json",
+    "attestation_git_blob_sha": "fb258ccf61000a203d1e4072b94fecece0dfbc81",
+    "operator_message_timestamp_utc": "2026-09-20T08:51:51Z",
+    "implementation_authorized": true,
+    "scientific_dispatch_authorized": false
+  },
+  "validation": {
+    "prereg_contract_run_id": 35500951486,
+    "prereg_contract_conclusion": "success",
+    "implementation_ci_run_id": 35501662552,
+    "implementation_ci_head": "035294a7800b98920faa44df1bb93a941c62814f",
+    "implementation_ci_conclusion": "success",
+    "implementation_ci_jobs": {
+      "implementation-contract": "success",
+      "real-parent-smoke": "success"
+    },
+    "seal_candidate_run_id": 35502464544,
+    "seal_candidate_conclusion": "success",
+    "seal_candidate_artifact_id": 10602114490,
+    "seal_candidate_artifact_zip_sha256": "4d1cbf51f2c682fc3677eda3e2bcf3d0f968ca1c1d10331137505d52b8d4fdd4"
+  },
+  "parent_authority": {
+    "exp336_authoritative_run_id": 35481336946,
+    "exp336_authoritative_head_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+    "exp336_final_decision": "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED",
+    "exp336_evidence_digest": "c89f70f3555ad95892794821eddbcc158a2e7e9d7c4ef4fa02082a00acd6ccf7",
+    "exp336_closure_digest": "c291b3f8f0af0952ce8bbbda8fd107e29d8bd916e4656f2d13cc2e9b70a53d48",
+    "parent_chunk7_artifact_id": 10601286249,
+    "parent_chunk7_zip_sha256": "5a12a2e59e399bec993ee1597ddbf4f85546e1d5de0b26635cb1d7def5a9666d"
+  },
+  "scientific_dispatch_authorized": false,
+  "post_seal_operator_transition_required": true,
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  },
+  "mutation_rule": "Do not modify the sealed scientific source commit, frozen preregistration/design bytes, source loss, self-roll-in construction, schedule, thresholds, parent authority, projector, reducer, or scientific workflow. Any scientific mutation requires a new preregistration/court identity.",
+  "dispatch_rule": "No authoritative EXP-337 workflow_dispatch may be created until a separate operator transition occurs after this seal and explicitly authorizes dispatch of the exact sealed marker."
+}
