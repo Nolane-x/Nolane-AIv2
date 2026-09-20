@@ -1,0 +1,31 @@
+{
+  "schema": "EXP337-LIVE-CHAIN-AUDIT-0OF8-RECEIPT-V1",
+  "experiment_id": "EXP-337",
+  "authoritative_run_id": 35503733893,
+  "sealed_marker_sha": "ec5f98a636e9395a76509493800b6b9f06a33271",
+  "frozen_auditor_sha": "debc13fd4ec8f8ed443302ef0352d751661faafc",
+  "live_audit": {
+    "run_id": 35503830490,
+    "conclusion": "success",
+    "artifact_id": 10603586332,
+    "artifact_zip_sha256": "09f3eac6528a987cae06e19294013c611d708d9bd005130deb8a823624323f88",
+    "verified_chunk_count": 0,
+    "complete_chunk_chain": false,
+    "identity_artifact_present": true
+  },
+  "authoritative_identity_artifact": {
+    "id": 10603451535,
+    "raw_zip_sha256": "a8c8feef319ba2988a1e518fbfaf3f448cd90259264e709cea8ef47ff38a6c5b"
+  },
+  "scientific_interpretation_assigned": false,
+  "note": "Frozen live auditor verified the authoritative authority chain before any EXP-337 chunk artifact existed; this is provenance evidence only.",
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
