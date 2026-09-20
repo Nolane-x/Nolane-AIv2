@@ -84,7 +84,8 @@
       "all_32_worlds_must_pass_simultaneously": true,
       "nonfinite_events_max": 0,
       "per_world_answer_token_accuracy_min": 0.99,
-      "per_world_full_answer_exact_min": 0.9
+      "per_world_full_answer_exact_min": 0.9,
+      "teacher_forced_effort": 4
     }
   },
   "exp319_cnrs_start_authority": {
@@ -168,8 +169,10 @@
     "control_sham_exact_state_required_at_every_chunk_boundary": true,
     "rng_after_source_restored_before_parameter_update": true,
     "sham_applies_raw_source_gradient": true,
+    "source_and_all_target_gradients_use_same_current_exposure_effort": true,
     "source_and_target_backward_rng_reset_required": true,
     "source_world": "current scheduled world",
+    "target_gradient_effort": "current source exposure effort from frozen 1/2/4/8 cycle",
     "target_gradients_measured_at_identical_pre_update_model_optimizer_rng_state": true,
     "target_worlds": "all other 31 worlds"
   },
