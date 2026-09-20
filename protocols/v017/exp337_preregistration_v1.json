@@ -119,17 +119,17 @@
     "parent_reference": {
       "CONTROL_CNRS_FULL32": {
         "aggregate_answer_token_accuracy": 0.8732394366197183,
-        "aggregate_eos_correctness": 1,
+        "aggregate_eos_correctness": 1.0,
         "aggregate_greedy_exact_match": 0.4375,
-        "aggregate_invalid_output_rate": 0,
+        "aggregate_invalid_output_rate": 0.0,
         "aggregate_loss_fraction_of_original_initial": 0.004028852176910027,
         "pass_count": 14
       },
       "SUBSPACE_PROJECT_CNRS_FULL32": {
         "aggregate_answer_token_accuracy": 0.9119718309859155,
-        "aggregate_eos_correctness": 1,
+        "aggregate_eos_correctness": 1.0,
         "aggregate_greedy_exact_match": 0.5625,
-        "aggregate_invalid_output_rate": 0,
+        "aggregate_invalid_output_rate": 0.0,
         "aggregate_loss_fraction_of_original_initial": 0.003099444664217025,
         "pass_count": 18
       }
