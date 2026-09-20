@@ -1,0 +1,58 @@
+name: v017-exp337-independent-auditor-ci
+
+on:
+  push:
+    branches: [exp337-independent-artifact-auditor]
+    paths:
+      - "src/nolane_ai/experiments/exp337_artifact_audit.py"
+      - "scripts/exp337_audit_chain.py"
+      - "tests/test_exp337_artifact_audit.py"
+      - ".github/workflows/v017-exp337-independent-auditor-ci.yml"
+  pull_request:
+    paths:
+      - "src/nolane_ai/experiments/exp337_artifact_audit.py"
+      - "scripts/exp337_audit_chain.py"
+      - "tests/test_exp337_artifact_audit.py"
+      - ".github/workflows/v017-exp337-independent-auditor-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  independent-auditor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify sealed EXP-337 scientific bytes are untouched
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:src/nolane_ai/experiments/exp337_runtime.py)" = "d15ef4078b24429935097393691a119c3468f92f"
+          test "$(git rev-parse HEAD:src/nolane_ai/experiments/exp337_contract.py)" = "4521989bbf46c2e795adeba7c8bae3383132ec2b"
+          test "$(git rev-parse HEAD:src/nolane_ai/experiments/exp337_identity.py)" = "c8dd280d837a09ec22d28caf4178cb34caa82301"
+          test "$(git rev-parse HEAD:.github/workflows/exp337-self-rollin-stage-a.yml)" = "e3a147183acdbca7a9bec1de40dfec34ea303141"
+          test "$(git rev-parse ec5f98a636e9395a76509493800b6b9f06a33271:src/nolane_ai/experiments/exp337_runtime.py)" = "d15ef4078b24429935097393691a119c3468f92f"
+          changed="$(git diff --name-only ec5f98a636e9395a76509493800b6b9f06a33271...HEAD)"
+          forbidden="$(printf '%s\n' "$changed" | grep -E '^(src/nolane_ai/experiments/exp337_(runtime|contract|identity)\.py|scripts/exp337_(run_chunk|finalize)\.py|\.github/workflows/exp337-self-rollin-stage-a\.yml|protocols/v017/(exp337_preregistration_v1\.json|EXP337_SELF_ROLLIN_SEQUENCE_RECOVERY_DESIGN_V1\.md|exp337_execution_identity_v1\.json|exp337_source_seal_v1\.json))$' || true)"
+          test -z "$forbidden"
+      - name: Install auditor test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev,model]'
+      - name: Run independent artifact-auditor falsification suite
+        run: |
+          pytest -q tests/test_exp337_artifact_audit.py
+      - name: Run EXP-337 sealed contract/runtime compatibility tests
+        run: |
+          pytest -q tests/test_exp337_contract.py tests/test_exp337_runtime.py
+      - name: Compile auditor
+        run: |
+          python -m compileall -q \
+            src/nolane_ai/experiments/exp337_artifact_audit.py \
+            scripts/exp337_audit_chain.py
