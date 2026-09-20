@@ -1,0 +1,57 @@
+{
+  "schema": "EXP337-POSTRUN-VERIFIER-LOCK-V1",
+  "experiment_id": "EXP-337",
+  "created_before_scientific_dispatch": true,
+  "created_before_exp337_result_visibility": true,
+  "scientific_authority": {
+    "sealed_marker_sha": "ec5f98a636e9395a76509493800b6b9f06a33271",
+    "scientific_source_sha": "5a0fa8da3e3906a712bcb027d8d4e40ed60f026b",
+    "scientific_source_tree_digest": "211179cb6c95308aa936efeb144ee8c9729e468b13cf7e13cdaf67ea3dbf1520",
+    "scientific_workflow_git_blob_sha": "e3a147183acdbca7a9bec1de40dfec34ea303141",
+    "scientific_workflow_sha256": "705319c2ab640308cbb36e8d118f7f1038644796d5099eb2f6964cee73860c9d",
+    "preregistration_digest": "5172c3f85d15d71e7fc4a16e3f00ae5d9a5031f09a97c1529f8fa6e25822c53a",
+    "execution_digest": "c7d9b0ad756a2417d5675a9203b3dd95b4ba3e2596a3a5c91b34b8dfd73e20d2"
+  },
+  "frozen_auditor": {
+    "commit_sha": "debc13fd4ec8f8ed443302ef0352d751661faafc",
+    "source_tree_digest": "024c9f1ef7165114bfb0be3e8ff6c2e86b1ab27c79f6e8bd623241eb5d75723b",
+    "independent_audit_lock_path": "protocols/v017/exp337_independent_audit_lock_v1.json",
+    "independent_audit_lock_git_blob_sha": "ff6980318e7216280b6eccb785be985bb594d219"
+  },
+  "postrun_verifier": {
+    "workflow_path": ".github/workflows/exp337-postrun-independent-audit.yml",
+    "registration_commit_sha": "0d2dad3891d4df8b308af433bec88918588b691f",
+    "workflow_git_blob_sha": "4188610ee403cbe76b62fce683228f992081dd4a",
+    "trigger": "workflow_run completed for exact EXP-337 scientific workflow",
+    "contract_run_id": 35503198974,
+    "contract_conclusion": "success",
+    "contract_artifact_id": 10603041618,
+    "contract_artifact_zip_sha256": "79ec184449812bd5534e1e260e5d6a495ff9ed5279d3912101c5c1a1cb715bfb",
+    "workflow_trigger_parse_verified": true,
+    "fail_closed_guards_verified": true,
+    "scientific_dispatch_count_at_contract": 0,
+    "run_lock_present_at_contract": false
+  },
+  "closure_control": {
+    "closure_requirements_path": "protocols/v017/exp337_final_closure_requirements_v1.json",
+    "closure_requirements_commit_sha": "141964d1bf7bd4c99e8bae8204863ff4bb1e2d7a",
+    "closure_requirements_git_blob_sha": "2cd7013bc5cd1d6b80c3ef2e2e4c0af33190eba2"
+  },
+  "expected_future_run_lock": {
+    "run_lock_path": "protocols/v017/exp337_authoritative_run_lock_v1.json",
+    "run_lock_receipt_path": "protocols/v017/exp337_authoritative_run_lock_receipt_v1.json",
+    "required_creation_boundary": "after separate post-seal operator dispatch authorization and authoritative run creation, but before the first EXP-337 chunk artifact exists",
+    "authoritative_selection_rule": "earliest successfully created workflow_dispatch on exact sealed marker and frozen scientific workflow; later duplicates excluded regardless of outcome"
+  },
+  "mutation_rule": "Do not modify or replace the locked post-run verifier, closure requirements, frozen auditor, scientific source, preregistration, loss construction, projector, thresholds, schedule, reducer, or sealed marker after authoritative dispatch. If verifier execution fails, preserve the failure and diagnose process/provenance without reinterpreting science through a modified verifier.",
+  "scientific_dispatch_authorized": false,
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
