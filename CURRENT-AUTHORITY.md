@@ -148,12 +148,46 @@ Chunk 1:
 - PROJECT cumulative projection updates: `256/256`
 - PROJECT cumulative projected targets: `2917`
 
+Chunk 2:
+
+- artifact: `10597562011`
+- raw ZIP SHA-256: `8063277a4f0a99c34d8c4491eb57606717f68ee93f46212eea582f21c696c784`
+- parent digest equals actual raw chunk1 ZIP SHA: true
+- exposure/world: `12`
+- cumulative training step: `1408`
+- CONTROL/SHAM exact: true
+- nonfinite: 0
+- interim CONTROL world-pass count: `9/32`
+- interim PROJECT world-pass count: `14/32`
+- PROJECT interim rescues: iterative `:5,:7`; generator `:0,:2,:3`
+- PROJECT interim regressions: none
+- CONTROL aggregate token / greedy exact: `0.78169 / 0.28125`
+- PROJECT aggregate token / greedy exact: `0.75352 / 0.4375`
+- aggregate Stage-A pass: false in all arms
+- PROJECT cumulative projection updates: `382/384`
+- PROJECT cumulative projected targets: `4362`
+
+Frozen independent audit through chunk2:
+
+- workflow run `35486348709`, attempt `2`: **SUCCESS**
+- artifact `10598291494`
+- artifact ZIP SHA-256: `ddc7c708d8a078046bb33ef16e7103ec8a3ac33b818b6b83f2c3e6af01906176`
+- report JSON SHA-256: `10cc46e0d5dd826fafd1415b913a81217b8b89ded62842614141cc269c52a3d8`
+- verified consecutive chunks: `3`
+- complete chain: false (correct; run is active)
+- independent CONTROL/PROJECT pass trajectory: `9/8 → 10/11 → 9/14`
+
+Chunk2 post-hoc geometry:
+
+`protocols/v017/exp336_chunk2_exploratory_geometry_v1.json`
+
+This diagnostic remains `reducer_input=false`.
+
 Current job:
 
-- chunk2 job: `106009912454`
+- chunk3 job: `106014853802`
 - status: **IN PROGRESS**
-- active step: `Execute EXP-336 chunk 2 court`
-- no chunk2 artifact exists yet
+- active step: `Execute EXP-336 chunk 3 court`
 
 **These chunk metrics are non-decisional. They are not reducer input for selecting a repository transition.**
 
