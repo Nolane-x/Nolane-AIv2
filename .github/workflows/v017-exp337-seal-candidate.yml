@@ -1,0 +1,102 @@
+name: v017-exp337-seal-candidate
+
+on:
+  push:
+    branches: [exp337-cnrs-self-rollin-sequence-recovery-design]
+    paths:
+      - ".github/workflows/exp337-self-rollin-stage-a.yml"
+      - ".github/workflows/v017-exp337-seal-candidate.yml"
+      - "src/nolane_ai/experiments/exp337_*.py"
+      - "scripts/exp337_*.py"
+      - "protocols/v017/exp337_preregistration_v1.json"
+      - "protocols/v017/EXP337_SELF_ROLLIN_SEQUENCE_RECOVERY_DESIGN_V1.md"
+      - "protocols/v017/exp337_preregistration_lock_v2.json"
+      - "protocols/v017/exp337_operator_authorization_attestation_v1.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  seal-candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compute and verify EXP-337 seal candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+          from nolane_ai.protocol.identity import source_tree_digest
+
+          prereg=Path("protocols/v017/exp337_preregistration_v1.json")
+          design=Path("protocols/v017/EXP337_SELF_ROLLIN_SEQUENCE_RECOVERY_DESIGN_V1.md")
+          lock_path=Path("protocols/v017/exp337_preregistration_lock_v2.json")
+          att_path=Path("protocols/v017/exp337_operator_authorization_attestation_v1.json")
+          workflow=Path(".github/workflows/exp337-self-rollin-stage-a.yml")
+
+          def raw_sha(path):
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+          def blob(path):
+              return subprocess.check_output(["git","rev-parse",f"HEAD:{path.as_posix()}"],text=True).strip()
+
+          prereg_obj=json.loads(prereg.read_text())
+          canonical=hashlib.sha256(json.dumps(
+              prereg_obj,sort_keys=True,separators=(",",":"),ensure_ascii=False,allow_nan=False
+          ).encode()).hexdigest()
+          lock=json.loads(lock_path.read_text())
+          att=json.loads(att_path.read_text())
+
+          assert blob(prereg) == "37afa42cf66e874c457f31415c5f426d318e9804"
+          assert raw_sha(prereg) == "95857497dcc0cc264e5e9c76e1f8cb3a15a6b05f1e3bab90795a5f9be7f84423"
+          assert canonical == "5172c3f85d15d71e7fc4a16e3f00ae5d9a5031f09a97c1529f8fa6e25822c53a"
+          assert blob(design) == "1e8097d4fc56686b7bd24c561811540d8d4c5321"
+          assert raw_sha(design) == "2b251900e435f219a8d2cb48ecf486674bbb1831cf99b9e41d0396c8b0ef19bf"
+          assert blob(lock_path) == "f200c69090cdb8c0f8e1b7f72b63ce3f227b2bc8"
+          assert lock["frozen_before_implementation"] is True
+          assert lock["frozen_before_exp337_result_visibility"] is True
+          assert all(v is False for v in lock["downstream_authority"].values())
+          assert att["scientific_dispatch_authorized"] is False
+          assert att["exact_head_gate"]["workflow_run_id"] == 35500951486
+          assert att["exact_head_gate"]["conclusion"] == "success"
+
+          payload={
+              "schema":"EXP337-SEAL-CANDIDATE-V1",
+              "source_commit_sha":os.environ["GITHUB_SHA"],
+              "source_tree_digest":source_tree_digest("."),
+              "scientific_workflow_path":workflow.as_posix(),
+              "scientific_workflow_sha256":raw_sha(workflow),
+              "scientific_workflow_git_blob":blob(workflow),
+              "preregistration_canonical_digest":canonical,
+              "preregistration_raw_sha256":raw_sha(prereg),
+              "preregistration_git_blob":blob(prereg),
+              "design_raw_sha256":raw_sha(design),
+              "design_git_blob":blob(design),
+              "preregistration_lock_v2_blob":blob(lock_path),
+              "operator_authorization_blob":blob(att_path),
+              "implementation_ci_run":35501662552,
+              "implementation_ci_head":"035294a7800b98920faa44df1bb93a941c62814f",
+              "scientific_dispatch_authorized":False,
+          }
+          Path("exp337-seal-candidate.json").write_text(
+              json.dumps(payload,sort_keys=True,indent=2)+"\n"
+          )
+          print(json.dumps(payload,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp337-seal-candidate-${{ github.run_id }}
+          path: exp337-seal-candidate.json
+          if-no-files-found: error
+          retention-days: 90
