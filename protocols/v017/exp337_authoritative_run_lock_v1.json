@@ -1,0 +1,39 @@
+{
+  "authoritative_run": {
+    "created_at": "2026-09-20T09:58:01Z",
+    "event": "workflow_dispatch",
+    "head_branch": "exp337-cnrs-self-rollin-sequence-recovery-design",
+    "head_sha": "ec5f98a636e9395a76509493800b6b9f06a33271",
+    "id": 35503733893,
+    "run_attempt": 1,
+    "workflow_id": 362574875,
+    "workflow_path": ".github/workflows/exp337-self-rollin-stage-a.yml"
+  },
+  "created_before_first_chunk_artifact": true,
+  "downstream_authority": {
+    "authorized_100m": false,
+    "authorized_30m": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false
+  },
+  "execution_digest": "c7d9b0ad756a2417d5675a9203b3dd95b4ba3e2596a3a5c91b34b8dfd73e20d2",
+  "experiment_id": "EXP-337",
+  "frozen_auditor_sha": "debc13fd4ec8f8ed443302ef0352d751661faafc",
+  "later_duplicate_runs_authoritative": false,
+  "operator_authorization": {
+    "authorization_commit_sha": "679f262b6f18e3cd7ba6a68e0df30e7153dcf2e3",
+    "authorization_git_blob_sha": "f6da2c87b200a883847ff3d83c25235f8f05a6f3",
+    "operator_message_text": "Ti\u1ebfp t\u1ee5c ho\u00e0n th\u00e0nh \u0111i nh\u00e9",
+    "operator_message_timestamp_utc": "2026-09-20T09:55:21Z"
+  },
+  "postrun_verifier_git_blob_sha": "4188610ee403cbe76b62fce683228f992081dd4a",
+  "schema": "EXP337-AUTHORITATIVE-RUN-LOCK-V1",
+  "scientific_source_sha": "5a0fa8da3e3906a712bcb027d8d4e40ed60f026b",
+  "scientific_workflow_git_blob_sha": "e3a147183acdbca7a9bec1de40dfec34ea303141",
+  "scientific_workflow_path": ".github/workflows/exp337-self-rollin-stage-a.yml",
+  "sealed_marker_sha": "ec5f98a636e9395a76509493800b6b9f06a33271",
+  "selection_rule": "earliest successfully created workflow_dispatch on exact sealed marker and frozen workflow; later duplicates excluded regardless of outcome"
+}
