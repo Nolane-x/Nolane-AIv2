@@ -1,0 +1,52 @@
+{
+  "schema": "EXP337-LIVE-CHAIN-AUDIT-1OF8-RECEIPT-V1",
+  "experiment_id": "EXP-337",
+  "authoritative_run_id": 35503733893,
+  "sealed_marker_sha": "ec5f98a636e9395a76509493800b6b9f06a33271",
+  "frozen_auditor_sha": "debc13fd4ec8f8ed443302ef0352d751661faafc",
+  "live_audit": {
+    "run_id": 35503830490,
+    "run_attempt": 2,
+    "conclusion": "success",
+    "artifact_id": 10603768669,
+    "artifact_zip_sha256": "f7bce293412898111ebddb04b836250e83a351f6a928cdb61f08a645eafc24c9",
+    "report_sha256": "5ec8770e32cf736feb4af0876e1e911dc9166663ab2c81396a24283d2da307f1",
+    "verified_chunk_count": 1,
+    "complete_chunk_chain": false
+  },
+  "chunk0": {
+    "artifact_id": 10604460939,
+    "artifact_name": "exp337-chunk-0-35503733893",
+    "raw_zip_sha256": "3cd0ae727a894ad24942a0cd94a0bab059c177feee5e9e287f16f978f735c920",
+    "size_in_bytes": 330118533,
+    "created_at": "2026-09-20T11:05:25Z",
+    "pass_counts": {
+      "CONTROL_PROJECT_GOLD_PREFIX": 17,
+      "SHAM_SELF_ROLLIN_MEASURE_PROJECT": 17,
+      "SELF_ROLLIN_RECOVERY_PROJECT": 17
+    },
+    "aggregate_pass": {
+      "CONTROL_PROJECT_GOLD_PREFIX": false,
+      "SHAM_SELF_ROLLIN_MEASURE_PROJECT": false,
+      "SELF_ROLLIN_RECOVERY_PROJECT": false
+    },
+    "self_rollin_divergent_update_count": {
+      "CONTROL_PROJECT_GOLD_PREFIX": 0,
+      "SHAM_SELF_ROLLIN_MEASURE_PROJECT": 59,
+      "SELF_ROLLIN_RECOVERY_PROJECT": 64
+    }
+  },
+  "control_sham_exact": true,
+  "scientific_interpretation_assigned": false,
+  "intermediate_boundary_non_decisional": true,
+  "note": "Frozen independent live auditor verified the first immutable EXP-337 chunk. Pass counts are diagnostic only and cannot select a transition.",
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
