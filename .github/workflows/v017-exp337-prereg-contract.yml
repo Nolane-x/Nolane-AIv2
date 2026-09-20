@@ -1,0 +1,161 @@
+name: v017-exp337-prereg-contract
+
+on:
+  push:
+    branches: [exp337-cnrs-self-rollin-sequence-recovery-design]
+    paths:
+      - "protocols/v017/exp337_preregistration_v1.json"
+      - "protocols/v017/EXP337_SELF_ROLLIN_SEQUENCE_RECOVERY_DESIGN_V1.md"
+      - "protocols/v017/exp337_preregistration_digest_v1.json"
+      - "protocols/v017/exp337_preregistration_lock_v1.json"
+      - ".github/workflows/v017-exp337-prereg-contract.yml"
+  pull_request:
+    paths:
+      - "protocols/v017/exp337_preregistration_v1.json"
+      - "protocols/v017/EXP337_SELF_ROLLIN_SEQUENCE_RECOVERY_DESIGN_V1.md"
+      - "protocols/v017/exp337_preregistration_digest_v1.json"
+      - "protocols/v017/exp337_preregistration_lock_v1.json"
+      - ".github/workflows/v017-exp337-prereg-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prereg-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Verify frozen EXP-337 preregistration contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import subprocess
+          from pathlib import Path
+
+          PREREG = Path("protocols/v017/exp337_preregistration_v1.json")
+          DESIGN = Path("protocols/v017/EXP337_SELF_ROLLIN_SEQUENCE_RECOVERY_DESIGN_V1.md")
+          SIDECAR = Path("protocols/v017/exp337_preregistration_digest_v1.json")
+          LOCK = Path("protocols/v017/exp337_preregistration_lock_v1.json")
+          CLOSURE = Path("protocols/v017/exp336_final_closure_v1.json")
+
+          expected = {
+              "prereg_blob": "37afa42cf66e874c457f31415c5f426d318e9804",
+              "prereg_raw": "95857497dcc0cc264e5e9c76e1f8cb3a15a6b05f1e3bab90795a5f9be7f84423",
+              "prereg_canonical": "5172c3f85d15d71e7fc4a16e3f00ae5d9a5031f09a97c1529f8fa6e25822c53a",
+              "design_blob": "1e8097d4fc56686b7bd24c561811540d8d4c5321",
+              "design_raw": "850beada84c0df269c8605a3c1ba1c6a5cf0804eb4e171ec6f704ad8aa933bcb",
+              "design_size": 10895,
+              "sidecar_blob": "589c7fbab7c351114ab0b3fae489a1bf1ca50a54",
+              "lock_blob": "71587efa4c2603a5f4f82c59b0bc13189d4a53f6",
+          }
+
+          def sha256(path: Path) -> str:
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          def blob(path: Path) -> str:
+              return subprocess.check_output(
+                  ["git", "rev-parse", f"HEAD:{path.as_posix()}"], text=True
+              ).strip()
+
+          prereg = json.loads(PREREG.read_text(encoding="utf-8"))
+          sidecar = json.loads(SIDECAR.read_text(encoding="utf-8"))
+          lock = json.loads(LOCK.read_text(encoding="utf-8"))
+          closure = json.loads(CLOSURE.read_text(encoding="utf-8"))
+
+          assert blob(PREREG) == expected["prereg_blob"]
+          assert sha256(PREREG) == expected["prereg_raw"]
+          canonical = json.dumps(
+              prereg,
+              sort_keys=True,
+              separators=(",", ":"),
+              ensure_ascii=False,
+              allow_nan=False,
+          ).encode("utf-8")
+          assert hashlib.sha256(canonical).hexdigest() == expected["prereg_canonical"]
+
+          assert blob(DESIGN) == expected["design_blob"]
+          assert sha256(DESIGN) == expected["design_raw"]
+          assert DESIGN.stat().st_size == expected["design_size"]
+          assert blob(SIDECAR) == expected["sidecar_blob"]
+          assert blob(LOCK) == expected["lock_blob"]
+
+          assert sidecar["preregistration"]["git_blob_sha"] == expected["prereg_blob"]
+          assert sidecar["preregistration"]["raw_sha256"] == expected["prereg_raw"]
+          assert sidecar["preregistration"]["canonical_digest"] == expected["prereg_canonical"]
+          assert sidecar["design"]["git_blob_sha"] == expected["design_blob"]
+          assert sidecar["design"]["raw_sha256"] == expected["design_raw"]
+          assert sidecar["implementation_authorized"] is False
+
+          assert lock["schema"] == "EXP337-PREREGISTRATION-LOCK-V1"
+          assert lock["frozen_before_implementation"] is True
+          assert lock["frozen_before_exp337_result_visibility"] is True
+          assert lock["locked_material"]["preregistration"]["git_blob_sha"] == expected["prereg_blob"]
+          assert lock["locked_material"]["design"]["git_blob_sha"] == expected["design_blob"]
+          assert lock["locked_material"]["digest_sidecar"]["git_blob_sha"] == expected["sidecar_blob"]
+          assert all(value is False for value in lock["downstream_authority"].values())
+
+          assert prereg["experiment_id"] == "EXP-337"
+          assert prereg["status"] == "DESIGN_PREREGISTRATION_ONLY"
+          assert prereg["resident_model"]["trainable_parameters"] == 10_000_000
+          assert prereg["resident_model"]["new_trainable_parameters_allowed"] is False
+          assert prereg["resident_model"]["architecture_geometry_may_change"] is False
+          assert prereg["continuation"]["learning_rate"] == 0.0003
+          assert prereg["continuation"]["additional_source_updates"] == 1024
+          assert prereg["continuation"]["additional_exposures_per_world"] == 32
+          assert prereg["self_rollin_construction"]["active_source_loss"] == "0.5 * gold_loss + 0.5 * self_rollin_loss"
+          assert prereg["self_rollin_construction"]["applies_to"] == "every source world; no family-specific branching"
+          assert prereg["world_population"]["world_count"] == 32
+          assert prereg["world_population"]["no_new_worlds"] is True
+          assert all(value is False for value in prereg["authorizations"].values())
+
+          reducer = prereg["reducer"]
+          successor = prereg["pre_result_successor_lock"]
+          assert set(reducer["order"]) == set(successor)
+          assert len(reducer["order"]) == len(set(reducer["order"])) == 7
+          assert reducer["partial_improvement_is_not_positive_reducer_evidence"] is True
+
+          assert closure["schema"] == "EXP336-FINAL-CLOSURE-V1"
+          assert closure["final_reducer"]["decision"] == "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED"
+          assert closure["authoritative_artifacts"]["evidence_digest"] == "c89f70f3555ad95892794821eddbcc158a2e7e9d7c4ef4fa02082a00acd6ccf7"
+          assert closure["transition_selected_from_frozen_matrix"]["selected_transition"]["next_scope"] == "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY"
+          assert closure["downstream_authority"]["stage_b_implementation_authorized"] is False
+          assert closure["downstream_authority"]["scale_authorized"] is False
+
+          forbidden = []
+          for root, patterns in (
+              (Path("src"), ("*exp337*", "*EXP337*")),
+              (Path("scripts"), ("*exp337*", "*EXP337*")),
+          ):
+              if root.exists():
+                  for pattern in patterns:
+                      forbidden.extend(str(p) for p in root.rglob(pattern) if p.is_file())
+          workflow_root = Path(".github/workflows")
+          if workflow_root.exists():
+              for p in workflow_root.glob("*exp337*"):
+                  if p.name != "v017-exp337-prereg-contract.yml":
+                      forbidden.append(str(p))
+          if forbidden:
+              raise AssertionError(f"EXP-337 implementation/execution material exists before authorization: {sorted(set(forbidden))}")
+
+          design_text = DESIGN.read_text(encoding="utf-8")
+          for required in (
+              "**Status:** DESIGN / PREREGISTRATION ONLY",
+              "**Implementation authority:** **FALSE**",
+              "SELF_ROLLIN_RECOVERY_PROJECT",
+              "0.5 * gold_loss + 0.5 * self_rollin_loss",
+              "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY",
+          ):
+              assert required in design_text, required
+
+          print("EXP-337 preregistration contract: VERIFIED")
+          print("prereg canonical digest:", expected["prereg_canonical"])
+          print("design raw sha256:", expected["design_raw"])
+          print("implementation authorized: false")
+          PY
