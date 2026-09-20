@@ -1,0 +1,174 @@
+{
+  "authoritative_artifacts": {
+    "evidence_digest": "c89f70f3555ad95892794821eddbcc158a2e7e9d7c4ef4fa02082a00acd6ccf7",
+    "final_json_sha256": "e04b24a0fef1f00c35f8ad8c6549538d18642a249f955f2067294111f8288fcc",
+    "github_artifact_zip_digests": {
+      "exp336-chunk-0-35481336946": "176eedc34450c7e843ff4a21c218c82dea7fbc3fc15239559d4941e60bf69dbf",
+      "exp336-chunk-1-35481336946": "7fd5d9536438109896eca9922ff80704483aee452dc1061f28c58dede88a6a36",
+      "exp336-chunk-2-35481336946": "8063277a4f0a99c34d8c4491eb57606717f68ee93f46212eea582f21c696c784",
+      "exp336-chunk-3-35481336946": "ff25128ab36f4fc9b646e1b99c5228c2ca8f8e8d8781a785a0da742d16752890",
+      "exp336-chunk-4-35481336946": "29ecd6cef1f229e5be16d1df9212e8a8d1d371f92cf2221f014add66b68013ff",
+      "exp336-chunk-5-35481336946": "87013a2c5bb33fedc25bbdaae83a66868724419cb7e4c9cb8f0ab342729fa4d4",
+      "exp336-chunk-6-35481336946": "d50024b13c6d9c016e8d3f4dff12fe88ce2f0de6baf5bbe0c308645f3d9990df",
+      "exp336-chunk-7-35481336946": "5a12a2e59e399bec993ee1597ddbf4f85546e1d5de0b26635cb1d7def5a9666d",
+      "exp336-cnrs-full32-stage-a-final-35481336946": "3ed55f98e028034b8ee80d447b11dab44466013fb360910fe3e163f00022b5bf",
+      "exp336-identity-35481336946": "fcf481c6850c83d5f730bd0c2bc3cb2cc6ffcce55abfc15eec527a72dc41b5f7"
+    }
+  },
+  "authoritative_run": {
+    "conclusion": "success",
+    "head_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+    "id": 35481336946,
+    "run_attempt": 1,
+    "status": "completed"
+  },
+  "closure_digest": "f33df20c0a1edea2751b4804cd5e51c7e34512841f2ad25aa1819ddad7a9666d",
+  "closure_recovery": {
+    "archive_only_workflow_artifact_id": 10601137784,
+    "archive_only_workflow_run_id": 35498616072,
+    "automatic_postrun_workflow_run_observed": false,
+    "rule": "The locked workflow_run trigger did not materialize. Recovery used the already-frozen auditor source and authoritative immutable artifacts, then archived the deterministic report/receipt with an upload-only workflow. No scientific, reducer, threshold, projector, preregistration or locked-verifier bytes were changed."
+  },
+  "closure_requirements": {
+    "frozen_before_final_result_visibility": true,
+    "git_blob_sha": "c242dd78bb710aca9aa66ead22d0d5e7b889dbfa",
+    "required_fields": [
+      "authoritative_run",
+      "scientific_source",
+      "sealed_identity",
+      "parent_authority",
+      "authoritative_artifacts",
+      "independent_audit",
+      "final_reducer",
+      "transition_selected_from_frozen_matrix",
+      "downstream_authority"
+    ],
+    "source_commit_sha": "7c3102a15d5e5eb48b3bf6ebeed5f14c24e569ed"
+  },
+  "downstream_authority": {
+    "authorized_100m": false,
+    "authorized_30m": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false
+  },
+  "experiment_id": "EXP-336",
+  "final_reducer": {
+    "decision": "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED",
+    "evidence_digest": "c89f70f3555ad95892794821eddbcc158a2e7e9d7c4ef4fa02082a00acd6ccf7",
+    "reducer_vectors": {
+      "control_aggregate_pass": false,
+      "control_failed_worlds": [
+        "iterative-grid-and-maze:0",
+        "iterative-grid-and-maze:3",
+        "iterative-grid-and-maze:5",
+        "iterative-grid-and-maze:7",
+        "algorithmic-sequence-transform:1",
+        "algorithmic-sequence-transform:2",
+        "algorithmic-sequence-transform:3",
+        "algorithmic-sequence-transform:4",
+        "algorithmic-sequence-transform:5",
+        "algorithmic-sequence-transform:7",
+        "generator-heldout-abstract-transformation:0",
+        "generator-heldout-abstract-transformation:2",
+        "language-sequence-control:0",
+        "language-sequence-control:1",
+        "language-sequence-control:2",
+        "language-sequence-control:3",
+        "language-sequence-control:5",
+        "language-sequence-control:7"
+      ],
+      "project_aggregate_pass": false,
+      "project_failed_worlds": [
+        "iterative-grid-and-maze:0",
+        "algorithmic-sequence-transform:1",
+        "algorithmic-sequence-transform:2",
+        "algorithmic-sequence-transform:3",
+        "algorithmic-sequence-transform:4",
+        "algorithmic-sequence-transform:5",
+        "algorithmic-sequence-transform:7",
+        "language-sequence-control:0",
+        "language-sequence-control:1",
+        "language-sequence-control:2",
+        "language-sequence-control:3",
+        "language-sequence-control:5",
+        "language-sequence-control:6",
+        "language-sequence-control:7"
+      ],
+      "project_regressions": [
+        "language-sequence-control:6"
+      ],
+      "projected_target_count": 10945,
+      "projection_update_count": 1010,
+      "rescued_control_failures": [
+        "iterative-grid-and-maze:3",
+        "iterative-grid-and-maze:5",
+        "iterative-grid-and-maze:7",
+        "generator-heldout-abstract-transformation:0",
+        "generator-heldout-abstract-transformation:2"
+      ]
+    }
+  },
+  "independent_audit": {
+    "auditor_artifact_module_git_blob_sha": "379ccd90dff5b6b58d0cca4f0e1cd69ebb63ef90",
+    "auditor_script_git_blob_sha": "88d4b3241f3a969f14fd2af4a99a2b9864d72ca4",
+    "auditor_sha": "208be21e035a5064eb9d60a9269154768717f5b1",
+    "complete_chunk_chain": true,
+    "control_sham_exact_by_chunk": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "independent_audit_receipt_sha256": "0a8c81f9ace0e33decaa9a6a95b700df017aae40af3562b03c28f0ac88ead5f6",
+    "independent_audit_report_sha256": "5f8f69b93ba12bbf17713f09afb8dab4e6d04a4bb277be544c15b870b0a96536",
+    "live_chain_audit_artifact_id": 10601572905,
+    "live_chain_audit_artifact_zip_sha256": "bb1ba966c81d08e2d032630f80fd898ab9ba5eb0e3259bac8d1c90d5574c3303",
+    "receipt_archive_artifact_id": 10601137784,
+    "receipt_archive_artifact_zip_sha256": "a939abe531275b83db079c380a5ecd4315999f37aa09e35fd70a2d6bec8141b4",
+    "receipt_archive_run_id": 35498616072,
+    "verified_chunk_count": 8
+  },
+  "parent_authority": {
+    "parent_cnrs_artifact_id": 10534076546,
+    "parent_cnrs_checkpoint_sha256": "bd58607a0e49bb32f45124689d11880a13040afa702bf0524cce115d947f650b",
+    "parent_cnrs_model_state_digest": "01c2a0f16b3f84dfee1b6db749821cf09897de05c6ceb15e42274abcd5926a76",
+    "parent_cnrs_optimizer_state_digest": "d18439109cc9e020153b33fa6c39d38d4d0e05f2262c6a9ee3598df208f1ddf9",
+    "parent_cnrs_rng_state_digest": "3d2d8e928c4e09f880efbd2edaac3df47c88bace04c0e270c4ec0639e65bdb95",
+    "parent_cnrs_zip_digest": "d88a9d85584476ec5226321479560a1255f0d015122827d4be75f67a6f337755",
+    "parent_exp319_run_id": 35311529822,
+    "parent_exp335_audit_report_sha256": "6eec3678b0b00321a83fa69cc45add2111ec6524d6ace1c691dca2a6817900a0",
+    "parent_exp335_evidence_digest": "6fcabeb87971a0cb5d5ef0d14029f5ab248f3e353b21bb55f42ac977a4ffe1af",
+    "parent_exp335_run_id": 35445927525
+  },
+  "schema": "EXP336-FINAL-CLOSURE-V1",
+  "scientific_source": {
+    "execution_digest": "f81f382846d1c128934be40717e6eee33c48fe00dde00fd736a2ad2fdb15d5db",
+    "preregistration_digest": "491899f5f613b3d80b36689e7882e8c72875fb268a6886e1a40542eb09dc33ce",
+    "source_commit_sha": "5220e50adec7f6f048510aac44a077a4ddfdaf44",
+    "source_tree_digest": "6485fdc131dbf0358f8e6548b3ec510ce96bb80b8fbaf2858a97d5bade62a911",
+    "workflow_sha256": "b29710b206fb028f9064040f593ffd79ef4cdf6082fd820b3869d624b447de97"
+  },
+  "sealed_identity": {
+    "identity_artifact_zip_sha256": "fcf481c6850c83d5f730bd0c2bc3cb2cc6ffcce55abfc15eec527a72dc41b5f7",
+    "identity_json_sha256": "a8f81a0494ba00658d0e8eeea4c0112f1a0547e436783a557b1e70ec9091a190",
+    "schema": "EXP336-CNRS-FULL32-STAGE-A-EXECUTION-IDENTITY-V1"
+  },
+  "transition_selected_from_frozen_matrix": {
+    "decision": "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED",
+    "git_blob_sha": "fb64725b7830f4241c040bbe7a17525eab0e778f",
+    "selected_transition": {
+      "next_scope": "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY",
+      "rule": "Preserve the negative result. Do not open Stage B; only a distinct preregistered causal hypothesis may follow.",
+      "stage_a_established": false,
+      "stage_b_design_authorized": false
+    },
+    "source": "protocols/v017/exp336_post_result_transition_lock_v1.json"
+  }
+}
