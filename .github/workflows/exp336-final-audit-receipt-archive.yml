@@ -20,6 +20,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          sha256sum protocols/v017/exp336_independent_final_audit_v1.json
+          sha256sum protocols/v017/exp336_postrun_independent_audit_receipt_v1.json
           test "$(sha256sum protocols/v017/exp336_independent_final_audit_v1.json | awk '{print $1}')" = "5f8f69b93ba12bbf17713f09afb8dab4e6d04a4bb277be544c15b870b0a96536"
           test "$(sha256sum protocols/v017/exp336_postrun_independent_audit_receipt_v1.json | awk '{print $1}')" = "0a8c81f9ace0e33decaa9a6a95b700df017aae40af3562b03c28f0ac88ead5f6"
 
