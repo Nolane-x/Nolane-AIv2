@@ -1,0 +1,17 @@
+{
+  "authoritative_run_id": 35503733893,
+  "authorization_commit_sha": "679f262b6f18e3cd7ba6a68e0df30e7153dcf2e3",
+  "authorization_git_blob_sha": "f6da2c87b200a883847ff3d83c25235f8f05a6f3",
+  "dispatcher_workflow_run_id": 35503673903,
+  "experiment_id": "EXP-337",
+  "lock_commit_created_at": "2026-09-20T09:58:03Z",
+  "observed_chunk0_artifact_count_at_lock": 0,
+  "run_lock_commit_sha": "ba1d5307e1fa23e959b803edb851c71900ba4476",
+  "run_lock_git_blob_sha": "f9d96d59628eea8765814c1fba1d7cb8898ea221",
+  "run_lock_path": "protocols/v017/exp337_authoritative_run_lock_v1.json",
+  "schema": "EXP337-AUTHORITATIVE-RUN-LOCK-RECEIPT-V1",
+  "sealed_head_matching_dispatch_ids_at_lock": [
+    35503733893
+  ],
+  "sealed_marker_sha": "ec5f98a636e9395a76509493800b6b9f06a33271"
+}
