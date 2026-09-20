@@ -1,0 +1,94 @@
+name: EXP-336 post-run verifier lock
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/exp336-postrun-independent-audit.yml"
+      - ".github/workflows/exp336-postrun-verifier-lock.yml"
+      - "protocols/v017/exp336_final_closure_requirements_v1.json"
+      - "protocols/v017/exp336_postrun_verifier_lock_v1.json"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/exp336-postrun-independent-audit.yml"
+      - ".github/workflows/exp336-postrun-verifier-lock.yml"
+      - "protocols/v017/exp336_final_closure_requirements_v1.json"
+      - "protocols/v017/exp336_postrun_verifier_lock_v1.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-lock:
+    runs-on: ubuntu-latest
+    env:
+      LOCK_BLOB_SHA: "b5a2a64c835424a22fd7de7af362093679750090"
+      VERIFIER_BLOB_SHA: "c44d3adcaa202b88c6c69b986af536b5dcb34905"
+      REQUIREMENTS_BLOB_SHA: "c242dd78bb710aca9aa66ead22d0d5e7b889dbfa"
+      LOCKED_VERIFIER_COMMIT: "fb237efb887bc3767349b02d3b4c0abb5faa3fcb"
+      FROZEN_AUDITOR_SHA: "208be21e035a5064eb9d60a9269154768717f5b1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify immutable lock bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD:protocols/v017/exp336_postrun_verifier_lock_v1.json)" = "${LOCK_BLOB_SHA}"
+          test "$(git rev-parse HEAD:.github/workflows/exp336-postrun-independent-audit.yml)" = "${VERIFIER_BLOB_SHA}"
+          test "$(git rev-parse HEAD:protocols/v017/exp336_final_closure_requirements_v1.json)" = "${REQUIREMENTS_BLOB_SHA}"
+
+      - name: Verify lock semantics and provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          lock=json.loads(
+              Path("protocols/v017/exp336_postrun_verifier_lock_v1.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          assert lock["schema"] == "EXP336-POSTRUN-VERIFIER-LOCK-V1"
+          assert lock["created_before_final_result_visibility"] is True
+          assert lock["authoritative_science"]["run_id"] == 35481336946
+          assert lock["authoritative_science"]["run_attempt"] == 1
+          assert (
+              lock["authoritative_science"]["sealed_head_sha"]
+              == "08e2caebca4c1b7e4b197f6d2190ef90e94468fd"
+          )
+          assert lock["frozen_independent_auditor"]["sha"] == os.environ["FROZEN_AUDITOR_SHA"]
+          assert lock["postrun_verifier"]["commit_sha"] == os.environ["LOCKED_VERIFIER_COMMIT"]
+          assert lock["postrun_verifier"]["workflow_git_blob_sha"] == os.environ["VERIFIER_BLOB_SHA"]
+          assert lock["postrun_verifier"]["ci_conclusion"] == "success"
+          assert lock["closure_control"]["requirements_git_blob_sha"] == os.environ["REQUIREMENTS_BLOB_SHA"]
+          assert lock["downstream_authority"] == {
+              "stage_b_implementation_authorized": False,
+              "stage_c_implementation_authorized": False,
+              "exp302_implementation_authorized": False,
+              "exp320_implementation_authorized": False,
+              "scale_authorized": False,
+              "authorized_30m": False,
+              "authorized_100m": False,
+          }
+          PY
+
+      - name: Verify locked commits remain addressable
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "${LOCKED_VERIFIER_COMMIT}^{commit}"
+          git cat-file -e "${FROZEN_AUDITOR_SHA}^{commit}"
+
+      - name: Verify locked verifier tree object
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse "${LOCKED_VERIFIER_COMMIT}:.github/workflows/exp336-postrun-independent-audit.yml")" = "${VERIFIER_BLOB_SHA}"
