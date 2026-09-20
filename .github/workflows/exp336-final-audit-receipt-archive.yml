@@ -1,0 +1,71 @@
+name: EXP-336 final audit receipt archive
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/exp336-final-audit-receipt-archive.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify frozen-derived report and receipt bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(sha256sum protocols/v017/exp336_independent_final_audit_v1.json | awk '{print $1}')" = "5f8f69b93ba12bbf17713f09afb8dab4e6d04a4bb277be544c15b870b0a96536"
+          test "$(sha256sum protocols/v017/exp336_postrun_independent_audit_receipt_v1.json | awk '{print $1}')" = "0a8c81f9ace0e33decaa9a6a95b700df017aae40af3562b03c28f0ac88ead5f6"
+
+      - name: Verify closure authority remains fail-closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("protocols/v017/exp336_postrun_independent_audit_receipt_v1.json").read_text())
+          a=json.loads(Path("protocols/v017/exp336_independent_final_audit_v1.json").read_text())
+          assert r["schema"] == "EXP336-POSTRUN-INDEPENDENT-AUDIT-RECEIPT-V1"
+          assert a["schema"] == "EXP336-INDEPENDENT-FINAL-AUDIT-V1"
+          assert r["authoritative_run_id"] == 35481336946
+          assert r["authoritative_run_attempt"] == 1
+          assert r["authoritative_run_conclusion"] == "success"
+          assert r["unique_sealed_head_workflow_dispatch_count"] == 1
+          assert r["auditor_sha"] == "208be21e035a5064eb9d60a9269154768717f5b1"
+          assert r["verified_chunk_count"] == 8
+          assert r["complete_chunk_chain"] is True
+          assert r["decision"] == a["decision"] == "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED"
+          assert r["evidence_digest"] == a["evidence_digest"] == "c89f70f3555ad95892794821eddbcc158a2e7e9d7c4ef4fa02082a00acd6ccf7"
+          assert r["independent_audit_report_sha256"] == "5f8f69b93ba12bbf17713f09afb8dab4e6d04a4bb277be544c15b870b0a96536"
+          assert r["final_json_sha256"] == "e04b24a0fef1f00c35f8ad8c6549538d18642a249f955f2067294111f8288fcc"
+          expected={
+              "stage_b_implementation_authorized":False,
+              "stage_c_implementation_authorized":False,
+              "exp302_implementation_authorized":False,
+              "exp320_implementation_authorized":False,
+              "scale_authorized":False,
+              "authorized_30m":False,
+              "authorized_100m":False,
+          }
+          assert r["authorization_flags"] == expected
+          assert a["authorization_flags"] == expected
+          assert r["control_sham_exact_by_chunk"] == [True]*8
+          assert a["control_sham_exact_by_chunk"] == [True]*8
+          PY
+
+      - uses: actions/upload-artifact@v4
+        id: upload
+        with:
+          name: exp336-final-audit-receipt-recovery-${{ github.run_id }}
+          path: |
+            protocols/v017/exp336_independent_final_audit_v1.json
+            protocols/v017/exp336_postrun_independent_audit_receipt_v1.json
+          if-no-files-found: error
+          retention-days: 90
