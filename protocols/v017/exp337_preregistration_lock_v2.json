@@ -1,0 +1,85 @@
+{
+  "schema": "EXP337-PREREGISTRATION-LOCK-V2",
+  "experiment_id": "EXP-337",
+  "program": "Nolane-AIv2 V0.17 10M Native Recursive Substrate",
+  "status": "PREREGISTRATION_FROZEN_IMPLEMENTATION_CLOSED",
+  "frozen_before_implementation": true,
+  "frozen_before_exp337_result_visibility": true,
+  "branch": "exp337-cnrs-self-rollin-sequence-recovery-design",
+  "scientific_bytes_commit": "2bf7f6ac50c03b5891653c100c4fc452183f4fcb",
+  "metadata_reconciliation_commit": "1bd5f5394bac77a68fd0a923428eca8be1c1eda8",
+  "supersedes_metadata_lock_only": {
+    "schema": "EXP337-PREREGISTRATION-LOCK-V1",
+    "git_blob_sha": "71587efa4c2603a5f4f82c59b0bc13189d4a53f6",
+    "reason": "V1 froze incorrect local-copy raw Markdown SHA/size metadata. The locked preregistration and design Git blobs themselves were already correct and remain unchanged."
+  },
+  "parent_authority": {
+    "exp336_closure_commit": "818fe44bccb1b8177bea4ba622dc6306775521ed",
+    "exp336_final_decision": "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED",
+    "exp336_transition": "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY",
+    "exp336_evidence_digest": "c89f70f3555ad95892794821eddbcc158a2e7e9d7c4ef4fa02082a00acd6ccf7"
+  },
+  "locked_material": {
+    "preregistration": {
+      "path": "protocols/v017/exp337_preregistration_v1.json",
+      "git_blob_sha": "37afa42cf66e874c457f31415c5f426d318e9804",
+      "raw_sha256": "95857497dcc0cc264e5e9c76e1f8cb3a15a6b05f1e3bab90795a5f9be7f84423",
+      "canonical_digest": "5172c3f85d15d71e7fc4a16e3f00ae5d9a5031f09a97c1529f8fa6e25822c53a"
+    },
+    "design": {
+      "path": "protocols/v017/EXP337_SELF_ROLLIN_SEQUENCE_RECOVERY_DESIGN_V1.md",
+      "git_blob_sha": "1e8097d4fc56686b7bd24c561811540d8d4c5321",
+      "raw_sha256": "2b251900e435f219a8d2cb48ecf486674bbb1831cf99b9e41d0396c8b0ef19bf",
+      "size_bytes": 10898
+    },
+    "digest_sidecar_v2": {
+      "path": "protocols/v017/exp337_preregistration_digest_v2.json",
+      "git_blob_sha": "e8e9b65669bb9d7deb3a44ddd6673acfbde5e354"
+    }
+  },
+  "scientific_boundary": {
+    "resident_trainable_parameters": 10000000,
+    "architecture_geometry_may_change": false,
+    "new_trainable_parameters_allowed": false,
+    "learning_rate_retuning_allowed": false,
+    "projector_geometry_may_change": false,
+    "world_population_may_change": false,
+    "stage_b_in_scope": false,
+    "stage_c_in_scope": false,
+    "scale_in_scope": false
+  },
+  "downstream_authority": {
+    "exp337_implementation_authorized": false,
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  },
+  "allowed_before_explicit_operator_transition": [
+    "read-only review of frozen EXP-337 preregistration",
+    "contract and CI validation of frozen preregistration bytes",
+    "independent consistency checks",
+    "documentation that does not alter locked scientific material"
+  ],
+  "forbidden_before_explicit_operator_transition": [
+    "EXP-337 runtime implementation",
+    "EXP-337 scientific execution workflow",
+    "scientific dispatch",
+    "checkpoint mutation",
+    "threshold change",
+    "loss-mixture change",
+    "roll-in construction change",
+    "projector change",
+    "world selection change",
+    "learning-rate retuning",
+    "Stage-B implementation",
+    "Stage-C implementation",
+    "EXP-302 implementation",
+    "EXP-320 implementation",
+    "30M or 100M scaling"
+  ],
+  "mutation_rule": "Any proposed scientific change requires a new preregistration version and invalidates this exact court identity; do not silently mutate these locked scientific bytes."
+}
