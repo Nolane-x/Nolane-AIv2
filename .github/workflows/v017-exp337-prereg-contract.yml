@@ -7,14 +7,18 @@ on:
       - "protocols/v017/exp337_preregistration_v1.json"
       - "protocols/v017/EXP337_SELF_ROLLIN_SEQUENCE_RECOVERY_DESIGN_V1.md"
       - "protocols/v017/exp337_preregistration_digest_v1.json"
+      - "protocols/v017/exp337_preregistration_digest_v2.json"
       - "protocols/v017/exp337_preregistration_lock_v1.json"
+      - "protocols/v017/exp337_preregistration_lock_v2.json"
       - ".github/workflows/v017-exp337-prereg-contract.yml"
   pull_request:
     paths:
       - "protocols/v017/exp337_preregistration_v1.json"
       - "protocols/v017/EXP337_SELF_ROLLIN_SEQUENCE_RECOVERY_DESIGN_V1.md"
       - "protocols/v017/exp337_preregistration_digest_v1.json"
+      - "protocols/v017/exp337_preregistration_digest_v2.json"
       - "protocols/v017/exp337_preregistration_lock_v1.json"
+      - "protocols/v017/exp337_preregistration_lock_v2.json"
       - ".github/workflows/v017-exp337-prereg-contract.yml"
   workflow_dispatch:
 
@@ -41,8 +45,8 @@ jobs:
 
           PREREG = Path("protocols/v017/exp337_preregistration_v1.json")
           DESIGN = Path("protocols/v017/EXP337_SELF_ROLLIN_SEQUENCE_RECOVERY_DESIGN_V1.md")
-          SIDECAR = Path("protocols/v017/exp337_preregistration_digest_v1.json")
-          LOCK = Path("protocols/v017/exp337_preregistration_lock_v1.json")
+          SIDECAR = Path("protocols/v017/exp337_preregistration_digest_v2.json")
+          LOCK = Path("protocols/v017/exp337_preregistration_lock_v2.json")
           CLOSURE = Path("protocols/v017/exp336_final_closure_v1.json")
 
           expected = {
@@ -50,10 +54,10 @@ jobs:
               "prereg_raw": "95857497dcc0cc264e5e9c76e1f8cb3a15a6b05f1e3bab90795a5f9be7f84423",
               "prereg_canonical": "5172c3f85d15d71e7fc4a16e3f00ae5d9a5031f09a97c1529f8fa6e25822c53a",
               "design_blob": "1e8097d4fc56686b7bd24c561811540d8d4c5321",
-              "design_raw": "850beada84c0df269c8605a3c1ba1c6a5cf0804eb4e171ec6f704ad8aa933bcb",
-              "design_size": 10895,
-              "sidecar_blob": "589c7fbab7c351114ab0b3fae489a1bf1ca50a54",
-              "lock_blob": "71587efa4c2603a5f4f82c59b0bc13189d4a53f6",
+              "design_raw": "2b251900e435f219a8d2cb48ecf486674bbb1831cf99b9e41d0396c8b0ef19bf",
+              "design_size": 10898,
+              "sidecar_blob": "e8e9b65669bb9d7deb3a44ddd6673acfbde5e354",
+              "lock_blob": "f200c69090cdb8c0f8e1b7f72b63ce3f227b2bc8",
           }
 
           def sha256(path: Path) -> str:
@@ -80,11 +84,9 @@ jobs:
           ).encode("utf-8")
           assert hashlib.sha256(canonical).hexdigest() == expected["prereg_canonical"]
 
-          actual_design_raw = sha256(DESIGN)
-          actual_design_size = DESIGN.stat().st_size
-          print("EXP337_DESIGN_RAW_SHA256=", actual_design_raw)
-          print("EXP337_DESIGN_SIZE=", actual_design_size)
           assert blob(DESIGN) == expected["design_blob"]
+          assert sha256(DESIGN) == expected["design_raw"]
+          assert DESIGN.stat().st_size == expected["design_size"]
           assert blob(SIDECAR) == expected["sidecar_blob"]
           assert blob(LOCK) == expected["lock_blob"]
 
@@ -95,12 +97,12 @@ jobs:
           assert sidecar["design"]["raw_sha256"] == expected["design_raw"]
           assert sidecar["implementation_authorized"] is False
 
-          assert lock["schema"] == "EXP337-PREREGISTRATION-LOCK-V1"
+          assert lock["schema"] == "EXP337-PREREGISTRATION-LOCK-V2"
           assert lock["frozen_before_implementation"] is True
           assert lock["frozen_before_exp337_result_visibility"] is True
           assert lock["locked_material"]["preregistration"]["git_blob_sha"] == expected["prereg_blob"]
           assert lock["locked_material"]["design"]["git_blob_sha"] == expected["design_blob"]
-          assert lock["locked_material"]["digest_sidecar"]["git_blob_sha"] == expected["sidecar_blob"]
+          assert lock["locked_material"]["digest_sidecar_v2"]["git_blob_sha"] == expected["sidecar_blob"]
           assert all(value is False for value in lock["downstream_authority"].values())
 
           assert prereg["experiment_id"] == "EXP-337"
@@ -158,6 +160,11 @@ jobs:
 
           print("EXP-337 preregistration contract: VERIFIED")
           print("prereg canonical digest:", expected["prereg_canonical"])
+          assert sidecar["schema"] == "EXP337-PREREGISTRATION-DIGEST-V2"
+          assert sidecar["reconciliation"]["scientific_bytes_changed"] is False
+          assert sidecar["reconciliation"]["design_blob_changed"] is False
+          assert sidecar["reconciliation"]["preregistration_blob_changed"] is False
+          assert lock["supersedes_metadata_lock_only"]["git_blob_sha"] == "71587efa4c2603a5f4f82c59b0bc13189d4a53f6"
           print("design raw sha256:", expected["design_raw"])
           print("implementation authorized: false")
           PY
