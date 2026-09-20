@@ -231,6 +231,153 @@ jobs:
           sha256sum audit-input/exp336-postrun-independent-audit-receipt.json
           sha256sum audit-input/exp336-final.json
 
+      - name: Build consolidated EXP-336 final closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root=Path("audit-input")
+          receipt_path=root/"exp336-postrun-independent-audit-receipt.json"
+          final_path=root/"exp336-final.json"
+          report_path=root/"exp336-independent-final-audit.json"
+          manifest_path=root/"github-artifact-manifest.json"
+          identity_path=Path("protocols/v017/exp336_execution_identity_v1.json")
+          transition_path=Path("protocols/v017/exp336_post_result_transition_lock_v1.json")
+
+          receipt=json.loads(receipt_path.read_text(encoding="utf-8"))
+          final=json.loads(final_path.read_text(encoding="utf-8"))
+          report=json.loads(report_path.read_text(encoding="utf-8"))
+          manifest=json.loads(manifest_path.read_text(encoding="utf-8"))
+          identity=json.loads(identity_path.read_text(encoding="utf-8"))
+          transition_lock=json.loads(transition_path.read_text(encoding="utf-8"))
+
+          decision=receipt["decision"]
+          transitions=transition_lock.get("transitions",{})
+          if decision not in transitions:
+              raise SystemExit(f"final reducer decision missing from frozen transition matrix: {decision}")
+          selected=transitions[decision]
+          guards=transition_lock.get("universal_guards",{})
+
+          if transition_lock.get("created_before_scientific_result") is not True:
+              raise SystemExit("transition matrix is not marked pre-result")
+          if transition_lock.get("source_commit_sha") != identity.get("source_commit_sha"):
+              raise SystemExit("transition/source identity mismatch")
+          if transition_lock.get("preregistration_digest") != identity.get("approved_preregistration_digest"):
+              raise SystemExit("transition/preregistration identity mismatch")
+          if transition_lock.get("execution_digest") != identity.get("exp336_execution_digest"):
+              raise SystemExit("transition/execution identity mismatch")
+          if receipt.get("verified_chunk_count") != 8 or receipt.get("complete_chunk_chain") is not True:
+              raise SystemExit("cannot close EXP-336 without independently verified 8-chunk chain")
+          if final.get("evidence_digest") != receipt.get("evidence_digest"):
+              raise SystemExit("closure evidence digest mismatch")
+          if report["final"]["decision"] != decision:
+              raise SystemExit("closure independent reducer mismatch")
+          if any(value is not False for value in receipt.get("authorization_flags",{}).values()):
+              raise SystemExit("closure contains forbidden downstream authorization")
+          for key in (
+              "stage_b_implementation_authorized",
+              "stage_c_implementation_authorized",
+              "exp302_implementation_authorized",
+              "exp320_implementation_authorized",
+              "scale_authorized",
+              "authorized_30m",
+              "authorized_100m",
+          ):
+              if guards.get(key) is not False:
+                  raise SystemExit(f"frozen universal guard unexpectedly open: {key}")
+
+          run_id=int(os.environ["AUTHORITATIVE_RUN_ID"])
+          expected_names=[
+              f"exp336-identity-{run_id}",
+              *[f"exp336-chunk-{i}-{run_id}" for i in range(8)],
+              f"exp336-cnrs-full32-stage-a-final-{run_id}",
+          ]
+          missing=[name for name in expected_names if name not in manifest]
+          if missing:
+              raise SystemExit(f"closure artifact manifest incomplete: {missing}")
+
+          raw_sha=lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+          transition_sha=raw_sha(transition_path)
+          identity_sha=raw_sha(identity_path)
+          receipt_sha=raw_sha(receipt_path)
+          report_sha=raw_sha(report_path)
+          final_sha=raw_sha(final_path)
+
+          closure={
+              "schema":"EXP336-FINAL-CLOSURE-V1",
+              "experiment_id":"EXP-336",
+              "authoritative_run":{
+                  "id":run_id,
+                  "status":"completed",
+                  "conclusion":"success",
+                  "run_attempt":1,
+                  "head_sha":os.environ["AUTHORITATIVE_HEAD_SHA"],
+              },
+              "scientific_source":{
+                  "source_commit_sha":identity["source_commit_sha"],
+                  "source_tree_digest":identity["source_tree_digest"],
+                  "workflow_sha256":identity["workflow_sha256"],
+                  "preregistration_digest":identity["approved_preregistration_digest"],
+                  "execution_digest":identity["exp336_execution_digest"],
+              },
+              "sealed_identity":{
+                  "schema":identity["schema"],
+                  "identity_json_sha256":identity_sha,
+                  "identity_artifact_zip_sha256":manifest[f"exp336-identity-{run_id}"],
+              },
+              "parent_authority":{
+                  "parent_exp319_run_id":identity["parent_exp319_run_id"],
+                  "parent_cnrs_artifact_id":identity["parent_cnrs_artifact_id"],
+                  "parent_cnrs_zip_digest":identity["parent_cnrs_zip_digest"],
+                  "parent_cnrs_checkpoint_sha256":identity["parent_cnrs_checkpoint_sha256"],
+                  "parent_cnrs_model_state_digest":identity["parent_cnrs_model_state_digest"],
+                  "parent_cnrs_optimizer_state_digest":identity["parent_cnrs_optimizer_state_digest"],
+                  "parent_cnrs_rng_state_digest":identity["parent_cnrs_rng_state_digest"],
+                  "parent_exp335_run_id":identity["parent_exp335_run_id"],
+                  "parent_exp335_evidence_digest":identity["parent_exp335_evidence_digest"],
+                  "parent_exp335_audit_report_sha256":identity["parent_exp335_audit_report_sha256"],
+              },
+              "authoritative_artifacts":{
+                  "github_artifact_zip_digests":manifest,
+                  "final_json_sha256":final_sha,
+                  "evidence_digest":receipt["evidence_digest"],
+              },
+              "independent_audit":{
+                  "auditor_sha":os.environ["AUDITOR_SHA"],
+                  "independent_audit_report_sha256":report_sha,
+                  "independent_audit_receipt_sha256":receipt_sha,
+                  "verified_chunk_count":receipt["verified_chunk_count"],
+                  "complete_chunk_chain":receipt["complete_chunk_chain"],
+                  "control_sham_exact_by_chunk":receipt["control_sham_exact_by_chunk"],
+              },
+              "final_reducer":{
+                  "decision":decision,
+                  "reducer_vectors":receipt["reducer_vectors"],
+                  "evidence_digest":receipt["evidence_digest"],
+              },
+              "transition_selected_from_frozen_matrix":{
+                  "source":"protocols/v017/exp336_post_result_transition_lock_v1.json",
+                  "transition_lock_json_sha256":transition_sha,
+                  "decision":decision,
+                  "selected_transition":selected,
+              },
+              "downstream_authority":dict(receipt["authorization_flags"]),
+          }
+
+          canonical=json.dumps(closure,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          closure["closure_digest"]=hashlib.sha256(canonical).hexdigest()
+          rendered=json.dumps(closure,sort_keys=True,indent=2,ensure_ascii=False)+"\n"
+          out=root/"exp336-final-closure-v1.json"
+          out.write_text(rendered,encoding="utf-8")
+          print(rendered,end="")
+          PY
+          sha256sum audit-input/exp336-final-closure-v1.json
+
       - uses: actions/upload-artifact@v4
         id: upload_audit
         with:
@@ -240,6 +387,7 @@ jobs:
             audit-input/exp336-postrun-independent-audit-receipt.json
             audit-input/github-artifact-manifest.json
             audit-input/exp336-final.json
+            audit-input/exp336-final-closure-v1.json
           if-no-files-found: error
           retention-days: 90
 
@@ -260,6 +408,9 @@ jobs:
                   encoding="utf-8"
               )
           )
+          closure=json.loads(
+              Path("audit-input/exp336-final-closure-v1.json").read_text(encoding="utf-8")
+          )
           print("EXP-336 post-run independent audit completed successfully.")
           print()
           print(f"- authoritative run: `{r['authoritative_run_id']}`")
@@ -272,6 +423,8 @@ jobs:
           print(f"- verified chunk count: `{r['verified_chunk_count']}/8`")
           print(f"- complete artifact chain: `{r['complete_chunk_chain']}`")
           print(f"- audit artifact ID: `{os.environ['AUDIT_ARTIFACT_ID']}`")
+          print(f"- closure digest: `{closure['closure_digest']}`")
+          print(f"- frozen next scope: `{closure['transition_selected_from_frozen_matrix']['selected_transition']['next_scope']}`")
           print()
           print("The receipt is based on re-downloading and hashing every authoritative artifact ZIP,")
           print("validating the frozen execution identity, binding each parent to the preceding raw ZIP,")
