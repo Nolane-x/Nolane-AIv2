@@ -1,0 +1,252 @@
+{
+  "arm_initialization": {
+    "afixed_checkpoint_transplant_allowed": false,
+    "all_arms_load_same_model_state": true,
+    "all_arms_load_same_optimizer_state": true,
+    "all_arms_restore_same_torch_rng_state": true,
+    "all_arms_start_from_exact_same_checkpoint_bytes": true,
+    "fresh_initialization_allowed": false,
+    "learning_rate_retuning_allowed": false
+  },
+  "arms": [
+    "CONTROL_CNRS_FULL32",
+    "SHAM_MEASURE_CNRS_FULL32",
+    "SUBSPACE_PROJECT_CNRS_FULL32"
+  ],
+  "authorizations": {
+    "authorized_100m": false,
+    "authorized_30m": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "exp336_implementation_authorized": false,
+    "scale_authorized": false,
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false
+  },
+  "cnrs_geometry": {
+    "builder": "build_nrs_core_10m",
+    "capacity_bottleneck": 973,
+    "capacity_tail_parameters": 192,
+    "latent_state_carry_within_forward": true,
+    "loop_conditioning": true,
+    "model_class": "V017RecurrentLM",
+    "persistent_state_across_examples": false,
+    "trainable_parameters": 10000000,
+    "weight_tied_across_depth": true
+  },
+  "continuation": {
+    "additional_exposures_per_world": 32,
+    "additional_source_updates": 1024,
+    "answer_only_loss": true,
+    "byte_tokenizer_unchanged": true,
+    "chunk_count": 8,
+    "effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "exposures_per_chunk": 4,
+    "final_cumulative_step": 2048,
+    "gradient_clip_norm": 1.0,
+    "learning_rate": 0.0003,
+    "optimizer": "AdamW",
+    "schedule": "for exposure 0..31: for family in frozen family order: for world index 0..7",
+    "source_updates_per_chunk": 128,
+    "starting_cumulative_step": 1024,
+    "weight_decay": 0.01
+  },
+  "evaluation": {
+    "aggregate_exp319_stage_a_floor": {
+      "answer_token_accuracy_min": 0.99,
+      "eos_correctness_min": 0.95,
+      "final_loss_fraction_of_original_exp319_initial_max": 0.25,
+      "gating_effort": 4,
+      "greedy_exact_match_min": 0.9,
+      "invalid_output_rate_max": 0.01,
+      "max_generation_tokens": 96,
+      "nonfinite_events_max": 0,
+      "original_exp319_initial_answer_only_loss": 164.55180455597355
+    },
+    "arm_pass_rule": "arm passes only if both the full-32 teacher-forced floor and aggregate EXP-319 Stage-A floor pass at the final boundary",
+    "chunk_boundaries": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      24,
+      28,
+      32
+    ],
+    "intermediate_boundaries_are_diagnostic_only": true,
+    "primary_full32_teacher_forced_floor": {
+      "all_32_worlds_must_pass_simultaneously": true,
+      "nonfinite_events_max": 0,
+      "per_world_answer_token_accuracy_min": 0.99,
+      "per_world_full_answer_exact_min": 0.9
+    }
+  },
+  "exp319_cnrs_start_authority": {
+    "checkpoint_member_sha256": "bd58607a0e49bb32f45124689d11880a13040afa702bf0524cce115d947f650b",
+    "checkpoint_receipt": {
+      "arm_id": "C_NRS_CORE",
+      "artifact_digest": "f89332de841047bd0bc8c509fb5a1d507ade5ed1cc1b14c36f8aa10a469f1ac6",
+      "chunk_end_step": 1024,
+      "chunk_start_step": 768,
+      "cumulative_step": 1024,
+      "data_cursor_digest": "0a283c3606ced3e8bb726a0cdbf8f4baa27caf958d34cfbf2b4720c7f6c6b36d",
+      "data_order_digest": "ad1a4149659a4c53873e8a01263aeb0aca06c05bc3396bf4e0f870665b5a3c51",
+      "learning_rate": 0.0003,
+      "model_init_seed": 415273425230203559,
+      "model_state_digest": "01c2a0f16b3f84dfee1b6db749821cf09897de05c6ceb15e42274abcd5926a76",
+      "optimizer_state_digest": "d18439109cc9e020153b33fa6c39d38d4d0e05f2262c6a9ee3598df208f1ddf9",
+      "parent_artifact_digest": "aa017ac09be4d43c9890fdec7adcc9715e09423dc184a157e919c36fc7cd42ea",
+      "rng_state_digest": "3d2d8e928c4e09f880efbd2edaac3df47c88bace04c0e270c4ec0639e65bdb95",
+      "root": 0,
+      "schema": "EXP319-TRAINING-CHAIN-RECEIPT-V1",
+      "source_commit_sha": "2002a42322c7b919c3c9dc3da7d9cb0f546d4431",
+      "stage": "A_SANITY",
+      "training_contract_digest": "bb9a26a3c49f0acb2d6b470aea19c60a1816215f84da8b1af81fdc524ef2682a"
+    },
+    "receipt_member_sha256": "cea3fb3d0b94e5d7cbec59813cfa3a1611dec0883a14acd6b2d0e46a23db3e4d",
+    "run_id": 35311529822,
+    "run_identity": "github-run-35311529822-exp319-v1",
+    "selected_arm": "C_NRS_CORE",
+    "selected_chain_artifact_id": 10534076546,
+    "selected_chain_artifact_name": "exp319-stage-a-C_NRS_CORE-0.0003-c3",
+    "selected_chain_artifact_zip_sha256": "d88a9d85584476ec5226321479560a1255f0d015122827d4be75f67a6f337755",
+    "selected_learning_rate": 0.0003,
+    "selected_passes_original_exp319_floor": false,
+    "selected_record": {
+      "answer_only_loss": 2.149582388769822,
+      "answer_token_accuracy": 0.7007042253521126,
+      "eos_correctness": 1.0,
+      "exact_match": 0.25,
+      "initial_answer_only_loss": 164.55180455597355,
+      "invalid_output_rate": 0.0,
+      "nonfinite_events": 0,
+      "step": 1024
+    },
+    "stage_a_selection_artifact_id": 10533822077,
+    "stage_a_selection_artifact_zip_sha256": "ee65f07a5f63c5b7f472eba5aea5ab17a624697138c23266d515810024bfb559",
+    "stage_a_selection_authority_digest": "39e5e846dbe87f3d5b34e438f0c8864626caa7049148fac934f2c893032e623f",
+    "stage_a_selection_json_sha256": "4da236ea06a76df94ab6aa3e8141c6855a97f427f0b8614fc380d5c71e88e34a",
+    "summary_member_sha256": "32131c058049a27c24ac215cc04b77d5e1432cbda41fda71f8724f6723dfea23"
+  },
+  "exp335_parent_authority": {
+    "authoritative_run_id": 35445927525,
+    "closure_path": "protocols/v017/exp335_final_closure_v1.json",
+    "execution_digest": "24d4e97ad3c7026881a122cd309d671d9999f3f84b5dcc04a11c468c4409d520",
+    "final_artifact_id": 10590026763,
+    "final_artifact_zip_sha256": "ae4ab3bc0b8ce064ece92655fd578a896fe3ed6f27fffd411b9b14d0fc1729a5",
+    "final_evidence_digest": "6fcabeb87971a0cb5d5ef0d14029f5ab248f3e353b21bb55f42ac977a4ffe1af",
+    "final_json_sha256": "955d400eb4d590fe0399671dfadb37e8140be835451c5d7482a8928ed2686032",
+    "independent_audit_artifact_id": 10595335243,
+    "independent_audit_artifact_zip_sha256": "0ae527b905d92e51d6ec62553fdaa0098ebde9432f7d0201baa6d773c2782b7d",
+    "independent_audit_receipt_json_sha256": "50cbfe612b8debb208ae578c929dddbc94a94be618eab9047f1e5083247ac9a9",
+    "independent_audit_report_sha256": "6eec3678b0b00321a83fa69cc45add2111ec6524d6ace1c691dca2a6817900a0",
+    "independent_audit_run_id": 35477337239,
+    "independent_auditor_sha": "bb629e90fd7dc0755b3f60842bba6bc0aa846d03",
+    "scientific_source_sha": "d29e20e5af3467d16123e224462b37ef9a2ebf9d",
+    "sealed_marker_sha": "57fdf3a38b42b41951639a35dbb3c0d82055846b",
+    "transition_lock_path": "protocols/v017/exp335_post_result_transition_lock_v1.json"
+  },
+  "experiment_id": "EXP-336",
+  "inherited_projection": {
+    "formula": "g' = g - T pinv(T^T T) T^T g",
+    "gram_dtype": "float64",
+    "pinv_rtol": 1e-12,
+    "posthoc_halfspace_or_no_new_conflict_variant_forbidden": true,
+    "selection": "targets with raw source-target dot < 0 and target norm squared > 1e-24",
+    "source": "EXP-335 registered SUBSPACE_PROJECT_FULL32 rule",
+    "target_norm_squared_floor": 1e-24,
+    "target_order": "frozen world order excluding source"
+  },
+  "measurement_geometry": {
+    "control_does_not_measure_target_gradients": true,
+    "control_sham_exact_state_required_at_every_chunk_boundary": true,
+    "rng_after_source_restored_before_parameter_update": true,
+    "sham_applies_raw_source_gradient": true,
+    "source_and_target_backward_rng_reset_required": true,
+    "source_world": "current scheduled world",
+    "target_gradients_measured_at_identical_pre_update_model_optimizer_rng_state": true,
+    "target_worlds": "all other 31 worlds"
+  },
+  "pre_result_successor_lock": {
+    "CNRS_BASELINE_FAILURE_WITHOUT_PROJECTOR_TRIGGER": "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY",
+    "CNRS_FULL32_STAGE_A_ESTABLISHED_BOTH": "STAGE_B_DESIGN_PREREGISTRATION_ONLY",
+    "CNRS_FULL32_STAGE_A_ESTABLISHED_CONTROL_ONLY_PROJECT_REGRESSION": "STAGE_B_DESIGN_PREREGISTRATION_ONLY_USING_CONTROL_FOUNDATION",
+    "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED": "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY",
+    "CNRS_FULL32_STAGE_A_RESCUED_BY_INHERITED_PROJECTOR_NO_REGRESSION": "STAGE_B_DESIGN_PREREGISTRATION_ONLY_USING_EXACT_INHERITED_REPAIR",
+    "INVALID_CNRS_FULL32_STAGE_A": "VALIDITY_OR_PROVENANCE_REVIEW_ONLY",
+    "PARENT_AUTHORITY_MISMATCH": "PARENT_AUTHORITY_RECONCILIATION_ONLY",
+    "SHAM_CNRS_FULL32_MISMATCH": "MEASUREMENT_NONPERTURBATION_LOCALIZATION_ONLY"
+  },
+  "program": "Nolane-AIv2 V0.17 10M Native Recursive Substrate",
+  "reducer": {
+    "order": [
+      "INVALID_CNRS_FULL32_STAGE_A",
+      "PARENT_AUTHORITY_MISMATCH",
+      "SHAM_CNRS_FULL32_MISMATCH",
+      "CNRS_FULL32_STAGE_A_ESTABLISHED_BOTH",
+      "CNRS_FULL32_STAGE_A_ESTABLISHED_CONTROL_ONLY_PROJECT_REGRESSION",
+      "CNRS_BASELINE_FAILURE_WITHOUT_PROJECTOR_TRIGGER",
+      "CNRS_FULL32_STAGE_A_RESCUED_BY_INHERITED_PROJECTOR_NO_REGRESSION",
+      "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED"
+    ],
+    "projector_trigger": "projection_update_count > 0 and projected_target_count > 0",
+    "rules": {
+      "CNRS_BASELINE_FAILURE_WITHOUT_PROJECTOR_TRIGGER": "CONTROL fails, PROJECT fails, and inherited projector never engages",
+      "CNRS_FULL32_STAGE_A_ESTABLISHED_BOTH": "CONTROL and PROJECT both pass the complete final arm pass rule",
+      "CNRS_FULL32_STAGE_A_ESTABLISHED_CONTROL_ONLY_PROJECT_REGRESSION": "CONTROL passes and PROJECT fails",
+      "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED": "all remaining valid scientific outcomes",
+      "CNRS_FULL32_STAGE_A_RESCUED_BY_INHERITED_PROJECTOR_NO_REGRESSION": "CONTROL fails, PROJECT passes, inherited projector engages, at least one CONTROL-failed world is rescued, and no CONTROL-passing world regresses"
+    },
+    "world_vectors": [
+      "control_failed_worlds",
+      "project_failed_worlds",
+      "rescued_control_failures",
+      "project_regressions"
+    ]
+  },
+  "schema_version": "EXP336-CNRS-FULL32-STAGE-A-PROJECTION-INHERITANCE-V1",
+  "scientific_boundary": {
+    "afixed_weights_transplanted_into_cnrs": false,
+    "architecture_geometry_may_change": false,
+    "exp335_final_disposition": "AFIXED_FULL32_FOUNDATION_REENTRY_RESCUED_NO_REGRESSION",
+    "exp335_transition": "C_NRS_CORE_FULL32_STAGE_A_DESIGN_ONLY",
+    "inherits_projector_rule_only": true,
+    "posthoc_halfspace_projector_allowed": false,
+    "resident_trainable_parameters": 10000000,
+    "stage_b_in_scope": false,
+    "stage_c_in_scope": false
+  },
+  "scientific_question": "Does the exact EXP-335 registered full-32 subspace-projection repair causally rescue the previously selected C_NRS_CORE Stage-A root-0 failure when CONTROL, SHAM, and PROJECT continue from the exact same sealed C_NRS checkpoint, optimizer state, and RNG state?",
+  "status": "DESIGN_PREREGISTRATION_ONLY",
+  "world_population": {
+    "content_must_match_exp335_full32_population": true,
+    "families": [
+      "iterative-grid-and-maze",
+      "algorithmic-sequence-transform",
+      "generator-heldout-abstract-transformation",
+      "language-sequence-control"
+    ],
+    "generator": "exp319-worlds-v1",
+    "population_source": "materialize_stage_a()",
+    "root": 0,
+    "stage": "A_SANITY",
+    "world_count": 32,
+    "world_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "world_order": "family order above, then index 0..7"
+  }
+}
