@@ -1,0 +1,63 @@
+{
+  "schema": "EXP337-INDEPENDENT-AUDIT-LOCK-V1",
+  "experiment_id": "EXP-337",
+  "created_before_scientific_dispatch": true,
+  "created_before_exp337_result_visibility": true,
+  "scientific_authority": {
+    "sealed_marker_sha": "ec5f98a636e9395a76509493800b6b9f06a33271",
+    "scientific_source_sha": "5a0fa8da3e3906a712bcb027d8d4e40ed60f026b",
+    "source_tree_digest": "211179cb6c95308aa936efeb144ee8c9729e468b13cf7e13cdaf67ea3dbf1520",
+    "scientific_workflow_sha256": "705319c2ab640308cbb36e8d118f7f1038644796d5099eb2f6964cee73860c9d",
+    "scientific_workflow_git_blob_sha": "e3a147183acdbca7a9bec1de40dfec34ea303141",
+    "preregistration_digest": "5172c3f85d15d71e7fc4a16e3f00ae5d9a5031f09a97c1529f8fa6e25822c53a",
+    "execution_digest": "c7d9b0ad756a2417d5675a9203b3dd95b4ba3e2596a3a5c91b34b8dfd73e20d2"
+  },
+  "frozen_auditor": {
+    "branch": "exp337-independent-artifact-auditor",
+    "commit_sha": "debc13fd4ec8f8ed443302ef0352d751661faafc",
+    "source_tree_digest": "024c9f1ef7165114bfb0be3e8ff6c2e86b1ab27c79f6e8bd623241eb5d75723b",
+    "module_path": "src/nolane_ai/experiments/exp337_artifact_audit.py",
+    "module_git_blob_sha": "e02833350720e8b737f41e8c7ef2225a297be385",
+    "cli_path": "scripts/exp337_audit_chain.py",
+    "cli_git_blob_sha": "0ff527f6d92aeb9f00a4d00b4f6249be113f422b",
+    "falsification_test_path": "tests/test_exp337_artifact_audit.py",
+    "falsification_test_git_blob_sha": "417d4c328f655e40997041561dae230db04175e9",
+    "ci_workflow_git_blob_sha": "5a495ec41acb1aa11521f9994f995d60b48f911a",
+    "seal_workflow_git_blob_sha": "476c4763d53a09dff527cca9b58f517ca4709269",
+    "ci_run_id": 35502811494,
+    "ci_conclusion": "success",
+    "seal_run_id": 35502893614,
+    "seal_conclusion": "success",
+    "seal_artifact_id": 10602528010,
+    "seal_artifact_zip_sha256": "681f0401cbd326e63009daf9177e639be14b01c54c1964d9dc3f0b343863dea6",
+    "falsification_tests_passed": 6,
+    "sealed_contract_runtime_tests_passed": 14
+  },
+  "audit_requirements": [
+    "download and hash each authoritative raw chunk ZIP independently against GitHub artifact metadata",
+    "start chunk0 parent chain at exact EXP-336 PROJECT chunk7 raw ZIP SHA-256",
+    "require chunk1..chunk7 parent_artifact_digest to equal the actual preceding raw EXP-337 chunk ZIP SHA-256",
+    "recompute every chunk bundle digest",
+    "verify every checkpoint ZIP-member SHA-256 against summary manifest and receipt",
+    "recompute every receipt canonical digest",
+    "require receipt model/optimizer/RNG state digests to equal audited boundary digests",
+    "require CONTROL and SHAM exact equivalence at every chunk boundary",
+    "require all downstream authorization flags false",
+    "require final boundaries to equal independently audited chunk7 boundaries exactly",
+    "require final chunk artifact/bundle/parent arrays to equal the independently audited 8-chunk chain",
+    "rerun the preregistered EXP-337 reducer from independently audited final boundaries",
+    "recompute reducer vectors and final evidence digest",
+    "archive independent report and receipt as immutable GitHub artifacts"
+  ],
+  "mutation_rule": "Do not modify or replace this auditor after an authoritative EXP-337 scientific run is dispatched. A defect must be preserved and diagnosed; scientific interpretation may not be outcome-selected through a modified verifier.",
+  "scientific_dispatch_authorized": false,
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
