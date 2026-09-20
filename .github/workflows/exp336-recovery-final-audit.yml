@@ -1,0 +1,394 @@
+name: EXP-336 recovery invocation of frozen final auditor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/exp336-recovery-final-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      AUTHORITATIVE_RUN_ID: "35481336946"
+      AUTHORITATIVE_HEAD_SHA: "08e2caebca4c1b7e4b197f6d2190ef90e94468fd"
+      FROZEN_AUDITOR_SHA: "208be21e035a5064eb9d60a9269154768717f5b1"
+      CLOSURE_CONTROL_SHA: "7c3102a15d5e5eb48b3bf6ebeed5f14c24e569ed"
+      CLOSURE_REQUIREMENTS_BLOB_SHA: "c242dd78bb710aca9aa66ead22d0d5e7b889dbfa"
+      LOCKED_VERIFIER_BLOB_SHA: "c44d3adcaa202b88c6c69b986af536b5dcb34905"
+    steps:
+      - name: Checkout frozen independent auditor
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.FROZEN_AUDITOR_SHA }}
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Checkout frozen closure-control requirements
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CLOSURE_CONTROL_SHA }}
+          path: closure-control
+          sparse-checkout: |
+            protocols/v017/exp336_final_closure_requirements_v1.json
+          sparse-checkout-cone-mode: false
+          fetch-depth: 1
+
+      - name: Verify frozen authorities
+        shell: bash
+        run: |
+          set -euo pipefail
+          observed="$(git -C closure-control rev-parse "HEAD:protocols/v017/exp336_final_closure_requirements_v1.json")"
+          test "$observed" = "${CLOSURE_REQUIREMENTS_BLOB_SHA}"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("closure-control/protocols/v017/exp336_final_closure_requirements_v1.json").read_text())
+          assert r["schema"] == "EXP336-FINAL-CLOSURE-REQUIREMENTS-V1"
+          assert r["frozen_before_final_result_visibility"] is True
+          assert r["authoritative_run_id"] == 35481336946
+          assert r["authoritative_run_attempt"] == 1
+          assert r["frozen_auditor_sha"] == "208be21e035a5064eb9d60a9269154768717f5b1"
+          PY
+
+      - name: Download, hash and bind authoritative artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-input
+          python - <<'PY'
+          import hashlib, json, os, urllib.error, urllib.request
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
+          run_id=int(os.environ["AUTHORITATIVE_RUN_ID"])
+          head=os.environ["AUTHORITATIVE_HEAD_SHA"]
+          headers={
+              "Authorization":f"Bearer {token}",
+              "Accept":"application/vnd.github+json",
+              "X-GitHub-Api-Version":"2022-11-28",
+              "User-Agent":"exp336-recovery-frozen-auditor",
+          }
+          def get(url):
+              req=urllib.request.Request(url,headers=headers)
+              with urllib.request.urlopen(req) as response:
+                  return json.load(response)
+
+          run=get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}")
+          assert run["event"] == "workflow_dispatch"
+          assert run["status"] == "completed"
+          assert run["conclusion"] == "success"
+          assert run["head_sha"] == head
+          assert int(run["run_attempt"]) == 1
+          workflow_id=run["workflow_id"]
+
+          matches=[]
+          page=1
+          while True:
+              payload=get(
+                  f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_id}/runs"
+                  f"?event=workflow_dispatch&per_page=100&page={page}"
+              )
+              batch=payload.get("workflow_runs",[])
+              matches += [
+                  {"id":int(x["id"]),"run_attempt":int(x.get("run_attempt",0))}
+                  for x in batch if x.get("head_sha") == head
+              ]
+              if len(batch) < 100: break
+              page += 1
+              if page > 100: raise SystemExit("dispatch pagination safety bound")
+          if matches != [{"id":run_id,"run_attempt":1}]:
+              raise SystemExit(f"sealed-head dispatch uniqueness failure: {matches}")
+
+          listing=get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100")
+          by_name={x["name"]:x for x in listing.get("artifacts",[])}
+          expected=[
+              f"exp336-identity-{run_id}",
+              *[f"exp336-chunk-{i}-{run_id}" for i in range(8)],
+              f"exp336-cnrs-full32-stage-a-final-{run_id}",
+          ]
+          missing=[x for x in expected if x not in by_name]
+          if missing: raise SystemExit(f"missing authoritative artifacts: {missing}")
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, response_headers, newurl):
+                  return None
+          opener=urllib.request.build_opener(NoRedirect)
+          def download(item,dst):
+              req=urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/actions/artifacts/{item['id']}/zip",
+                  headers=headers,
+              )
+              try: opener.open(req)
+              except urllib.error.HTTPError as exc:
+                  if exc.code not in (301,302,303,307,308): raise
+                  location=exc.headers.get("Location")
+              else: raise RuntimeError("artifact endpoint did not redirect")
+              if not location: raise RuntimeError("artifact redirect missing Location")
+              with urllib.request.urlopen(
+                  urllib.request.Request(location,headers={"User-Agent":"exp336-recovery-frozen-auditor"})
+              ) as response:
+                  data=response.read()
+              observed=hashlib.sha256(data).hexdigest()
+              expected_digest=str(item["digest"]).removeprefix("sha256:")
+              if observed != expected_digest:
+                  raise SystemExit(f"artifact digest mismatch {item['name']}: {observed} != {expected_digest}")
+              Path(dst).write_bytes(data)
+              return observed
+
+          manifest={}
+          identity_name=f"exp336-identity-{run_id}"
+          manifest[identity_name]=download(by_name[identity_name],"audit-input/identity.zip")
+          for i in range(8):
+              name=f"exp336-chunk-{i}-{run_id}"
+              manifest[name]=download(by_name[name],f"audit-input/chunk{i}.zip")
+          final_name=f"exp336-cnrs-full32-stage-a-final-{run_id}"
+          manifest[final_name]=download(by_name[final_name],"audit-input/final.zip")
+
+          with ZipFile("audit-input/identity.zip") as z:
+              members=[x for x in z.namelist() if x.endswith("exp336_execution_identity_v1.json")]
+              if len(members)!=1: raise SystemExit("identity member ambiguity")
+              Path("audit-input/identity.json").write_bytes(z.read(members[0]))
+          with ZipFile("audit-input/final.zip") as z:
+              members=[x for x in z.namelist() if x.endswith("exp336-final.json")]
+              if len(members)!=1: raise SystemExit("final member ambiguity")
+              Path("audit-input/final.json").write_bytes(z.read(members[0]))
+
+          frozen=json.loads(Path("protocols/v017/exp336_execution_identity_v1.json").read_text())
+          artifact=json.loads(Path("audit-input/identity.json").read_text())
+          if frozen != artifact: raise SystemExit("identity artifact != frozen auditor identity")
+
+          Path("audit-input/github-artifact-manifest.json").write_text(
+              json.dumps(manifest,sort_keys=True,indent=2)+"\n"
+          )
+          Path("audit-input/authority.json").write_text(json.dumps({
+              "schema":"EXP336-RECOVERY-INVOCATION-AUTHORITY-V1",
+              "created_after_final_result_visibility":True,
+              "scientific_authority":False,
+              "purpose":"Invoke the already-frozen independent auditor after the pre-registered workflow_run trigger failed to instantiate.",
+              "authoritative_run_id":run_id,
+              "authoritative_head_sha":head,
+              "run_attempt":1,
+              "sealed_head_dispatch_matches":matches,
+              "frozen_auditor_sha":os.environ["FROZEN_AUDITOR_SHA"],
+              "locked_verifier_blob_sha":os.environ["LOCKED_VERIFIER_BLOB_SHA"],
+          },sort_keys=True,indent=2)+"\n")
+          PY
+
+      - name: Run exact frozen auditor over 8 chunks and final evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python scripts/exp336_audit_chain.py \
+            --execution-identity protocols/v017/exp336_execution_identity_v1.json \
+            --chunk-zip audit-input/chunk0.zip \
+            --chunk-zip audit-input/chunk1.zip \
+            --chunk-zip audit-input/chunk2.zip \
+            --chunk-zip audit-input/chunk3.zip \
+            --chunk-zip audit-input/chunk4.zip \
+            --chunk-zip audit-input/chunk5.zip \
+            --chunk-zip audit-input/chunk6.zip \
+            --chunk-zip audit-input/chunk7.zip \
+            --final-json audit-input/final.json \
+            --output audit-input/exp336-independent-final-audit.json
+
+      - name: Build frozen-auditor receipt and consolidated closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+
+          def raw_sha(p):
+              return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+
+          report=json.loads(Path("audit-input/exp336-independent-final-audit.json").read_text())
+          final=json.loads(Path("audit-input/final.json").read_text())
+          manifest=json.loads(Path("audit-input/github-artifact-manifest.json").read_text())
+          authority=json.loads(Path("audit-input/authority.json").read_text())
+          identity=json.loads(Path("protocols/v017/exp336_execution_identity_v1.json").read_text())
+          transition=json.loads(Path("protocols/v017/exp336_post_result_transition_lock_v1.json").read_text())
+          requirements=json.loads(Path("closure-control/protocols/v017/exp336_final_closure_requirements_v1.json").read_text())
+
+          chain=report["chain"]
+          independent=report["final"]
+          if chain["verified_chunk_count"] != 8 or chain["complete_chunk_chain"] is not True:
+              raise SystemExit("incomplete independently verified chain")
+          if independent["decision"] != final["decision"]:
+              raise SystemExit("independent/authoritative reducer decision mismatch")
+          if independent["evidence_digest"] != final["evidence_digest"]:
+              raise SystemExit("independent/authoritative evidence digest mismatch")
+          if independent["control_sham_exact_by_chunk"] != [True]*8:
+              raise SystemExit("CONTROL/SHAM mismatch")
+          expected_auth={
+              "stage_b_implementation_authorized":False,
+              "stage_c_implementation_authorized":False,
+              "exp302_implementation_authorized":False,
+              "exp320_implementation_authorized":False,
+              "scale_authorized":False,
+              "authorized_30m":False,
+              "authorized_100m":False,
+          }
+          if independent["authorization_flags"] != expected_auth:
+              raise SystemExit(f"downstream authorization mismatch: {independent['authorization_flags']}")
+          if final["decision"] not in transition["transitions"]:
+              raise SystemExit("decision absent from frozen transition matrix")
+
+          receipt={
+              "schema":"EXP336-RECOVERY-FROZEN-INDEPENDENT-AUDIT-RECEIPT-V1",
+              "invocation_authority":authority,
+              "authoritative_run_id":int(os.environ["AUTHORITATIVE_RUN_ID"]),
+              "authoritative_head_sha":os.environ["AUTHORITATIVE_HEAD_SHA"],
+              "frozen_auditor_sha":os.environ["FROZEN_AUDITOR_SHA"],
+              "decision":independent["decision"],
+              "evidence_digest":independent["evidence_digest"],
+              "final_json_sha256":raw_sha("audit-input/final.json"),
+              "independent_audit_report_sha256":raw_sha("audit-input/exp336-independent-final-audit.json"),
+              "github_artifact_zip_digests":manifest,
+              "verified_chunk_count":chain["verified_chunk_count"],
+              "complete_chunk_chain":chain["complete_chunk_chain"],
+              "control_sham_exact_by_chunk":independent["control_sham_exact_by_chunk"],
+              "reducer_vectors":independent["reducer_vectors"],
+              "authorization_flags":independent["authorization_flags"],
+          }
+          Path("audit-input/exp336-recovery-independent-audit-receipt.json").write_text(
+              json.dumps(receipt,sort_keys=True,indent=2)+"\n"
+          )
+
+          decision=receipt["decision"]
+          selected=transition["transitions"][decision]
+          closure={
+              "schema":"EXP336-FINAL-CLOSURE-V1",
+              "authoritative_run":{
+                  "id":int(os.environ["AUTHORITATIVE_RUN_ID"]),
+                  "status":"completed",
+                  "conclusion":"success",
+                  "run_attempt":1,
+                  "head_sha":os.environ["AUTHORITATIVE_HEAD_SHA"],
+              },
+              "scientific_source":{
+                  "source_commit_sha":identity["source_commit_sha"],
+                  "source_tree_digest":identity["source_tree_digest"],
+                  "workflow_sha256":identity["workflow_sha256"],
+                  "preregistration_digest":identity["approved_preregistration_digest"],
+                  "execution_digest":identity["exp336_execution_digest"],
+              },
+              "sealed_identity":{
+                  "schema":identity["schema"],
+                  "identity_json_sha256":raw_sha("audit-input/identity.json"),
+                  "identity_artifact_zip_sha256":manifest[f"exp336-identity-{os.environ['AUTHORITATIVE_RUN_ID']}"],
+              },
+              "parent_authority":{
+                  "parent_exp319_run_id":identity["parent_exp319_run_id"],
+                  "parent_cnrs_artifact_id":identity["parent_cnrs_artifact_id"],
+                  "parent_cnrs_zip_digest":identity["parent_cnrs_zip_digest"],
+                  "parent_cnrs_checkpoint_sha256":identity["parent_cnrs_checkpoint_sha256"],
+                  "parent_cnrs_model_state_digest":identity["parent_cnrs_model_state_digest"],
+                  "parent_cnrs_optimizer_state_digest":identity["parent_cnrs_optimizer_state_digest"],
+                  "parent_cnrs_rng_state_digest":identity["parent_cnrs_rng_state_digest"],
+                  "parent_exp335_run_id":identity["parent_exp335_run_id"],
+                  "parent_exp335_evidence_digest":identity["parent_exp335_evidence_digest"],
+                  "parent_exp335_audit_report_sha256":identity["parent_exp335_audit_report_sha256"],
+              },
+              "authoritative_artifacts":{
+                  "github_artifact_zip_digests":manifest,
+                  "final_json_sha256":receipt["final_json_sha256"],
+                  "evidence_digest":receipt["evidence_digest"],
+              },
+              "independent_audit":{
+                  "auditor_sha":os.environ["FROZEN_AUDITOR_SHA"],
+                  "invocation_mode":"POST_RESULT_RECOVERY_HARNESS_PROCESS_ONLY",
+                  "created_after_final_result_visibility":True,
+                  "scientific_authority":False,
+                  "independent_audit_report_sha256":receipt["independent_audit_report_sha256"],
+                  "independent_audit_receipt_sha256":raw_sha("audit-input/exp336-recovery-independent-audit-receipt.json"),
+                  "verified_chunk_count":8,
+                  "complete_chunk_chain":True,
+                  "control_sham_exact_by_chunk":receipt["control_sham_exact_by_chunk"],
+              },
+              "final_reducer":{
+                  "decision":decision,
+                  "reducer_vectors":receipt["reducer_vectors"],
+                  "evidence_digest":receipt["evidence_digest"],
+              },
+              "transition_selected_from_frozen_matrix":{
+                  "source":"protocols/v017/exp336_post_result_transition_lock_v1.json",
+                  "decision":decision,
+                  "selected_transition":selected,
+              },
+              "downstream_authority":receipt["authorization_flags"],
+          }
+          required=set(requirements["closure_output_required_fields"])
+          missing=sorted(required-set(closure))
+          if missing: raise SystemExit(f"closure missing frozen required fields: {missing}")
+          canonical=json.dumps(closure,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()
+          closure["closure_digest"]=hashlib.sha256(canonical).hexdigest()
+          Path("audit-input/exp336-final-closure-v1.json").write_text(
+              json.dumps(closure,sort_keys=True,indent=2,ensure_ascii=False)+"\n"
+          )
+
+          print("EXP336_RECOVERY_RECEIPT_BEGIN")
+          print(json.dumps(receipt,sort_keys=True))
+          print("EXP336_RECOVERY_RECEIPT_END")
+          print("EXP336_RECOVERY_CLOSURE_BEGIN")
+          print(json.dumps(closure,sort_keys=True))
+          print("EXP336_RECOVERY_CLOSURE_END")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        id: upload
+        with:
+          name: exp336-recovery-frozen-independent-final-audit-${{ github.run_id }}
+          path: |
+            audit-input/authority.json
+            audit-input/github-artifact-manifest.json
+            audit-input/final.json
+            audit-input/exp336-independent-final-audit.json
+            audit-input/exp336-recovery-independent-audit-receipt.json
+            audit-input/exp336-final-closure-v1.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Record recovery invocation result on PR 113
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUDIT_ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' > /tmp/comment.md
+          import json, os
+          from pathlib import Path
+          r=json.loads(Path("audit-input/exp336-recovery-independent-audit-receipt.json").read_text())
+          c=json.loads(Path("audit-input/exp336-final-closure-v1.json").read_text())
+          print("EXP-336 recovery invocation of the **already-frozen independent auditor** completed successfully.")
+          print()
+          print("- recovery harness was created after final-result visibility and has no scientific authority")
+          print("- frozen auditor: `%s`" % r["frozen_auditor_sha"])
+          print("- authoritative run: `%s`, attempt 1" % r["authoritative_run_id"])
+          print("- independently recomputed disposition: **`%s`**" % r["decision"])
+          print("- evidence digest: `%s`" % r["evidence_digest"])
+          print("- verified chunk chain: `8/8`")
+          print("- complete chain: `true`")
+          print("- immutable recovery audit artifact ID: `%s`" % os.environ["AUDIT_ARTIFACT_ID"])
+          print("- closure digest: `%s`" % c["closure_digest"])
+          print("- frozen next scope: `%s`" % c["transition_selected_from_frozen_matrix"]["selected_transition"]["next_scope"])
+          print()
+          print("The locked post-run verifier bytes were not modified or reinterpreted.")
+          PY
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/113/comments" -F body=@/tmp/comment.md
