@@ -1,0 +1,272 @@
+{
+  "arm_initialization": {
+    "all_arms_load_same_model_state": true,
+    "all_arms_load_same_optimizer_state": true,
+    "all_arms_restore_same_torch_rng_state": true,
+    "all_arms_start_from_exact_same_exp336_project_checkpoint_bytes": true,
+    "fresh_initialization_allowed": false,
+    "learning_rate_retuning_allowed": false,
+    "optimizer_reset_allowed": false
+  },
+  "arms": [
+    "CONTROL_PROJECT_GOLD_PREFIX",
+    "SHAM_SELF_ROLLIN_MEASURE_PROJECT",
+    "SELF_ROLLIN_RECOVERY_PROJECT"
+  ],
+  "authorizations": {
+    "authorized_100m": false,
+    "authorized_30m": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "exp337_implementation_authorized": false,
+    "scale_authorized": false,
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false
+  },
+  "causal_hypothesis": {
+    "claim": "After cross-world destructive interference is constrained by the exact inherited EXP-336 projector, the dominant remaining failure is autoregressive prefix-state fragility. Training on model-generated answer prefixes should improve exact multi-token sequence emission beyond equal-compute continuation on gold prefixes.",
+    "falsification": "The mechanism is not causally established unless the SELF_ROLLIN arm passes the complete frozen Stage-A gate while the equal-compute CONTROL arm does not, with no regression of any CONTROL-passing world.",
+    "mechanism_not_claimed": [
+      "larger model capacity",
+      "learning-rate retuning",
+      "more resident parameters",
+      "new task-family-specific rules",
+      "post-hoc threshold changes",
+      "new projector geometry",
+      "Stage-B capability"
+    ],
+    "name": "SELF_ROLLIN_PREFIX_RECOVERY"
+  },
+  "common_projector": {
+    "formula": "g' = g - T pinv(T^T T) T^T g",
+    "gram_dtype": "float64",
+    "pinv_rtol": 1e-12,
+    "posthoc_projector_variant_allowed": false,
+    "source": "exact EXP-336 inherited projector",
+    "target_gradient_loss": "gold-prefix answer-only loss for all arms",
+    "target_gradients_measured_at_identical_pre-update_model_optimizer_rng_state": true,
+    "target_norm_squared_floor": 1e-24,
+    "target_order": "frozen world order excluding source"
+  },
+  "continuation": {
+    "additional_exposures_per_world": 32,
+    "additional_source_updates": 1024,
+    "chunk_count": 8,
+    "effort_cycle": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "exposures_per_chunk": 4,
+    "final_cumulative_step": 3072,
+    "gradient_clip_norm": 1.0,
+    "learning_rate": 0.0003,
+    "no_extra_optimizer_steps_for_self_rollin": true,
+    "no_lr_retuning": true,
+    "optimizer": "AdamW",
+    "schedule": "for exposure 0..31: for family in frozen family order: for world index 0..7",
+    "source_updates_per_chunk": 128,
+    "starting_cumulative_step": 2048,
+    "weight_decay": 0.01
+  },
+  "evaluation": {
+    "aggregate_exp319_stage_a_floor": {
+      "answer_token_accuracy_min": 0.99,
+      "eos_correctness_min": 0.95,
+      "final_loss_fraction_of_original_exp319_initial_max": 0.25,
+      "gating_effort": 4,
+      "greedy_exact_match_min": 0.9,
+      "invalid_output_rate_max": 0.01,
+      "max_generation_tokens": 96,
+      "nonfinite_events_max": 0,
+      "original_exp319_initial_answer_only_loss": 164.55180455597355
+    },
+    "arm_pass_rule": "arm passes only if both the unchanged full-32 teacher-forced floor and unchanged aggregate Stage-A floor pass at the final boundary",
+    "chunk_boundaries": [
+      4,
+      8,
+      12,
+      16,
+      20,
+      24,
+      28,
+      32
+    ],
+    "diagnostics_not_reducer_input": [
+      "per-family pass counts",
+      "per-family mean teacher-forced token accuracy",
+      "teacher-forced versus greedy-exact gap",
+      "self-rollin prefix divergence rate",
+      "gold loss versus self-rollin loss",
+      "first-error-position distribution",
+      "rescue/regression vectors before final boundary"
+    ],
+    "intermediate_boundaries_are_diagnostic_only": true,
+    "primary_full32_teacher_forced_floor": {
+      "all_32_worlds_must_pass_simultaneously": true,
+      "nonfinite_events_max": 0,
+      "per_world_answer_token_accuracy_min": 0.99,
+      "per_world_full_answer_exact_min": 0.9,
+      "teacher_forced_effort": 4
+    }
+  },
+  "exp336_parent_authority": {
+    "authoritative_head_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+    "authoritative_run_id": 35481336946,
+    "closure_digest": "c291b3f8f0af0952ce8bbbda8fd107e29d8bd916e4656f2d13cc2e9b70a53d48",
+    "closure_path": "protocols/v017/exp336_final_closure_v1.json",
+    "final_decision": "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED",
+    "final_evidence_digest": "c89f70f3555ad95892794821eddbcc158a2e7e9d7c4ef4fa02082a00acd6ccf7",
+    "independent_audit_report_sha256": "c184be9e6bfc24e26695447521a6f29dc79817c54b505102c9903cff264f913c",
+    "independent_auditor_sha": "208be21e035a5064eb9d60a9269154768717f5b1",
+    "parent_arm": "SUBSPACE_PROJECT_CNRS_FULL32",
+    "parent_checkpoint_member_sha256": "a9e638f3029e4af05a685dd4cfba096da6107221ca3a31cb26e5422b4d394208",
+    "parent_chunk_artifact_id": 10601286249,
+    "parent_chunk_artifact_name": "exp336-chunk-7-35481336946",
+    "parent_chunk_bundle_digest": "c5c72c4919077b0d1647939d4335cea79f579090af27fb2ff0a5e82e91d8cae8",
+    "parent_chunk_zip_sha256": "5a12a2e59e399bec993ee1597ddbf4f85546e1d5de0b26635cb1d7def5a9666d",
+    "parent_cumulative_exposure_per_world": 32,
+    "parent_cumulative_training_step": 2048,
+    "parent_model_state_digest": "e122331caa2e6924c13d4c479574dc8d3e4e1de823adfc02604158ec3ad7fc38",
+    "parent_optimizer_state_digest": "44db727abdf9edca155ebd1a3d9e697a4d0b0e1b82e70371e3a77768b72932a7",
+    "parent_receipt_digest": "6831373eb293c6c32281e0c94059610af62f11e1da85cf7f80950d1cb415c04f",
+    "parent_rng_state_digest": "3d2d8e928c4e09f880efbd2edaac3df47c88bace04c0e270c4ec0639e65bdb95",
+    "transition_selected": "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY"
+  },
+  "experiment_id": "EXP-337",
+  "failure_surface_anchor": {
+    "descriptive_boundary": "EXP-336 solved the generator family and nearly solved iterative while sequence-output families remained the dominant failure surface. This motivates but does not prove the self-roll-in hypothesis.",
+    "project_final_aggregate_greedy_exact": 0.5625,
+    "project_final_aggregate_token_accuracy": 0.9119718309859155,
+    "project_final_family_mean_teacher_forced_token_accuracy": {
+      "algorithmic-sequence-transform": 0.8510416666666667,
+      "generator-heldout-abstract-transformation": 1.0,
+      "iterative-grid-and-maze": 0.9375,
+      "language-sequence-control": 0.9340277777777778
+    },
+    "project_final_family_pass_counts": {
+      "algorithmic-sequence-transform": 2,
+      "generator-heldout-abstract-transformation": 8,
+      "iterative-grid-and-maze": 7,
+      "language-sequence-control": 1
+    },
+    "project_final_world_pass_count": 18,
+    "projector_projected_targets": 10945,
+    "projector_projection_updates": 1010,
+    "purpose": "preregister a new causal mechanism without reinterpreting EXP-336",
+    "reducer_input": false
+  },
+  "measurement_geometry": {
+    "control_sham_exact_state_required_at_every_chunk_boundary": true,
+    "nonfinite_fail_closed": true,
+    "rng_after_measurement_restored_before_parameter_update": true,
+    "sham_self_rollin_measurement_must_not_perturb_applied_update": true,
+    "source_and_target_backward_rng_reset_required": true
+  },
+  "pre_result_successor_lock": {
+    "EXP337_PARENT_AUTHORITY_MISMATCH": "PARENT_AUTHORITY_RECONCILIATION_ONLY",
+    "EXP337_SELF_ROLLIN_NO_CAUSAL_RESCUE": "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY",
+    "EXP337_SHAM_MEASUREMENT_MISMATCH": "MEASUREMENT_NONPERTURBATION_LOCALIZATION_ONLY",
+    "EXP337_STAGE_A_ESTABLISHED_BOTH": "STAGE_B_DESIGN_PREREGISTRATION_ONLY_USING_SIMPLER_GOLD_PREFIX_CONTINUATION",
+    "EXP337_STAGE_A_ESTABLISHED_CONTROL_ONLY_RECOVERY_REGRESSION": "STAGE_B_DESIGN_PREREGISTRATION_ONLY_USING_CONTROL_FOUNDATION; SELF_ROLLIN_REJECTED",
+    "EXP337_STAGE_A_RESCUED_BY_SELF_ROLLIN_NO_REGRESSION": "STAGE_B_DESIGN_PREREGISTRATION_ONLY_USING_EXACT_SELF_ROLLIN_REPAIR",
+    "INVALID_EXP337_SELF_ROLLIN_COURT": "VALIDITY_OR_PROVENANCE_REVIEW_ONLY"
+  },
+  "program": "Nolane-AIv2 V0.17 10M Native Recursive Substrate",
+  "reducer": {
+    "order": [
+      "INVALID_EXP337_SELF_ROLLIN_COURT",
+      "EXP337_PARENT_AUTHORITY_MISMATCH",
+      "EXP337_SHAM_MEASUREMENT_MISMATCH",
+      "EXP337_STAGE_A_ESTABLISHED_BOTH",
+      "EXP337_STAGE_A_ESTABLISHED_CONTROL_ONLY_RECOVERY_REGRESSION",
+      "EXP337_STAGE_A_RESCUED_BY_SELF_ROLLIN_NO_REGRESSION",
+      "EXP337_SELF_ROLLIN_NO_CAUSAL_RESCUE"
+    ],
+    "partial_improvement_is_not_positive_reducer_evidence": true,
+    "rules": {
+      "EXP337_PARENT_AUTHORITY_MISMATCH": "exact EXP-336 PROJECT chunk7 parent authority does not match the preregistered hashes/digests",
+      "EXP337_SELF_ROLLIN_NO_CAUSAL_RESCUE": "all remaining valid outcomes",
+      "EXP337_SHAM_MEASUREMENT_MISMATCH": "CONTROL and SHAM are not exactly equivalent at a required boundary",
+      "EXP337_STAGE_A_ESTABLISHED_BOTH": "CONTROL and SELF_ROLLIN both pass the complete unchanged final Stage-A arm pass rule",
+      "EXP337_STAGE_A_ESTABLISHED_CONTROL_ONLY_RECOVERY_REGRESSION": "CONTROL passes and SELF_ROLLIN fails",
+      "EXP337_STAGE_A_RESCUED_BY_SELF_ROLLIN_NO_REGRESSION": "CONTROL fails, SELF_ROLLIN passes, at least one CONTROL-failed world is rescued, and no CONTROL-passing world regresses",
+      "INVALID_EXP337_SELF_ROLLIN_COURT": "invalid schema, nonfinite validity failure, malformed final boundary, or frozen-contract drift"
+    },
+    "world_vectors": [
+      "control_failed_worlds",
+      "recovery_failed_worlds",
+      "rescued_control_failures",
+      "recovery_regressions"
+    ]
+  },
+  "resident_model": {
+    "architecture_geometry_may_change": false,
+    "builder": "build_nrs_core_10m",
+    "byte_tokenizer_unchanged": true,
+    "latent_state_carry_within_forward": true,
+    "loop_conditioning": true,
+    "model_class": "V017RecurrentLM",
+    "new_trainable_parameters_allowed": false,
+    "trainable_parameters": 10000000,
+    "weight_tied_across_depth": true
+  },
+  "schema_version": "EXP337-CNRS-SELF-ROLLIN-SEQUENCE-RECOVERY-V1",
+  "scientific_boundary": {
+    "exp302_in_scope": false,
+    "exp320_in_scope": false,
+    "exp336_result_may_be_reinterpreted": false,
+    "exp336_scientific_source_may_change": false,
+    "exp337_runtime_implementation_in_this_preregistration": false,
+    "resident_trainable_parameters": 10000000,
+    "scale_in_scope": false,
+    "stage_b_in_scope": false,
+    "stage_c_in_scope": false
+  },
+  "scientific_question": "Are the remaining EXP-336 C_NRS Stage-A failures caused primarily by train-test answer-prefix mismatch—gold prefixes during teacher-forced training versus model-generated prefixes during free-running decoding—and can an exact parameter-neutral self-roll-in recovery objective repair that failure while preserving the already-frozen EXP-336 projector and 10M resident scale?",
+  "self_rollin_construction": {
+    "active_source_loss": "0.5 * gold_loss + 0.5 * self_rollin_loss",
+    "applies_to": "every source world; no family-specific branching",
+    "canonical_answer_bytes": "tokenizer byte tokens before EOS",
+    "control_source_loss": "gold_loss",
+    "early_eos_stop": false,
+    "generation": "greedy argmax under the current pre-update model snapshot and current exposure effort",
+    "gold_loss": "unchanged EXP-336 answer-only teacher-forced loss",
+    "gradient_during_rollin_generation": false,
+    "invalid_or_eos_prediction_inside_rollin": "append the raw predicted token ID and continue to preserve positional alignment",
+    "projector_application": "project the arm-specific source gradient against the common gold-prefix target-gradient subspace",
+    "rollin_length": "exact canonical answer byte-token count, excluding EOS",
+    "self_rollin_loss": "answer-only cross entropy over canonical targets conditioned on self-generated prefixes",
+    "sham_source_loss": "gold_loss; self-rollin path and gradient are computed then discarded before applying the control update",
+    "training_input": "[BOS, prompt bytes, SEP, self-generated prefix tokens]",
+    "training_targets": "canonical answer byte tokens followed by EOS at the corresponding answer positions"
+  },
+  "status": "DESIGN_PREREGISTRATION_ONLY",
+  "world_population": {
+    "families": [
+      "iterative-grid-and-maze",
+      "algorithmic-sequence-transform",
+      "generator-heldout-abstract-transformation",
+      "language-sequence-control"
+    ],
+    "generator": "exp319-worlds-v1",
+    "no_family_specific_training_rule": true,
+    "no_new_worlds": true,
+    "population_source": "materialize_stage_a()",
+    "root": 0,
+    "stage": "A_SANITY",
+    "world_count": 32,
+    "world_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "world_order": "family order above, then index 0..7"
+  }
+}
