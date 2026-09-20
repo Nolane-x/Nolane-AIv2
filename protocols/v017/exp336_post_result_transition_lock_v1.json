@@ -1,0 +1,77 @@
+{
+  "schema": "EXP336-POST-RESULT-TRANSITION-LOCK-V1",
+  "experiment_id": "EXP-336",
+  "created_before_scientific_result": true,
+  "source_commit_sha": "5220e50adec7f6f048510aac44a077a4ddfdaf44",
+  "source_tree_digest": "6485fdc131dbf0358f8e6548b3ec510ce96bb80b8fbaf2858a97d5bade62a911",
+  "workflow_sha256": "b29710b206fb028f9064040f593ffd79ef4cdf6082fd820b3869d624b447de97",
+  "preregistration_digest": "491899f5f613b3d80b36689e7882e8c72875fb268a6886e1a40542eb09dc33ce",
+  "execution_digest": "f81f382846d1c128934be40717e6eee33c48fe00dde00fd736a2ad2fdb15d5db",
+  "purpose": "Freeze the only allowed repository transition for every EXP-336 preregistered reducer disposition before any scientific result is visible.",
+  "transitions": {
+    "INVALID_CNRS_FULL32_STAGE_A": {
+      "stage_a_established": false,
+      "next_scope": "VALIDITY_OR_PROVENANCE_REVIEW_ONLY",
+      "rule": "No capability interpretation. Preserve the invalid execution and localize only the validity/provenance defect."
+    },
+    "PARENT_AUTHORITY_MISMATCH": {
+      "stage_a_established": false,
+      "next_scope": "PARENT_AUTHORITY_RECONCILIATION_ONLY",
+      "rule": "No capability interpretation. Reconcile immutable EXP-319/EXP-335 parent authority before any new execution."
+    },
+    "SHAM_CNRS_FULL32_MISMATCH": {
+      "stage_a_established": false,
+      "next_scope": "MEASUREMENT_NONPERTURBATION_LOCALIZATION_ONLY",
+      "rule": "No capability interpretation. Localize measurement perturbation before another C_NRS court."
+    },
+    "CNRS_FULL32_STAGE_A_ESTABLISHED_BOTH": {
+      "stage_a_established": true,
+      "stage_b_design_authorized": true,
+      "stage_b_scope": "DESIGN_PREREGISTRATION_ONLY",
+      "foundation_for_stage_b": "CONTROL_CNRS_FULL32",
+      "next_scope": "STAGE_B_DESIGN_PREREGISTRATION_ONLY",
+      "rule": "Both CONTROL and PROJECT pass. Use the simpler passing CONTROL C_NRS foundation for Stage-B design; projection is not required by this outcome."
+    },
+    "CNRS_FULL32_STAGE_A_ESTABLISHED_CONTROL_ONLY_PROJECT_REGRESSION": {
+      "stage_a_established": true,
+      "stage_b_design_authorized": true,
+      "stage_b_scope": "DESIGN_PREREGISTRATION_ONLY",
+      "foundation_for_stage_b": "CONTROL_CNRS_FULL32",
+      "next_scope": "STAGE_B_DESIGN_PREREGISTRATION_ONLY_USING_CONTROL_FOUNDATION",
+      "rule": "CONTROL passes and PROJECT regresses. Stage-B design may use CONTROL only; inherited projector is forbidden as the default Stage-B repair."
+    },
+    "CNRS_BASELINE_FAILURE_WITHOUT_PROJECTOR_TRIGGER": {
+      "stage_a_established": false,
+      "stage_b_design_authorized": false,
+      "next_scope": "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY",
+      "rule": "Neither arm establishes Stage A and projector never actually engages. Do not open Stage B."
+    },
+    "CNRS_FULL32_STAGE_A_RESCUED_BY_INHERITED_PROJECTOR_NO_REGRESSION": {
+      "stage_a_established": true,
+      "stage_b_design_authorized": true,
+      "stage_b_scope": "DESIGN_PREREGISTRATION_ONLY",
+      "foundation_for_stage_b": "EXACT_EXP336_INHERITED_PROJECTOR_REPAIRED_CNRS_FOUNDATION",
+      "next_scope": "STAGE_B_DESIGN_PREREGISTRATION_ONLY_USING_EXACT_INHERITED_REPAIR",
+      "rule": "C_NRS Stage A is established only under the exact inherited EXP-335 projector. A Stage-B design may inherit exactly this repair, prospectively frozen; no post-hoc projector substitution."
+    },
+    "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED": {
+      "stage_a_established": false,
+      "stage_b_design_authorized": false,
+      "next_scope": "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY",
+      "rule": "Preserve the negative result. Do not open Stage B; only a distinct preregistered causal hypothesis may follow."
+    }
+  },
+  "universal_guards": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false,
+    "only_final_preregistered_reducer_may_select_transition": true,
+    "intermediate_chunks_are_non_decisional": true,
+    "posthoc_geometry_is_not_reducer_input": true,
+    "no_outcome_selected_reinterpretation": true
+  }
+}
