@@ -5,6 +5,7 @@ on:
     branches: [exp336-independent-artifact-auditor]
     paths:
       - ".github/workflows/exp336-independent-live-artifact-audit.yml"
+  workflow_dispatch:
 
 permissions:
   actions: read
@@ -13,14 +14,18 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
+    env:
+      AUTHORITATIVE_RUN_ID: "35481336946"
+      FROZEN_AUDITOR_SHA: "208be21e035a5064eb9d60a9269154768717f5b1"
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 208be21e035a5064eb9d60a9269154768717f5b1
+          ref: ${{ env.FROZEN_AUDITOR_SHA }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Download authoritative raw chunk ZIPs
+
+      - name: Discover, download and hash consecutive authoritative chunks
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -29,34 +34,64 @@ jobs:
           mkdir -p audit-input
           python - <<'PY'
           import hashlib
+          import json
           import os
           import urllib.error
           import urllib.request
           from pathlib import Path
 
           repo=os.environ["GITHUB_REPOSITORY"]
+          run_id=int(os.environ["AUTHORITATIVE_RUN_ID"])
           token=os.environ["GH_TOKEN"]
-          artifacts={
-              0:(10596866141,"176eedc34450c7e843ff4a21c218c82dea7fbc3fc15239559d4941e60bf69dbf"),
-              1:(10597253461,"7fd5d9536438109896eca9922ff80704483aee452dc1061f28c58dede88a6a36"),
-          }
           headers={
               "Authorization":f"Bearer {token}",
               "Accept":"application/vnd.github+json",
               "X-GitHub-Api-Version":"2022-11-28",
               "User-Agent":"exp336-independent-live-auditor",
           }
+
+          def get_json(url):
+              req=urllib.request.Request(url,headers=headers)
+              with urllib.request.urlopen(req) as response:
+                  return json.load(response)
+
+          run=get_json(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}")
+          if run.get("head_sha") != "08e2caebca4c1b7e4b197f6d2190ef90e94468fd":
+              raise SystemExit("EXP-336 live audit sealed-head mismatch")
+          if int(run.get("run_attempt",0)) != 1:
+              raise SystemExit("EXP-336 live audit run-attempt mismatch")
+
+          listing=get_json(
+              f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100"
+          )
+          by_name={item["name"]:item for item in listing.get("artifacts",[])}
+          chunks=[]
+          for index in range(8):
+              name=f"exp336-chunk-{index}-{run_id}"
+              if name not in by_name:
+                  break
+              chunks.append((index,by_name[name]))
+          if not chunks:
+              raise SystemExit("no authoritative EXP-336 chunk artifact exists")
+          # Fail closed on gaps: if a later chunk exists after the first missing index.
+          first_missing=len(chunks)
+          for index in range(first_missing+1,8):
+              if f"exp336-chunk-{index}-{run_id}" in by_name:
+                  raise SystemExit(f"non-consecutive EXP-336 chunk artifacts: gap before {index}")
+
           class NoRedirect(urllib.request.HTTPRedirectHandler):
-              def redirect_request(self, req, fp, code, msg, response_headers, newurl):
+              def redirect_request(self,req,fp,code,msg,response_headers,newurl):
                   return None
           opener=urllib.request.build_opener(NoRedirect)
-          for index,(artifact_id,expected) in artifacts.items():
-              req=urllib.request.Request(
-                  f"https://api.github.com/repos/{repo}/actions/artifacts/{artifact_id}/zip",
+
+          manifest=[]
+          for index,artifact in chunks:
+              request=urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/actions/artifacts/{artifact['id']}/zip",
                   headers=headers,
               )
               try:
-                  opener.open(req)
+                  opener.open(request)
               except urllib.error.HTTPError as exc:
                   if exc.code not in (301,302,303,307,308):
                       raise
@@ -64,46 +99,79 @@ jobs:
               else:
                   raise RuntimeError("artifact endpoint unexpectedly did not redirect")
               if not location:
-                  raise RuntimeError(f"artifact {artifact_id} redirect missing Location")
+                  raise RuntimeError(f"artifact {artifact['id']} redirect missing Location")
               storage=urllib.request.Request(
-                  location, headers={"User-Agent":"exp336-independent-live-auditor"}
+                  location,headers={"User-Agent":"exp336-independent-live-auditor"}
               )
               with urllib.request.urlopen(storage) as response:
                   payload=response.read()
               observed=hashlib.sha256(payload).hexdigest()
+              expected=str(artifact["digest"])
+              if expected.startswith("sha256:"):
+                  expected=expected[7:]
               if observed != expected:
-                  raise SystemExit(f"chunk{index} raw ZIP SHA mismatch: {observed} != {expected}")
+                  raise SystemExit(
+                      f"chunk{index} raw ZIP SHA mismatch: {observed} != {expected}"
+                  )
               Path(f"audit-input/chunk{index}.zip").write_bytes(payload)
-              print(f"chunk{index}: artifact={artifact_id} bytes={len(payload)} sha256={observed}")
+              manifest.append({
+                  "chunk_index":index,
+                  "artifact_id":artifact["id"],
+                  "artifact_name":artifact["name"],
+                  "artifact_sha256":observed,
+                  "size_in_bytes":artifact["size_in_bytes"],
+                  "created_at":artifact["created_at"],
+              })
+
+          Path("audit-input/discovered-chunks.json").write_text(
+              json.dumps(manifest,sort_keys=True,indent=2)+"\n",encoding="utf-8"
+          )
+          Path("audit-input/chunk-count.txt").write_text(str(len(manifest)),encoding="utf-8")
+          print(json.dumps(manifest,sort_keys=True,indent=2))
           PY
 
-      - name: Run frozen EXP-336 independent chain auditor
+      - name: Run frozen auditor over every currently available consecutive chunk
         shell: bash
         run: |
           set -euo pipefail
+          count="$(cat audit-input/chunk-count.txt)"
+          args=()
+          for ((i=0;i<count;i++)); do
+            args+=(--chunk-zip "audit-input/chunk$i.zip")
+          done
           PYTHONPATH=src python scripts/exp336_audit_chain.py \
             --execution-identity protocols/v017/exp336_execution_identity_v1.json \
-            --chunk-zip audit-input/chunk0.zip \
-            --chunk-zip audit-input/chunk1.zip \
-            --output audit-input/exp336-independent-chain-audit-through-chunk1.json
+            "${args[@]}" \
+            --output audit-input/exp336-independent-live-chain-audit.json
           python - <<'PY'
           import json
           from pathlib import Path
-          p=json.loads(Path("audit-input/exp336-independent-chain-audit-through-chunk1.json").read_text())
-          c=p["chain"]
-          assert c["verified_chunk_count"] == 2
-          assert c["complete_chunk_chain"] is False
-          assert c["chunks"][0]["control_sham_exact"] is True
-          assert c["chunks"][1]["control_sham_exact"] is True
-          assert c["chunks"][0]["artifact_sha256"] == "176eedc34450c7e843ff4a21c218c82dea7fbc3fc15239559d4941e60bf69dbf"
-          assert c["chunks"][1]["artifact_sha256"] == "7fd5d9536438109896eca9922ff80704483aee452dc1061f28c58dede88a6a36"
-          print(json.dumps(c,sort_keys=True,indent=2))
+          manifest=json.loads(Path("audit-input/discovered-chunks.json").read_text())
+          report=json.loads(Path("audit-input/exp336-independent-live-chain-audit.json").read_text())
+          chain=report["chain"]
+          assert chain["verified_chunk_count"] == len(manifest)
+          assert chain["last_artifact_sha256"] == manifest[-1]["artifact_sha256"]
+          assert chain["complete_chunk_chain"] is (len(manifest) == 8)
+          assert all(chunk["control_sham_exact"] is True for chunk in chain["chunks"])
+          assert all(
+              all(value is False for value in chunk["authorization_flags"].values())
+              for chunk in chain["chunks"]
+          )
+          print(json.dumps({
+              "verified_chunk_count":chain["verified_chunk_count"],
+              "complete_chunk_chain":chain["complete_chunk_chain"],
+              "last_artifact_sha256":chain["last_artifact_sha256"],
+              "pass_counts":[chunk["pass_counts"] for chunk in chain["chunks"]],
+              "aggregate_pass":[chunk["aggregate_pass"] for chunk in chain["chunks"]],
+          },sort_keys=True,indent=2))
           PY
-          sha256sum audit-input/exp336-independent-chain-audit-through-chunk1.json
+          sha256sum audit-input/exp336-independent-live-chain-audit.json
 
       - uses: actions/upload-artifact@v4
         with:
-          name: exp336-independent-chain-audit-through-chunk1-${{ github.run_id }}
-          path: audit-input/exp336-independent-chain-audit-through-chunk1.json
+          name: exp336-independent-live-chain-audit-${{ github.run_id }}
+          path: |
+            audit-input/exp336-independent-live-chain-audit.json
+            audit-input/discovered-chunks.json
           if-no-files-found: error
           retention-days: 90
