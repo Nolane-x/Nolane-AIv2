@@ -1,0 +1,76 @@
+{
+  "schema": "EXP336-CHUNK2-FAILURE-SURFACE-DIAGNOSTIC-V1",
+  "experiment_id": "EXP-336",
+  "authoritative_run_id": 35481336946,
+  "chunk_index": 2,
+  "exposure_per_world": 12,
+  "cumulative_step": 1408,
+  "artifact_id": 10597562011,
+  "artifact_zip_sha256": "8063277a4f0a99c34d8c4491eb57606717f68ee93f46212eea582f21c696c784",
+  "posthoc": true,
+  "decisional": false,
+  "reducer_input": false,
+  "teacher_forced_pass_rule": {
+    "token_accuracy_min": 0.99,
+    "full_answer_exact_min": 0.9
+  },
+  "CONTROL_CNRS_FULL32": {
+    "iterative-grid-and-maze": {
+      "pass_count": 4,
+      "mean_token_accuracy": 0.75,
+      "min_token_accuracy": 0.5,
+      "max_token_accuracy": 1
+    },
+    "algorithmic-sequence-transform": {
+      "pass_count": 0,
+      "mean_token_accuracy": 0.6729166666666666,
+      "min_token_accuracy": 0.5,
+      "max_token_accuracy": 0.8333333333333334
+    },
+    "generator-heldout-abstract-transformation": {
+      "pass_count": 5,
+      "mean_token_accuracy": 0.8125,
+      "min_token_accuracy": 0.5,
+      "max_token_accuracy": 1
+    },
+    "language-sequence-control": {
+      "pass_count": 0,
+      "mean_token_accuracy": 0.828125,
+      "min_token_accuracy": 0.75,
+      "max_token_accuracy": 0.8888888888888888
+    }
+  },
+  "SUBSPACE_PROJECT_CNRS_FULL32": {
+    "iterative-grid-and-maze": {
+      "pass_count": 6,
+      "mean_token_accuracy": 0.875,
+      "min_token_accuracy": 0.5,
+      "max_token_accuracy": 1
+    },
+    "algorithmic-sequence-transform": {
+      "pass_count": 0,
+      "mean_token_accuracy": 0.63125,
+      "min_token_accuracy": 0.5833333333333334,
+      "max_token_accuracy": 0.75
+    },
+    "generator-heldout-abstract-transformation": {
+      "pass_count": 8,
+      "mean_token_accuracy": 1,
+      "min_token_accuracy": 1,
+      "max_token_accuracy": 1
+    },
+    "language-sequence-control": {
+      "pass_count": 0,
+      "mean_token_accuracy": 0.7743055555555556,
+      "min_token_accuracy": 0.6666666666666666,
+      "max_token_accuracy": 0.8333333333333334
+    }
+  },
+  "descriptive_observations": [
+    "At exposure 12, PROJECT has fully solved the generator-heldout family under the frozen teacher-forced floor and passes 6/8 iterative worlds.",
+    "Neither arm passes any algorithmic-sequence-transform or language-sequence-control world at this boundary.",
+    "The remaining PROJECT algorithmic/language failures are materially below the 0.99 token threshold rather than narrowly missing it.",
+    "Relative to CONTROL at this boundary, PROJECT improves iterative and generator pass counts but has lower mean token accuracy in algorithmic and language families.",
+    "These observations are intermediate diagnostics only and cannot select or modify the preregistered reducer or successor transition."
+  ]
+}
