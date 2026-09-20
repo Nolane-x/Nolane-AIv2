@@ -1,0 +1,129 @@
+name: v017-exp337-postrun-verifier-contract
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/v017-exp337-postrun-verifier-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verifier-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install YAML parser
+        run: python -m pip install pyyaml
+      - name: Verify frozen post-run verifier contract
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, subprocess, urllib.request
+          from pathlib import Path
+          import yaml
+
+          verifier=Path(".github/workflows/exp337-postrun-independent-audit.yml")
+          requirements=Path("protocols/v017/exp337_final_closure_requirements_v1.json")
+          audit_lock=Path("protocols/v017/exp337_independent_audit_lock_v1.json")
+
+          def blob(path):
+              return subprocess.check_output(["git","rev-parse",f"HEAD:{path.as_posix()}"],text=True).strip()
+
+          assert blob(verifier) == "4188610ee403cbe76b62fce683228f992081dd4a"
+          assert blob(requirements) == "2cd7013bc5cd1d6b80c3ef2e2e4c0af33190eba2"
+          assert blob(audit_lock) == "ff6980318e7216280b6eccb785be985bb594d219"
+
+          doc=yaml.load(verifier.read_text(),Loader=yaml.BaseLoader)
+          assert doc["name"] == "EXP-337 post-run independent audit"
+          on=doc["on"]
+          assert set(on) == {"workflow_run"}
+          trigger=on["workflow_run"]
+          assert trigger["workflows"] == ["EXP-337 C_NRS self-roll-in Stage-A recovery court"]
+          assert trigger["types"] == ["completed"]
+          perms=doc["permissions"]
+          assert perms == {"actions":"read","contents":"read"}
+          job=doc["jobs"]["independent-final-audit"]
+          env=job["env"]
+          assert env["SEALED_MARKER_SHA"] == "ec5f98a636e9395a76509493800b6b9f06a33271"
+          assert env["SCIENTIFIC_WORKFLOW_PATH"] == ".github/workflows/exp337-self-rollin-stage-a.yml"
+          assert env["FROZEN_AUDITOR_SHA"] == "debc13fd4ec8f8ed443302ef0352d751661faafc"
+          assert env["CLOSURE_CONTROL_SHA"] == "141964d1bf7bd4c99e8bae8204863ff4bb1e2d7a"
+          assert env["CLOSURE_REQUIREMENTS_BLOB_SHA"] == "2cd7013bc5cd1d6b80c3ef2e2e4c0af33190eba2"
+          assert env["INDEPENDENT_AUDIT_LOCK_BLOB_SHA"] == "ff6980318e7216280b6eccb785be985bb594d219"
+
+          req=json.loads(requirements.read_text())
+          lock=json.loads(audit_lock.read_text())
+          assert req["frozen_before_scientific_dispatch"] is True
+          assert req["frozen_independent_auditor"]["commit_sha"] == env["FROZEN_AUDITOR_SHA"]
+          assert lock["created_before_scientific_dispatch"] is True
+          assert lock["frozen_auditor"]["commit_sha"] == env["FROZEN_AUDITOR_SHA"]
+          assert lock["frozen_auditor"]["ci_conclusion"] == "success"
+          assert lock["frozen_auditor"]["seal_conclusion"] == "success"
+          assert all(v is False for v in req["downstream_authority_at_freeze"].values())
+
+          text=verifier.read_text()
+          for required in (
+              "NON_AUTHORITATIVE_DUPLICATE_EXCLUDED",
+              "run lock was not committed before chunk0 artifact",
+              "audit_chunk_chain.py",
+              "independent/authoritative reducer mismatch",
+              "independent/authoritative evidence digest mismatch",
+              "EXP337-FINAL-CLOSURE-V1",
+          ):
+              assert required in text, required
+
+          subprocess.check_call(["git","fetch","origin","debc13fd4ec8f8ed443302ef0352d751661faafc","--depth=1"])
+          subprocess.check_call(["git","cat-file","-e","debc13fd4ec8f8ed443302ef0352d751661faafc^{commit}"])
+
+          run_lock=Path("protocols/v017/exp337_authoritative_run_lock_v1.json")
+          run_receipt=Path("protocols/v017/exp337_authoritative_run_lock_receipt_v1.json")
+          assert not run_lock.exists()
+          assert not run_receipt.exists()
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
+          headers={"Authorization":f"Bearer {token}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"exp337-postrun-contract"}
+          page=1
+          scientific=[]
+          while True:
+              reqq=urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs?event=workflow_dispatch&branch=exp337-cnrs-self-rollin-sequence-recovery-design&per_page=100&page={page}",headers=headers)
+              with urllib.request.urlopen(reqq) as response: listing=json.load(response)
+              batch=listing.get("workflow_runs",[])
+              scientific.extend(r for r in batch if r.get("path")==".github/workflows/exp337-self-rollin-stage-a.yml")
+              if len(batch)<100: break
+              page+=1
+          assert scientific == [], scientific
+
+          receipt={
+              "schema":"EXP337-POSTRUN-VERIFIER-CONTRACT-RECEIPT-V1",
+              "commit_sha":os.environ["GITHUB_SHA"],
+              "verifier_git_blob_sha":"4188610ee403cbe76b62fce683228f992081dd4a",
+              "closure_requirements_git_blob_sha":"2cd7013bc5cd1d6b80c3ef2e2e4c0af33190eba2",
+              "independent_audit_lock_git_blob_sha":"ff6980318e7216280b6eccb785be985bb594d219",
+              "frozen_auditor_sha":"debc13fd4ec8f8ed443302ef0352d751661faafc",
+              "scientific_dispatch_count":0,
+              "run_lock_present":False,
+              "workflow_trigger_parse_verified":True,
+              "fail_closed_guards_verified":True,
+          }
+          Path("exp337-postrun-verifier-contract-receipt.json").write_text(json.dumps(receipt,sort_keys=True,indent=2)+"\n")
+          print(json.dumps(receipt,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp337-postrun-verifier-contract-${{ github.run_id }}
+          path: exp337-postrun-verifier-contract-receipt.json
+          if-no-files-found: error
+          retention-days: 90
