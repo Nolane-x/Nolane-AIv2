@@ -463,5 +463,15 @@
       4362
     ],
     "note": "Frozen auditor SHA 208be21e... independently verified the consecutive authoritative chain through chunk2. Intermediate evidence only; reducer_input=false."
+  },
+  "default_branch_ops_lineage": {
+    "dispatcher_initial_commit": "dc9208caf9aacd042af8d57ec5de2aae9de96da7",
+    "scientific_workflow_registration_commit": "deb7b4f19fde40d03ff59cc9deeedce92c7d59e4",
+    "guarded_dispatch_retry_commit": "a92b256ad4d038c8ae704fcc635b02efece2fb9e",
+    "postrun_verifier_registration_commit": "4f6d29e5da76815fbbb02f58edc0d9823e6829a1",
+    "current_main_head": "4f6d29e5da76815fbbb02f58edc0d9823e6829a1",
+    "lineage_order_verified": true,
+    "postrun_hook_on_current_default_branch": true,
+    "note": "The one-shot dispatcher is historical ops provenance only. The current main head contains the registered scientific workflow and the hard-bound post-run verifier."
   }
 }
