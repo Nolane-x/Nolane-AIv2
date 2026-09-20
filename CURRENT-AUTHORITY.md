@@ -181,6 +181,26 @@ Frozen independent auditor:
 - generic core 3.13: **SUCCESS**
 - generic model-smoke: **SUCCESS**
 
+Frozen-auditor lock:
+
+`protocols/v017/exp336_independent_audit_lock_v1.json`
+
+Real independent live audit through chunk1:
+
+- frozen auditor actually executed: `208be21e035a5064eb9d60a9269154768717f5b1`
+- workflow run: `35486210011`
+- audit artifact: `10597830566`
+- audit artifact ZIP SHA-256: `699115d89a91c2431b216addf10555f803f49e3026a75d9991adb1dd63fcd717`
+- audit report JSON SHA-256: `87dcaf3fb25ddcffa1420bb3c9a6e5d0d2184be91c002fbb6f5934f5cf324668`
+- verified chunks: `2`
+- complete chain: false (correct; authoritative run is still active)
+- selected C_NRS parent → chunk0 → chunk1 raw ZIP chain: verified
+- CONTROL/SHAM exact: true for both completed chunks
+- independent pass counts:
+  - exposure 4: CONTROL `9`, SHAM `9`, PROJECT `8`
+  - exposure 8: CONTROL `10`, SHAM `10`, PROJECT `11`
+- aggregate Stage-A pass: false in all arms at both intermediate boundaries
+
 Default-branch post-run verifier:
 
 `.github/workflows/exp336-postrun-independent-audit.yml`
@@ -226,7 +246,7 @@ Do **not** change or rerun the sealed EXP-336 science.
 Continue only by:
 
 1. monitoring authoritative run `35481336946`;
-2. as each immutable chunk appears, independently verify the actual raw ZIP digest, parent chain, receipts/checkpoint member SHA values, CONTROL/SHAM exactness, frozen identity, and authorization flags;
+2. as each immutable chunk appears, independently verify the actual raw ZIP digest, parent chain, receipts/checkpoint member SHA values, CONTROL/SHAM exactness, frozen identity, and authorization flags; the frozen auditor has already performed this successfully through chunk1;
 3. treat all intermediate metrics as non-decisional;
 4. after the complete 8-chunk chain and final artifact exist, require the frozen independent post-run auditor to recompute the final reducer;
 5. apply only the already-frozen EXP-336 post-result transition matrix.
