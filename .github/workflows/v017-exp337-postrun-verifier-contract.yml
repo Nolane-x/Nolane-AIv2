@@ -77,7 +77,7 @@ jobs:
           for required in (
               "NON_AUTHORITATIVE_DUPLICATE_EXCLUDED",
               "run lock was not committed before chunk0 artifact",
-              "audit_chunk_chain.py",
+              "exp337_audit_chain.py",
               "independent/authoritative reducer mismatch",
               "independent/authoritative evidence digest mismatch",
               "EXP337-FINAL-CLOSURE-V1",
