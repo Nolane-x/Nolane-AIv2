@@ -211,5 +211,45 @@
     "note": "Only authority/evidence/documentation files changed after the sealed marker at the audited checkpoint."
   },
   "current_authoritative_job": "chunk2",
-  "final_disposition_available": false
+  "final_disposition_available": false,
+  "independent_audit_through_chunk1": {
+    "frozen_auditor_sha": "208be21e035a5064eb9d60a9269154768717f5b1",
+    "workflow_run_id": 35486210011,
+    "audit_artifact_id": 10597830566,
+    "audit_artifact_zip_sha256": "699115d89a91c2431b216addf10555f803f49e3026a75d9991adb1dd63fcd717",
+    "audit_report_json_sha256": "87dcaf3fb25ddcffa1420bb3c9a6e5d0d2184be91c002fbb6f5934f5cf324668",
+    "verified_chunk_count": 2,
+    "complete_chunk_chain": false,
+    "first_parent_cnrs_zip_digest": "d88a9d85584476ec5226321479560a1255f0d015122827d4be75f67a6f337755",
+    "last_artifact_sha256": "7fd5d9536438109896eca9922ff80704483aee452dc1061f28c58dede88a6a36",
+    "control_sham_exact_by_chunk": [
+      true,
+      true
+    ],
+    "pass_counts_by_chunk": {
+      "0": {
+        "CONTROL_CNRS_FULL32": 9,
+        "SHAM_MEASURE_CNRS_FULL32": 9,
+        "SUBSPACE_PROJECT_CNRS_FULL32": 8
+      },
+      "1": {
+        "CONTROL_CNRS_FULL32": 10,
+        "SHAM_MEASURE_CNRS_FULL32": 10,
+        "SUBSPACE_PROJECT_CNRS_FULL32": 11
+      }
+    },
+    "aggregate_pass_by_chunk": {
+      "0": {
+        "CONTROL_CNRS_FULL32": false,
+        "SHAM_MEASURE_CNRS_FULL32": false,
+        "SUBSPACE_PROJECT_CNRS_FULL32": false
+      },
+      "1": {
+        "CONTROL_CNRS_FULL32": false,
+        "SHAM_MEASURE_CNRS_FULL32": false,
+        "SUBSPACE_PROJECT_CNRS_FULL32": false
+      }
+    },
+    "note": "Primary frozen auditor was explicitly checked out at SHA 208be21e... by the live-audit workflow. Intermediate evidence only; not reducer input."
+  }
 }
