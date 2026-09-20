@@ -1,0 +1,49 @@
+{
+  "schema": "EXP337-SEALED-MARKER-RECEIPT-V1",
+  "experiment_id": "EXP-337",
+  "marker_branch": "exp337-cnrs-self-rollin-sequence-recovery-design",
+  "sealed_marker_sha": "ec5f98a636e9395a76509493800b6b9f06a33271",
+  "sealed_before_scientific_dispatch": true,
+  "scientific_source": {
+    "commit_sha": "5a0fa8da3e3906a712bcb027d8d4e40ed60f026b",
+    "source_tree_digest": "211179cb6c95308aa936efeb144ee8c9729e468b13cf7e13cdaf67ea3dbf1520",
+    "workflow_path": ".github/workflows/exp337-self-rollin-stage-a.yml",
+    "workflow_git_blob_sha": "e3a147183acdbca7a9bec1de40dfec34ea303141",
+    "workflow_sha256": "705319c2ab640308cbb36e8d118f7f1038644796d5099eb2f6964cee73860c9d"
+  },
+  "execution_identity": {
+    "git_blob_sha": "ca29c92e80089dce5b1f2206a92b3dd15810b5bb",
+    "raw_sha256": "ddd1f9616e78e6c1f8adba123f4595dade9089abd1a1c58c7394cee99860f480",
+    "execution_digest": "c7d9b0ad756a2417d5675a9203b3dd95b4ba3e2596a3a5c91b34b8dfd73e20d2"
+  },
+  "frozen_preregistration": {
+    "canonical_digest": "5172c3f85d15d71e7fc4a16e3f00ae5d9a5031f09a97c1529f8fa6e25822c53a",
+    "raw_sha256": "95857497dcc0cc264e5e9c76e1f8cb3a15a6b05f1e3bab90795a5f9be7f84423",
+    "git_blob_sha": "37afa42cf66e874c457f31415c5f426d318e9804",
+    "design_git_blob_sha": "1e8097d4fc56686b7bd24c561811540d8d4c5321",
+    "lock_v2_git_blob_sha": "f200c69090cdb8c0f8e1b7f72b63ce3f227b2bc8"
+  },
+  "validation": {
+    "prereg_contract_run_id": 35500951486,
+    "implementation_ci_run_id": 35501662552,
+    "seal_candidate_run_id": 35502464544,
+    "sealed_contract_run_id": 35502589442,
+    "sealed_contract_conclusion": "success",
+    "sealed_contract_artifact_id": 10602442699,
+    "sealed_contract_artifact_zip_sha256": "fda156f58330975328a6d32ffddae2837cc38261d5eb44caaa611f2be3644fdd",
+    "scientific_workflow_dispatch_count_at_seal": 0
+  },
+  "authorization": {
+    "implementation_authorized_and_completed": true,
+    "scientific_dispatch_authorized": false,
+    "post_seal_operator_transition_required": true,
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  },
+  "rule": "Do not advance the sealed marker branch. Any authoritative scientific dispatch must be created by a separate post-seal operator transition and must target exactly the sealed marker SHA above."
+}
