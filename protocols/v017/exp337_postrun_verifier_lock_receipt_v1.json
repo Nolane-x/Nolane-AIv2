@@ -1,0 +1,44 @@
+{
+  "schema": "EXP337-POSTRUN-VERIFIER-LOCK-RECEIPT-V1",
+  "experiment_id": "EXP-337",
+  "created_before_scientific_dispatch": true,
+  "sealed_marker_sha": "ec5f98a636e9395a76509493800b6b9f06a33271",
+  "frozen_auditor_sha": "debc13fd4ec8f8ed443302ef0352d751661faafc",
+  "frozen_auditor_source_tree_digest": "024c9f1ef7165114bfb0be3e8ff6c2e86b1ab27c79f6e8bd623241eb5d75723b",
+  "verifier": {
+    "path": ".github/workflows/exp337-postrun-independent-audit.yml",
+    "git_blob_sha": "4188610ee403cbe76b62fce683228f992081dd4a",
+    "registration_commit_sha": "0d2dad3891d4df8b308af433bec88918588b691f",
+    "contract_run_id": 35503198974,
+    "contract_conclusion": "success",
+    "contract_artifact_id": 10603041618,
+    "contract_artifact_zip_sha256": "79ec184449812bd5534e1e260e5d6a495ff9ed5279d3912101c5c1a1cb715bfb"
+  },
+  "frozen_controls": {
+    "closure_requirements_git_blob_sha": "2cd7013bc5cd1d6b80c3ef2e2e4c0af33190eba2",
+    "independent_audit_lock_git_blob_sha": "ff6980318e7216280b6eccb785be985bb594d219",
+    "verifier_lock_git_blob_sha": "aefe8b32fcec8bf92c1e3ec0e54df7dee3e89668"
+  },
+  "enforcement": {
+    "workflow_path": ".github/workflows/exp337-postrun-verifier-lock.yml",
+    "workflow_git_blob_sha": "eebd2825b0a53a5e2483ee8930683074a504befa",
+    "commit_sha": "ed24443217c54198d6cb531503c771c838050aed",
+    "run_id": 35503327262,
+    "conclusion": "success",
+    "artifact_id": 10603635192,
+    "artifact_zip_sha256": "fff5d2f407783c58883c26c3bf000b08e86b9e5f3edddb34a1712248b4df111f"
+  },
+  "scientific_workflow_dispatch_count": 0,
+  "authoritative_run_lock_present": false,
+  "scientific_dispatch_authorized": false,
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  },
+  "interpretation": "The EXP-337 scientific marker, frozen independent auditor, final closure requirements, and post-run verifier were all sealed and independently enforced before any scientific workflow_dispatch existed. This receipt does not authorize scientific dispatch."
+}
