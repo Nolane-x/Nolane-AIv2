@@ -1,0 +1,97 @@
+{
+  "authorization_flags": {
+    "authorized_100m": false,
+    "authorized_30m": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false
+  },
+  "chunk_artifact_digests": [
+    "176eedc34450c7e843ff4a21c218c82dea7fbc3fc15239559d4941e60bf69dbf",
+    "7fd5d9536438109896eca9922ff80704483aee452dc1061f28c58dede88a6a36",
+    "8063277a4f0a99c34d8c4491eb57606717f68ee93f46212eea582f21c696c784",
+    "ff25128ab36f4fc9b646e1b99c5228c2ca8f8e8d8781a785a0da742d16752890",
+    "29ecd6cef1f229e5be16d1df9212e8a8d1d371f92cf2221f014add66b68013ff",
+    "87013a2c5bb33fedc25bbdaae83a66868724419cb7e4c9cb8f0ab342729fa4d4",
+    "d50024b13c6d9c016e8d3f4dff12fe88ce2f0de6baf5bbe0c308645f3d9990df",
+    "5a12a2e59e399bec993ee1597ddbf4f85546e1d5de0b26635cb1d7def5a9666d"
+  ],
+  "chunk_bundle_digests": [
+    "08ea7ad3f43281d31b687c92e7dd9927e73b14797e52fa9575295e89bb56bc6e",
+    "9ff533a3e56298f5a955cfda081ec4cf4b69668b9da8bc5e418afcdc4bc9b9a2",
+    "0ea40a712dd355921a588a1cbc453f8384308613bb5194d80112cb492369521e",
+    "8de7f008062e7418ef575c65da2e7644e14d621ab942e3de9700e12ae9b1e973",
+    "40c4b30cbda726b39c20894327a88403136baa6c3e3ededd8782221fdfaafb0",
+    "fab948c49e1f84fd16140bbd83451f107d96a85f0fee1f0bbc91f89bb2bf9cad",
+    "c905de4d1434252a47872b5053fc09728af40430c2ef5888b562c7b784eba8b7",
+    "c5c72c4919077b0d1647939d4335cea79f579090af27fb2ff0a5e82e91d8cae8"
+  ],
+  "control_sham_exact_by_chunk": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "decision": "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED",
+  "evidence_digest": "c89f70f3555ad95892794821eddbcc158a2e7e9d7c4ef4fa02082a00acd6ccf7",
+  "final_json_path": "audit-input/exp336-final.json",
+  "reducer_vectors": {
+    "control_aggregate_pass": false,
+    "control_failed_worlds": [
+      "iterative-grid-and-maze:0",
+      "iterative-grid-and-maze:3",
+      "iterative-grid-and-maze:5",
+      "iterative-grid-and-maze:7",
+      "algorithmic-sequence-transform:1",
+      "algorithmic-sequence-transform:2",
+      "algorithmic-sequence-transform:3",
+      "algorithmic-sequence-transform:4",
+      "algorithmic-sequence-transform:5",
+      "algorithmic-sequence-transform:7",
+      "generator-heldout-abstract-transformation:0",
+      "generator-heldout-abstract-transformation:2",
+      "language-sequence-control:0",
+      "language-sequence-control:1",
+      "language-sequence-control:2",
+      "language-sequence-control:3",
+      "language-sequence-control:5",
+      "language-sequence-control:7"
+    ],
+    "project_aggregate_pass": false,
+    "project_failed_worlds": [
+      "iterative-grid-and-maze:0",
+      "algorithmic-sequence-transform:1",
+      "algorithmic-sequence-transform:2",
+      "algorithmic-sequence-transform:3",
+      "algorithmic-sequence-transform:4",
+      "algorithmic-sequence-transform:5",
+      "algorithmic-sequence-transform:7",
+      "language-sequence-control:0",
+      "language-sequence-control:1",
+      "language-sequence-control:2",
+      "language-sequence-control:3",
+      "language-sequence-control:5",
+      "language-sequence-control:6",
+      "language-sequence-control:7"
+    ],
+    "project_regressions": [
+      "language-sequence-control:6"
+    ],
+    "projected_target_count": 10945,
+    "projection_update_count": 1010,
+    "rescued_control_failures": [
+      "iterative-grid-and-maze:3",
+      "iterative-grid-and-maze:5",
+      "iterative-grid-and-maze:7",
+      "generator-heldout-abstract-transformation:0",
+      "generator-heldout-abstract-transformation:2"
+    ]
+  },
+  "schema": "EXP336-INDEPENDENT-FINAL-AUDIT-V1"
+}
