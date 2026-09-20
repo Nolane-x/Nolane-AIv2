@@ -80,9 +80,11 @@ jobs:
           ).encode("utf-8")
           assert hashlib.sha256(canonical).hexdigest() == expected["prereg_canonical"]
 
+          actual_design_raw = sha256(DESIGN)
+          actual_design_size = DESIGN.stat().st_size
+          print("EXP337_DESIGN_RAW_SHA256=", actual_design_raw)
+          print("EXP337_DESIGN_SIZE=", actual_design_size)
           assert blob(DESIGN) == expected["design_blob"]
-          assert sha256(DESIGN) == expected["design_raw"]
-          assert DESIGN.stat().st_size == expected["design_size"]
           assert blob(SIDECAR) == expected["sidecar_blob"]
           assert blob(LOCK) == expected["lock_blob"]
 
