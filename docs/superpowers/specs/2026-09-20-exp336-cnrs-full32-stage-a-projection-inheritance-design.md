@@ -129,6 +129,7 @@ At every source update:
 
 - compute the source gradient;
 - at the identical pre-update model/optimizer/RNG state, measure gradients for all other 31 worlds;
+- source and all 31 target backward passes use the same current exposure effort from the frozen 1/2/4/8 cycle;
 - preserve the raw source gradient;
 - apply the raw source gradient exactly as CONTROL does.
 
@@ -198,7 +199,7 @@ Every chunk boundary is diagnostic. Only the final boundary is decisional.
 
 ### Primary full-32 teacher-forced floor
 
-Every one of the 32 worlds must simultaneously satisfy:
+Every one of the 32 worlds is evaluated at frozen teacher-forced effort `4` and must simultaneously satisfy:
 
 - teacher-forced answer-token accuracy >= `0.99`
 - teacher-forced full-answer exact >= `0.90`
