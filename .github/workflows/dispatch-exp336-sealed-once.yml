@@ -18,6 +18,7 @@ jobs:
       EXPECTED_MARKER_SHA: 08e2caebca4c1b7e4b197f6d2190ef90e94468fd
       EXPECTED_IDENTITY_SHA256: a8f81a0494ba00658d0e8eeea4c0112f1a0547e436783a557b1e70ec9091a190
       TARGET_WORKFLOW: exp336-cnrs-full32-stage-a.yml
+      EXPECTED_REGISTERED_WORKFLOW_SHA256: b29710b206fb028f9064040f593ffd79ef4cdf6082fd820b3869d624b447de97
     steps:
       - name: Verify exact sealed marker and zero prior dispatches
         env:
@@ -31,6 +32,11 @@ jobs:
           gh api "repos/${GITHUB_REPOSITORY}/contents/protocols/v017/exp336_execution_identity_v1.json?ref=${TARGET_BRANCH}"             --jq '.content' | tr -d '\n' | base64 -d > /tmp/exp336-identity.json
           observed_identity="$(sha256sum /tmp/exp336-identity.json | awk '{print $1}')"
           test "$observed_identity" = "$EXPECTED_IDENTITY_SHA256"
+
+          gh api "repos/${GITHUB_REPOSITORY}/contents/.github/workflows/${TARGET_WORKFLOW}?ref=main" \
+            --jq '.content' | tr -d '\n' | base64 -d > /tmp/registered-exp336.yml
+          observed_workflow="$(sha256sum /tmp/registered-exp336.yml | awk '{print $1}')"
+          test "$observed_workflow" = "$EXPECTED_REGISTERED_WORKFLOW_SHA256"
 
           prior="$(
             gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${TARGET_WORKFLOW}/runs?branch=${TARGET_BRANCH}&event=workflow_dispatch&per_page=100"               --jq '.total_count'
