@@ -121,13 +121,144 @@
         "execution_digest": true,
         "authorization_flags_false": true
       }
+    },
+    {
+      "chunk_index": 2,
+      "artifact_id": 10597562011,
+      "name": "exp336-chunk-2-35481336946",
+      "github_zip_sha256": "8063277a4f0a99c34d8c4491eb57606717f68ee93f46212eea582f21c696c784",
+      "size_in_bytes": 328268754,
+      "parent_artifact_digest": "7fd5d9536438109896eca9922ff80704483aee452dc1061f28c58dede88a6a36",
+      "bundle_digest": "0ea40a712dd355921a588a1cbc453f8384308613bb5194d80112cb492369521e",
+      "cumulative_exposure_per_world": 12,
+      "cumulative_source_updates": 384,
+      "cumulative_training_step": 1408,
+      "control_sham_exact": true,
+      "nonfinite_events_all_arms": 0,
+      "control_world_pass_count": 9,
+      "sham_world_pass_count": 9,
+      "project_world_pass_count": 14,
+      "family_world_pass_counts": {
+        "CONTROL_CNRS_FULL32": {
+          "iterative-grid-and-maze": 4,
+          "algorithmic-sequence-transform": 0,
+          "generator-heldout-abstract-transformation": 5,
+          "language-sequence-control": 0
+        },
+        "SUBSPACE_PROJECT_CNRS_FULL32": {
+          "iterative-grid-and-maze": 6,
+          "algorithmic-sequence-transform": 0,
+          "generator-heldout-abstract-transformation": 8,
+          "language-sequence-control": 0
+        }
+      },
+      "control_aggregate": {
+        "answer_only_loss": 1.0926180365873785,
+        "answer_token_accuracy": 0.7816901408450704,
+        "greedy_exact_match": 0.28125,
+        "eos_correctness": 1,
+        "invalid_output_rate": 0,
+        "loss_fraction_of_original_initial": 0.006639963867523046,
+        "aggregate_pass": false
+      },
+      "project_aggregate": {
+        "answer_only_loss": 1.5820700958576457,
+        "answer_token_accuracy": 0.7535211267605634,
+        "greedy_exact_match": 0.4375,
+        "eos_correctness": 1,
+        "invalid_output_rate": 0,
+        "loss_fraction_of_original_initial": 0.009614419605586838,
+        "aggregate_pass": false
+      },
+      "sham_negative_target_count": 4128,
+      "project_negative_target_count": 4490,
+      "project_projection_update_count": 382,
+      "project_projected_target_count": 4362,
+      "control_failed_worlds": [
+        "iterative-grid-and-maze:0",
+        "iterative-grid-and-maze:3",
+        "iterative-grid-and-maze:5",
+        "iterative-grid-and-maze:7",
+        "algorithmic-sequence-transform:0",
+        "algorithmic-sequence-transform:1",
+        "algorithmic-sequence-transform:2",
+        "algorithmic-sequence-transform:3",
+        "algorithmic-sequence-transform:4",
+        "algorithmic-sequence-transform:5",
+        "algorithmic-sequence-transform:6",
+        "algorithmic-sequence-transform:7",
+        "generator-heldout-abstract-transformation:0",
+        "generator-heldout-abstract-transformation:2",
+        "generator-heldout-abstract-transformation:3",
+        "language-sequence-control:0",
+        "language-sequence-control:1",
+        "language-sequence-control:2",
+        "language-sequence-control:3",
+        "language-sequence-control:4",
+        "language-sequence-control:5",
+        "language-sequence-control:6",
+        "language-sequence-control:7"
+      ],
+      "project_failed_worlds": [
+        "iterative-grid-and-maze:0",
+        "iterative-grid-and-maze:3",
+        "algorithmic-sequence-transform:0",
+        "algorithmic-sequence-transform:1",
+        "algorithmic-sequence-transform:2",
+        "algorithmic-sequence-transform:3",
+        "algorithmic-sequence-transform:4",
+        "algorithmic-sequence-transform:5",
+        "algorithmic-sequence-transform:6",
+        "algorithmic-sequence-transform:7",
+        "language-sequence-control:0",
+        "language-sequence-control:1",
+        "language-sequence-control:2",
+        "language-sequence-control:3",
+        "language-sequence-control:4",
+        "language-sequence-control:5",
+        "language-sequence-control:6",
+        "language-sequence-control:7"
+      ],
+      "interim_project_rescues_vs_control": [
+        "iterative-grid-and-maze:5",
+        "iterative-grid-and-maze:7",
+        "generator-heldout-abstract-transformation:0",
+        "generator-heldout-abstract-transformation:2",
+        "generator-heldout-abstract-transformation:3"
+      ],
+      "interim_project_regressions_vs_control": [],
+      "checkpoint_sha256": {
+        "CONTROL_CNRS_FULL32": "d864e6f6b1e2bbc9ff179da91165b493151542a73b348e48635470cf122af890",
+        "SHAM_MEASURE_CNRS_FULL32": "e4b554691284b1f4a095685338094e1d51506442563648fd40ac557ed961d492",
+        "SUBSPACE_PROJECT_CNRS_FULL32": "3252127c6dda9e5455951a24871e026aa59c7c44f4f0cf8ff98ee4c963bd8ee9"
+      },
+      "receipt_digests": {
+        "CONTROL_CNRS_FULL32": "d35e30c7838b29016334464edec69336cf6c1a920c49cd5050c4a23f838d23a9",
+        "SHAM_MEASURE_CNRS_FULL32": "18e6ceeaf460ebc72c20adb07d9fc04682f335c2642eef57ca3a17d22c28b36d",
+        "SUBSPACE_PROJECT_CNRS_FULL32": "cb2b84037350d8ab41561620bc1f4800764ae274d1bb82b77cca1fb8bc582930"
+      },
+      "reducer_input": false,
+      "integrity_verified": {
+        "raw_zip_sha_matches_github": true,
+        "canonical_bundle_digest": true,
+        "all_receipt_digests": true,
+        "all_checkpoint_member_sha256": true,
+        "receipt_boundary_state_digests": true,
+        "parent_equals_actual_chunk1_zip_sha256": true,
+        "source_tree_digest": true,
+        "preregistration_digest": true,
+        "execution_digest": true,
+        "authorization_flags_false": true
+      }
     }
   ],
   "current_execution_state": {
     "chunk2_job_id": 106009912454,
-    "chunk2_status": "in_progress",
-    "chunk2_active_step": "Execute EXP-336 chunk 2 court",
-    "chunk2_partial_logs_available": false,
+    "chunk2_status": "completed",
+    "chunk2_conclusion": "success",
+    "chunk3_job_id": 106014853802,
+    "chunk3_status": "in_progress",
+    "chunk3_active_step": "Execute EXP-336 chunk 3 court",
     "final_reducer_available": false
   },
   "interpretation_guard": "Intermediate chunk metrics and exploratory trajectory are non-decisional and may not select a transition. Only the preregistered final reducer after a complete verified 8-chunk chain may do so.",
@@ -210,7 +341,7 @@
     ],
     "note": "Only authority/evidence/documentation files changed after the sealed marker at the audited checkpoint."
   },
-  "current_authoritative_job": "chunk2",
+  "current_authoritative_job": "chunk3",
   "final_disposition_available": false,
   "independent_audit_through_chunk1": {
     "frozen_auditor_sha": "208be21e035a5064eb9d60a9269154768717f5b1",
