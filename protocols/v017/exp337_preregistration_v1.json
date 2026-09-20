@@ -1,0 +1,242 @@
+{
+  "authorized_by_parent_transition": {
+    "authorized_next_scope": "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY",
+    "frozen_transition_lock_git_blob_sha": "fb64725b7830f4241c040bbe7a17525eab0e778f",
+    "parent_evidence_digest": "c89f70f3555ad95892794821eddbcc158a2e7e9d7c4ef4fa02082a00acd6ccf7",
+    "parent_experiment_id": "EXP-336",
+    "parent_final_closure_archive_artifact_id": 10601214018,
+    "parent_final_closure_archive_run_id": 35498717749,
+    "parent_final_closure_archive_zip_sha256": "87415d6144dfb3df54526762e7e4eb87c2d18db8a9cf6ea45d88bf3a4022848e",
+    "parent_final_closure_commit": "8ef8dd2a0dc69d56cb68d591622bd4b6dc0a610c",
+    "parent_final_closure_digest": "f33df20c0a1edea2751b4804cd5e51c7e34512841f2ad25aa1819ddad7a9666d",
+    "parent_final_decision": "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED"
+  },
+  "causal_question": "Can either exact frozen EXP-336 final C_NRS foundation satisfy the complete Stage-A gate solely by increasing recurrent inference effort, with zero learning, zero parameter change, zero optimizer update, and zero RNG advance?",
+  "design": {
+    "arms": [
+      "CONTROL_CNRS_FULL32",
+      "SUBSPACE_PROJECT_CNRS_FULL32"
+    ],
+    "baseline_reproduction_effort": 4,
+    "checkpoint_mutation_allowed": false,
+    "effort_order_is_fixed": true,
+    "effort_sweep": [
+      1,
+      2,
+      4,
+      8,
+      12,
+      16
+    ],
+    "evaluation_state_reset": "Every arm/effort evaluation reloads or restores the exact same frozen checkpoint model state before measurement. No result at one effort may change the state evaluated at another effort.",
+    "higher_efforts_eligible_for_rescue": [
+      8,
+      12,
+      16
+    ],
+    "lower_efforts_diagnostic_only": [
+      1,
+      2
+    ],
+    "new_parameters": 0,
+    "optimizer_steps": 0,
+    "parameter_count": 10000000,
+    "read_only_evaluation": true,
+    "rng_advances_allowed": 0,
+    "sham_policy": "SHAM is not separately evaluated because EXP-336 independently verified CONTROL=SHAM exactly at every chunk, including the parent boundary. Parent validity requires that frozen equality.",
+    "training_updates": 0,
+    "weight_updates": 0,
+    "world_set": "exact EXP-319/EXP-336 32 Stage-A worlds in frozen WORLD_IDS order"
+  },
+  "evaluation_semantics": {
+    "aggregate_metrics": [
+      "answer_only_loss",
+      "answer_token_accuracy",
+      "greedy_exact_match",
+      "eos_correctness",
+      "invalid_output_rate",
+      "loss_fraction_of_original_initial"
+    ],
+    "already_supported_efforts_in_parent_source": [
+      1,
+      2,
+      4,
+      8,
+      12,
+      16
+    ],
+    "common_gating_effort_in_parent": 4,
+    "forward_primitive": "forward_scientific_arm",
+    "greedy": {
+      "argmax_decoding": true,
+      "effort_equals_current_sweep_effort": true,
+      "invalid_token_rule_unchanged": true,
+      "max_generation_tokens": 96,
+      "no_sampling": true,
+      "note": "Implementation may parameterize the effort argument of the existing diagnostic-generation primitive, but must not change token budget, stopping, invalid-token handling, tokenizer, or decoding.",
+      "primitive_family": "_diagnostic_generate semantics",
+      "stop_on_eos": true
+    },
+    "original_exp319_initial_answer_only_loss": 164.55180455597355,
+    "teacher_forced": {
+      "effort_equals_current_sweep_effort": true,
+      "per_world_metrics": [
+        "answer_token_accuracy",
+        "full_answer_exact"
+      ],
+      "same_answer_only_encoding_and_targets_as_EXP336": true
+    }
+  },
+  "experiment_id": "EXP-337",
+  "hypotheses": {
+    "H_effort_sufficiency": "The EXP-336 final failure is at least partly an inference-compute insufficiency: one or both exact frozen final checkpoints can satisfy the complete Stage-A gate at a higher recurrent effort without any learning or state mutation.",
+    "H_no_effort_rescue": "Increasing recurrent inference effort alone through the largest already-supported effort 16 does not make either exact frozen final checkpoint satisfy the complete Stage-A gate.",
+    "scope_limit": "A no-rescue result rejects sufficiency of inference effort within the preregistered effort range; it does not by itself prove a unique representation/learning mechanism. A rescue result establishes sufficiency for the frozen checkpoint under that evaluation effort; it does not authorize Stage-B implementation."
+  },
+  "implementation_boundary": {
+    "execution_identity_allowed_in_this_pr": false,
+    "operator_transition_required_after_preregistration_freeze": true,
+    "runtime_code_allowed_in_this_pr": false,
+    "scientific_run_allowed_in_this_pr": false,
+    "workflow_allowed_in_this_pr": false
+  },
+  "mandatory_reproduction_gate": {
+    "comparison_scope": [
+      "all 32 world_token_accuracies",
+      "all 32 world_full_answer_exact",
+      "aggregate_answer_only_loss",
+      "aggregate_answer_token_accuracy",
+      "aggregate_greedy_exact_match",
+      "aggregate_eos_correctness",
+      "aggregate_invalid_output_rate",
+      "aggregate_loss_fraction_of_original_initial",
+      "model_state_digest",
+      "nonfinite_events"
+    ],
+    "effort": 4,
+    "failure_rule": "Any effort-4 reproduction mismatch makes the court invalid; higher-effort results cannot be interpreted.",
+    "must_exactly_reproduce_EXP336_final_boundary_objects": true,
+    "parent_reference": {
+      "CONTROL_CNRS_FULL32": {
+        "aggregate_answer_token_accuracy": 0.8732394366197183,
+        "aggregate_eos_correctness": 1.0,
+        "aggregate_greedy_exact_match": 0.4375,
+        "aggregate_invalid_output_rate": 0.0,
+        "aggregate_loss_fraction_of_original_initial": 0.004028852176910027,
+        "pass_count": 14
+      },
+      "SUBSPACE_PROJECT_CNRS_FULL32": {
+        "aggregate_answer_token_accuracy": 0.9119718309859155,
+        "aggregate_eos_correctness": 1.0,
+        "aggregate_greedy_exact_match": 0.5625,
+        "aggregate_invalid_output_rate": 0.0,
+        "aggregate_loss_fraction_of_original_initial": 0.003099444664217025,
+        "pass_count": 18
+      }
+    }
+  },
+  "parent_authority": {
+    "arms": {
+      "CONTROL_CNRS_FULL32": {
+        "checkpoint_sha256": "f616aea7f39c70e0a103ebe8f9b281a4487625d2b54418feea05e353c014290f",
+        "model_state_digest": "9d50a59a0cb6ed140e4c8bc9832ea1ca5efdd811226746a317e21f472e3b01e7",
+        "optimizer_state_digest": "65393b996c0503873454dacacc7037a4336595993626f8441a5f2b45ea06dd60",
+        "rng_state_digest": "3d2d8e928c4e09f880efbd2edaac3df47c88bace04c0e270c4ec0639e65bdb95"
+      },
+      "SUBSPACE_PROJECT_CNRS_FULL32": {
+        "checkpoint_sha256": "a9e638f3029e4af05a685dd4cfba096da6107221ca3a31cb26e5422b4d394208",
+        "model_state_digest": "e122331caa2e6924c13d4c479574dc8d3e4e1de823adfc02604158ec3ad7fc38",
+        "optimizer_state_digest": "44db727abdf9edca155ebd1a3d9e697a4d0b0e1b82e70371e3a77768b72932a7",
+        "rng_state_digest": "3d2d8e928c4e09f880efbd2edaac3df47c88bace04c0e270c4ec0639e65bdb95"
+      }
+    },
+    "authoritative_head_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+    "authoritative_run_attempt": 1,
+    "authoritative_run_id": 35481336946,
+    "chunk7_artifact_id": 10601286249,
+    "chunk7_artifact_zip_sha256": "5a12a2e59e399bec993ee1597ddbf4f85546e1d5de0b26635cb1d7def5a9666d",
+    "chunk7_bundle_digest": "c5c72c4919077b0d1647939d4335cea79f579090af27fb2ff0a5e82e91d8cae8",
+    "control_sham_exact_at_parent": true,
+    "frozen_independent_auditor_sha": "208be21e035a5064eb9d60a9269154768717f5b1",
+    "independent_final_audit_sha256": "5f8f69b93ba12bbf17713f09afb8dab4e6d04a4bb277be544c15b870b0a96536",
+    "scientific_source_sha": "5220e50adec7f6f048510aac44a077a4ddfdaf44"
+  },
+  "post_result_transition_lock": {
+    "BOTH_FROZEN_FOUNDATIONS_RESCUED_BY_RECURRENT_EFFORT": "RECURRENT_COMPUTE_CAUSAL_MECHANISM_PREREGISTRATION_ONLY",
+    "CONTROL_FROZEN_FOUNDATION_RESCUED_BY_RECURRENT_EFFORT": "RECURRENT_COMPUTE_CAUSAL_MECHANISM_PREREGISTRATION_ONLY",
+    "EFFORT4_REPRODUCTION_MISMATCH": "EVALUATOR_REPRODUCTION_LOCALIZATION_ONLY",
+    "FROZEN_FINAL_RECURRENT_EFFORT_NO_STAGE_A_RESCUE": "REPRESENTATION_OR_LEARNING_DEFICIT_HYPOTHESIS_PREREGISTRATION_ONLY",
+    "INVALID_EXP337_FROZEN_EFFORT_COURT": "VALIDITY_OR_PROVENANCE_REVIEW_ONLY",
+    "PARENT_AUTHORITY_MISMATCH": "PARENT_AUTHORITY_RECONCILIATION_ONLY",
+    "PROJECT_FROZEN_FOUNDATION_RESCUED_BY_RECURRENT_EFFORT": "RECURRENT_COMPUTE_CAUSAL_MECHANISM_PREREGISTRATION_ONLY"
+  },
+  "primary_outcomes": {
+    "arm_rescue_definition": "An arm is rescued iff it satisfies the complete Stage-A gate at at least one effort in [8,12,16]. The first passing effort in fixed ascending order is recorded.",
+    "best_of_efforts_without_full_gate_is_not_rescue": true,
+    "family_pass_count_is_not_primary": true,
+    "pass_count_is_not_primary": true
+  },
+  "reducer_order": [
+    "INVALID_EXP337_FROZEN_EFFORT_COURT",
+    "PARENT_AUTHORITY_MISMATCH",
+    "EFFORT4_REPRODUCTION_MISMATCH",
+    "BOTH_FROZEN_FOUNDATIONS_RESCUED_BY_RECURRENT_EFFORT",
+    "CONTROL_FROZEN_FOUNDATION_RESCUED_BY_RECURRENT_EFFORT",
+    "PROJECT_FROZEN_FOUNDATION_RESCUED_BY_RECURRENT_EFFORT",
+    "FROZEN_FINAL_RECURRENT_EFFORT_NO_STAGE_A_RESCUE"
+  ],
+  "reducer_rules": {
+    "BOTH_FROZEN_FOUNDATIONS_RESCUED_BY_RECURRENT_EFFORT": "Both CONTROL and PROJECT meet full Stage-A at one or more eligible higher efforts.",
+    "CONTROL_FROZEN_FOUNDATION_RESCUED_BY_RECURRENT_EFFORT": "CONTROL meets full Stage-A at an eligible higher effort and PROJECT does not.",
+    "EFFORT4_REPRODUCTION_MISMATCH": "Parent is valid but exact effort-4 EXP-336 final boundary reproduction fails.",
+    "FROZEN_FINAL_RECURRENT_EFFORT_NO_STAGE_A_RESCUE": "Neither arm meets the full Stage-A gate at efforts 8, 12, or 16.",
+    "INVALID_EXP337_FROZEN_EFFORT_COURT": "Malformed evidence, nonfinite event, state mutation, unsupported effort, world/order/evaluator drift, or any violation of the read-only contract.",
+    "PARENT_AUTHORITY_MISMATCH": "Any frozen parent artifact/checkpoint/model-state identity mismatch.",
+    "PROJECT_FROZEN_FOUNDATION_RESCUED_BY_RECURRENT_EFFORT": "PROJECT meets full Stage-A at an eligible higher effort and CONTROL does not."
+  },
+  "schema": "EXP337-FROZEN-FINAL-RECURRENT-EFFORT-SUFFICIENCY-PREREGISTRATION-V1",
+  "secondary_fixed_diagnostics": {
+    "diagnostics_are_reducer_input": false,
+    "monotonicity_claim_not_preregistered": true,
+    "record_for_each_arm_and_effort": [
+      "32-world pass vector",
+      "pass count",
+      "family pass counts in frozen family order",
+      "aggregate metrics",
+      "failed world IDs"
+    ]
+  },
+  "stage_a_gate": {
+    "aggregate_answer_token_accuracy_min": 0.99,
+    "aggregate_eos_correctness_min": 0.95,
+    "aggregate_greedy_exact_min": 0.9,
+    "aggregate_invalid_output_rate_max": 0.01,
+    "aggregate_loss_fraction_of_original_initial_max": 0.25,
+    "all_32_worlds_must_pass_simultaneously": true,
+    "nonfinite_events_required": 0,
+    "per_world_full_answer_exact_min": 0.9,
+    "per_world_teacher_forced_token_min": 0.99,
+    "same_effort_for_teacher_forced_and_greedy_within_each_effort_boundary": true
+  },
+  "status": "DESIGN_PREREGISTRATION_ONLY",
+  "title": "C_NRS Frozen-Final Recurrent-Effort Sufficiency Court",
+  "universal_guards": {
+    "authorized_100m": false,
+    "authorized_30m": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "exp337_execution_authorized": false,
+    "exp337_implementation_authorized": false,
+    "no_best_effort_threshold_tuning": true,
+    "no_checkpoint_mutation": true,
+    "no_family_subset_success": true,
+    "no_new_effort_values_after_result_visibility": true,
+    "no_pass_count_only_success": true,
+    "no_training_in_EXP337": true,
+    "only_preregistered_reducer_may_select_transition": true,
+    "scale_authorized": false,
+    "stage_b_design_authorized": false,
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false
+  }
+}
