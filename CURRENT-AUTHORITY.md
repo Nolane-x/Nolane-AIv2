@@ -249,6 +249,16 @@ On authoritative success it must independently re-download/hash all 8 raw chunk 
 
 On authoritative non-success it may only archive a fail-closed provenance receipt.
 
+## Final closure requirements — FROZEN
+
+Before any final reducer result exists, EXP-336 closure requirements were frozen at:
+
+`protocols/v017/exp336_final_closure_requirements_v1.json`
+
+Closure is forbidden unless all eight authoritative chunks, the authoritative final artifact, the exact raw ZIP chain, the frozen independent auditor `208be21e...`, independently recomputed reducer vectors/evidence digest, and the already-frozen transition mapping are all present and consistent.
+
+An authoritative final artifact by itself is **not sufficient** to close EXP-336.
+
 ## Pre-result transition lock
 
 The successor action for every possible final reducer disposition was frozen **before scientific result visibility**:
