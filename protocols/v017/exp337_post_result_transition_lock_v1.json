@@ -1,0 +1,56 @@
+{
+  "created_before_scientific_result": true,
+  "experiment_id": "EXP-337",
+  "preregistration_canonical_digest": "2cfa555fae502f717658d8f401bf2fb33b9e68f97b0a69eb5395ce0c87f2a7a6",
+  "preregistration_raw_sha256": "0d5429fb0870e8176f3d383ae619f4a971345b27deeb339236d8e99aa00266a0",
+  "schema": "EXP337-POST-RESULT-TRANSITION-LOCK-V1",
+  "transitions": {
+    "BOTH_FROZEN_FOUNDATIONS_RESCUED_BY_RECURRENT_EFFORT": {
+      "next_scope": "RECURRENT_COMPUTE_CAUSAL_MECHANISM_PREREGISTRATION_ONLY",
+      "rule": "Higher recurrent inference effort is sufficient for the frozen final checkpoints under the full Stage-A gate. Only a new mechanism/design preregistration may follow."
+    },
+    "CONTROL_FROZEN_FOUNDATION_RESCUED_BY_RECURRENT_EFFORT": {
+      "next_scope": "RECURRENT_COMPUTE_CAUSAL_MECHANISM_PREREGISTRATION_ONLY",
+      "rule": "Higher recurrent inference effort is sufficient for frozen CONTROL under the full Stage-A gate. Only a new mechanism/design preregistration may follow."
+    },
+    "EFFORT4_REPRODUCTION_MISMATCH": {
+      "next_scope": "EVALUATOR_REPRODUCTION_LOCALIZATION_ONLY",
+      "rule": "Do not interpret higher-effort outputs. Localize why read-only effort-4 evaluation failed to reproduce EXP-336."
+    },
+    "FROZEN_FINAL_RECURRENT_EFFORT_NO_STAGE_A_RESCUE": {
+      "next_scope": "REPRESENTATION_OR_LEARNING_DEFICIT_HYPOTHESIS_PREREGISTRATION_ONLY",
+      "rule": "Inference effort alone through effort 16 is insufficient for both frozen final checkpoints. Preserve the negative result; only a distinct learning/representation causal hypothesis may follow."
+    },
+    "INVALID_EXP337_FROZEN_EFFORT_COURT": {
+      "next_scope": "VALIDITY_OR_PROVENANCE_REVIEW_ONLY",
+      "rule": "No capability interpretation. Preserve evidence and localize only validity/provenance defects."
+    },
+    "PARENT_AUTHORITY_MISMATCH": {
+      "next_scope": "PARENT_AUTHORITY_RECONCILIATION_ONLY",
+      "rule": "No capability interpretation. Reconcile exact EXP-336 closure/chunk7 authority before any execution."
+    },
+    "PROJECT_FROZEN_FOUNDATION_RESCUED_BY_RECURRENT_EFFORT": {
+      "next_scope": "RECURRENT_COMPUTE_CAUSAL_MECHANISM_PREREGISTRATION_ONLY",
+      "rule": "Higher recurrent inference effort is sufficient for frozen PROJECT under the full Stage-A gate. Only a new mechanism/design preregistration may follow."
+    }
+  },
+  "universal_guards": {
+    "authorized_100m": false,
+    "authorized_30m": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "exp337_execution_authorized": false,
+    "exp337_implementation_authorized": false,
+    "no_best_effort_threshold_tuning": true,
+    "no_checkpoint_mutation": true,
+    "no_family_subset_success": true,
+    "no_new_effort_values_after_result_visibility": true,
+    "no_pass_count_only_success": true,
+    "no_training_in_EXP337": true,
+    "only_preregistered_reducer_may_select_transition": true,
+    "scale_authorized": false,
+    "stage_b_design_authorized": false,
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false
+  }
+}
