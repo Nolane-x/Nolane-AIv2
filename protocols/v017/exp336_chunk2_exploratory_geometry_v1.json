@@ -97,5 +97,39 @@
     "Nearly all remaining post-projection negative mass is newly induced on targets whose raw source-target dot was nonnegative.",
     "This diagnostic does not alter the preregistered reducer and cannot select a repository transition.",
     "Boundary-level PROJECT has zero world-pass regressions versus CONTROL at exposure 12 despite internal gradient-space leakage."
-  ]
+  ],
+  "no_projection_updates": [
+    {
+      "exposure_index": 8,
+      "source_world_id": "iterative-grid-and-maze:1",
+      "effort": 1,
+      "raw_negative_count": 0,
+      "source_loss": 0,
+      "interpretation": "No raw-negative target existed; projector correctly did not engage."
+    },
+    {
+      "exposure_index": 8,
+      "source_world_id": "iterative-grid-and-maze:4",
+      "effort": 1,
+      "raw_negative_count": 0,
+      "source_loss": 0,
+      "interpretation": "No raw-negative target existed; projector correctly did not engage."
+    }
+  ],
+  "boundary_transition_from_chunk1": {
+    "CONTROL_CNRS_FULL32": {
+      "gained_passes": [],
+      "lost_passes": [
+        "language-sequence-control:4"
+      ]
+    },
+    "SUBSPACE_PROJECT_CNRS_FULL32": {
+      "gained_passes": [
+        "iterative-grid-and-maze:5",
+        "generator-heldout-abstract-transformation:1",
+        "generator-heldout-abstract-transformation:6"
+      ],
+      "lost_passes": []
+    }
+  }
 }
