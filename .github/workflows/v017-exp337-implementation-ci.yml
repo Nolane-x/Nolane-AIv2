@@ -1,0 +1,196 @@
+name: v017-exp337-implementation-ci
+
+on:
+  push:
+    branches: [exp337-cnrs-self-rollin-sequence-recovery-design]
+    paths:
+      - "src/nolane_ai/experiments/exp337_*.py"
+      - "scripts/exp337_*.py"
+      - "tests/test_exp337_*.py"
+      - "protocols/v017/exp337_operator_authorization_attestation_v1.json"
+      - ".github/workflows/v017-exp337-implementation-ci.yml"
+  pull_request:
+    paths:
+      - "src/nolane_ai/experiments/exp337_*.py"
+      - "scripts/exp337_*.py"
+      - "tests/test_exp337_*.py"
+      - "protocols/v017/exp337_operator_authorization_attestation_v1.json"
+      - ".github/workflows/v017-exp337-implementation-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  implementation-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install frozen test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev,model]'
+      - name: Verify frozen scientific bytes remain unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import subprocess
+          from pathlib import Path
+
+          fixed = {
+              "protocols/v017/exp337_preregistration_v1.json":
+                  ("37afa42cf66e874c457f31415c5f426d318e9804",
+                   "95857497dcc0cc264e5e9c76e1f8cb3a15a6b05f1e3bab90795a5f9be7f84423"),
+              "protocols/v017/EXP337_SELF_ROLLIN_SEQUENCE_RECOVERY_DESIGN_V1.md":
+                  ("1e8097d4fc56686b7bd24c561811540d8d4c5321",
+                   "2b251900e435f219a8d2cb48ecf486674bbb1831cf99b9e41d0396c8b0ef19bf"),
+              "protocols/v017/exp337_preregistration_lock_v2.json":
+                  ("f200c69090cdb8c0f8e1b7f72b63ce3f227b2bc8", None),
+          }
+          for raw_path, (expected_blob, expected_sha) in fixed.items():
+              path=Path(raw_path)
+              observed_blob=subprocess.check_output(
+                  ["git","rev-parse",f"HEAD:{raw_path}"],text=True
+              ).strip()
+              assert observed_blob == expected_blob, (raw_path, observed_blob)
+              if expected_sha:
+                  observed_sha=hashlib.sha256(path.read_bytes()).hexdigest()
+                  assert observed_sha == expected_sha, (raw_path, observed_sha)
+
+          att=json.loads(Path(
+              "protocols/v017/exp337_operator_authorization_attestation_v1.json"
+          ).read_text())
+          assert att["scientific_dispatch_authorized"] is False
+          assert att["preregistration_canonical_digest"] == (
+              "5172c3f85d15d71e7fc4a16e3f00ae5d9a5031f09a97c1529f8fa6e25822c53a"
+          )
+          PY
+      - name: Run EXP-337 implementation tests
+        run: |
+          pytest -q tests/test_exp337_contract.py tests/test_exp337_runtime.py
+      - name: Compile EXP-337 implementation
+        run: |
+          python -m compileall -q             src/nolane_ai/experiments/exp337_contract.py             src/nolane_ai/experiments/exp337_identity.py             src/nolane_ai/experiments/exp337_runtime.py             scripts/exp337_run_chunk.py             scripts/exp337_finalize.py
+
+  real-parent-smoke:
+    runs-on: ubuntu-latest
+    env:
+      PARENT_ARTIFACT_ID: "10601286249"
+      PARENT_ARTIFACT_SHA256: "5a12a2e59e399bec993ee1597ddbf4f85546e1d5de0b26635cb1d7def5a9666d"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install model dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[model]'
+      - name: Download and verify exact EXP-336 PROJECT parent
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import os
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          artifact_id=os.environ["PARENT_ARTIFACT_ID"]
+          token=os.environ["GH_TOKEN"]
+          headers={
+              "Authorization":f"Bearer {token}",
+              "Accept":"application/vnd.github+json",
+              "X-GitHub-Api-Version":"2022-11-28",
+              "User-Agent":"exp337-parent-smoke",
+          }
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,req,fp,code,msg,response_headers,newurl):
+                  return None
+          opener=urllib.request.build_opener(NoRedirect)
+          request=urllib.request.Request(
+              f"https://api.github.com/repos/{repo}/actions/artifacts/{artifact_id}/zip",
+              headers=headers,
+          )
+          try:
+              opener.open(request)
+          except urllib.error.HTTPError as exc:
+              if exc.code not in (301,302,303,307,308):
+                  raise
+              location=exc.headers.get("Location")
+          else:
+              raise RuntimeError("artifact endpoint did not redirect")
+          if not location:
+              raise RuntimeError("artifact redirect missing Location")
+          with urllib.request.urlopen(
+              urllib.request.Request(location,headers={"User-Agent":"exp337-parent-smoke"})
+          ) as response:
+              payload=response.read()
+          observed=hashlib.sha256(payload).hexdigest()
+          expected=os.environ["PARENT_ARTIFACT_SHA256"]
+          if observed != expected:
+              raise SystemExit(f"parent raw ZIP mismatch: {observed} != {expected}")
+          Path("/tmp/parent.zip").write_bytes(payload)
+          Path("/tmp/parent").mkdir()
+          with ZipFile("/tmp/parent.zip") as archive:
+              archive.extractall("/tmp/parent")
+          members=sorted(p.name for p in Path("/tmp/parent").iterdir())
+          expected_members=[
+              "chunk-summary.json","control-receipt.json","control.pt",
+              "project-receipt.json","project.pt","sham-receipt.json","sham.pt",
+          ]
+          if members != expected_members:
+              raise SystemExit(f"unexpected parent members: {members}")
+          print("EXP-336 parent raw ZIP:", observed)
+          PY
+      - name: Reconstruct exact 10M parent state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from nolane_ai.experiments.exp337_contract import (
+              PARENT_PROJECT_MODEL_STATE_DIGEST,
+              PARENT_PROJECT_OPTIMIZER_STATE_DIGEST,
+              PARENT_PROJECT_RNG_STATE_DIGEST,
+          )
+          from nolane_ai.experiments.exp337_runtime import _parent_arm, _state_digests
+
+          compiled,optimizer,counters=_parent_arm(
+              checkpoint_path="/tmp/parent/project.pt",
+              receipt_path="/tmp/parent/project-receipt.json",
+          )
+          model=compiled.model
+          assert sum(p.numel() for p in model.parameters() if p.requires_grad) == 10_000_000
+          observed=_state_digests(compiled,optimizer)
+          assert observed == {
+              "model_state_digest":PARENT_PROJECT_MODEL_STATE_DIGEST,
+              "optimizer_state_digest":PARENT_PROJECT_OPTIMIZER_STATE_DIGEST,
+              "rng_state_digest":PARENT_PROJECT_RNG_STATE_DIGEST,
+          }
+          assert counters == {
+              "nonfinite_events":0,
+              "negative_target_count":0,
+              "projection_update_count":0,
+              "projected_target_count":0,
+              "self_rollin_measurement_count":0,
+              "self_rollin_active_update_count":0,
+              "self_rollin_divergent_update_count":0,
+          }
+          print("EXP-337 exact parent smoke: VERIFIED")
+          PY
