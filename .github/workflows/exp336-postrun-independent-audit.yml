@@ -1,0 +1,411 @@
+name: EXP-336 post-run independent audit
+
+on:
+  workflow_run:
+    workflows: ["EXP-336 C_NRS full-32 Stage-A projection-inheritance court"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    if: ${{ github.event.workflow_run.id == 35481336946 && github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      AUTHORITATIVE_RUN_ID: "35481336946"
+      AUTHORITATIVE_HEAD_SHA: "08e2caebca4c1b7e4b197f6d2190ef90e94468fd"
+      AUDITOR_SHA: "208be21e035a5064eb9d60a9269154768717f5b1"
+    steps:
+      - name: Fail closed on wrong authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ github.event.workflow_run.id }}" = "${AUTHORITATIVE_RUN_ID}"
+          test "${{ github.event.workflow_run.head_sha }}" = "${AUTHORITATIVE_HEAD_SHA}"
+          test "${{ github.event.workflow_run.run_attempt }}" = "1"
+          test "${{ github.event.workflow_run.conclusion }}" = "success"
+
+      - name: Checkout frozen independent auditor
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.AUDITOR_SHA }}
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download and hash every authoritative artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-input
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          run_id=int(os.environ["AUTHORITATIVE_RUN_ID"])
+          token=os.environ["GH_TOKEN"]
+          headers={
+              "Authorization":f"Bearer {token}",
+              "Accept":"application/vnd.github+json",
+              "X-GitHub-Api-Version":"2022-11-28",
+              "User-Agent":"exp336-postrun-independent-audit",
+          }
+
+          def api_json(url):
+              req=urllib.request.Request(url,headers=headers)
+              with urllib.request.urlopen(req) as response:
+                  return json.load(response)
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, response_headers, newurl):
+                  return None
+          opener=urllib.request.build_opener(NoRedirect)
+
+          def download_zip(artifact,destination):
+              artifact_id=artifact["id"]
+              request=urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/actions/artifacts/{artifact_id}/zip",
+                  headers=headers,
+              )
+              try:
+                  opener.open(request)
+              except urllib.error.HTTPError as exc:
+                  if exc.code not in (301,302,303,307,308):
+                      raise
+                  location=exc.headers.get("Location")
+              else:
+                  raise RuntimeError("artifact endpoint unexpectedly did not redirect")
+              if not location:
+                  raise RuntimeError(f"artifact {artifact_id} redirect missing Location")
+              storage_request=urllib.request.Request(
+                  location,headers={"User-Agent":"exp336-postrun-independent-audit"}
+              )
+              with urllib.request.urlopen(storage_request) as response:
+                  payload=response.read()
+              observed=hashlib.sha256(payload).hexdigest()
+              expected=str(artifact["digest"])
+              if expected.startswith("sha256:"):
+                  expected=expected[7:]
+              if observed != expected:
+                  raise SystemExit(
+                      f"artifact digest mismatch id={artifact_id}: {observed} != {expected}"
+                  )
+              Path(destination).write_bytes(payload)
+              return observed
+
+          listing=api_json(
+              f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100"
+          )
+          by_name={item["name"]:item for item in listing.get("artifacts",[])}
+
+          expected_names=[
+              f"exp336-identity-{run_id}",
+              *[f"exp336-chunk-{index}-{run_id}" for index in range(8)],
+              f"exp336-cnrs-full32-stage-a-final-{run_id}",
+          ]
+          missing=[name for name in expected_names if name not in by_name]
+          if missing:
+              raise SystemExit(f"missing authoritative artifacts: {missing}")
+
+          manifest={}
+          identity_name=f"exp336-identity-{run_id}"
+          identity_zip=Path("audit-input/identity.zip")
+          manifest[identity_name]=download_zip(by_name[identity_name],identity_zip)
+
+          for index in range(8):
+              name=f"exp336-chunk-{index}-{run_id}"
+              path=Path(f"audit-input/chunk{index}.zip")
+              manifest[name]=download_zip(by_name[name],path)
+
+          final_name=f"exp336-cnrs-full32-stage-a-final-{run_id}"
+          final_zip=Path("audit-input/final.zip")
+          manifest[final_name]=download_zip(by_name[final_name],final_zip)
+
+          with ZipFile(final_zip) as archive:
+              candidates=[name for name in archive.namelist() if name.endswith("exp336-final.json")]
+              if len(candidates)!=1:
+                  raise SystemExit(f"unexpected final artifact members: {archive.namelist()}")
+              Path("audit-input/exp336-final.json").write_bytes(archive.read(candidates[0]))
+
+          with ZipFile(identity_zip) as archive:
+              candidates=[
+                  name for name in archive.namelist()
+                  if name.endswith("exp336_execution_identity_v1.json")
+              ]
+              if len(candidates)!=1:
+                  raise SystemExit(f"unexpected identity artifact members: {archive.namelist()}")
+              artifact_identity=json.loads(archive.read(candidates[0]))
+
+          repo_identity=json.loads(
+              Path("protocols/v017/exp336_execution_identity_v1.json").read_text(encoding="utf-8")
+          )
+          if artifact_identity != repo_identity:
+              raise SystemExit("identity artifact != frozen auditor identity file")
+
+          Path("audit-input/github-artifact-manifest.json").write_text(
+              json.dumps(manifest,sort_keys=True,indent=2)+"\n",encoding="utf-8"
+          )
+          print(json.dumps(manifest,sort_keys=True,indent=2))
+          PY
+
+      - name: Independently recompute chain and final reducer
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python scripts/exp336_audit_chain.py \
+            --execution-identity protocols/v017/exp336_execution_identity_v1.json \
+            --chunk-zip audit-input/chunk0.zip \
+            --chunk-zip audit-input/chunk1.zip \
+            --chunk-zip audit-input/chunk2.zip \
+            --chunk-zip audit-input/chunk3.zip \
+            --chunk-zip audit-input/chunk4.zip \
+            --chunk-zip audit-input/chunk5.zip \
+            --chunk-zip audit-input/chunk6.zip \
+            --chunk-zip audit-input/chunk7.zip \
+            --final-json audit-input/exp336-final.json \
+            --output audit-input/exp336-independent-final-audit.json
+
+      - name: Build immutable post-run audit receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          report_path=Path("audit-input/exp336-independent-final-audit.json")
+          final_path=Path("audit-input/exp336-final.json")
+          manifest=json.loads(
+              Path("audit-input/github-artifact-manifest.json").read_text(encoding="utf-8")
+          )
+          report=json.loads(report_path.read_text(encoding="utf-8"))
+          final=json.loads(final_path.read_text(encoding="utf-8"))
+
+          report_sha=hashlib.sha256(report_path.read_bytes()).hexdigest()
+          final_sha=hashlib.sha256(final_path.read_bytes()).hexdigest()
+          receipt={
+              "schema":"EXP336-POSTRUN-INDEPENDENT-AUDIT-RECEIPT-V1",
+              "authoritative_run_id":int(os.environ["AUTHORITATIVE_RUN_ID"]),
+              "authoritative_head_sha":os.environ["AUTHORITATIVE_HEAD_SHA"],
+              "auditor_sha":os.environ["AUDITOR_SHA"],
+              "decision":report["final"]["decision"],
+              "evidence_digest":report["final"]["evidence_digest"],
+              "final_json_sha256":final_sha,
+              "independent_audit_report_sha256":report_sha,
+              "github_artifact_zip_digests":manifest,
+              "verified_chunk_count":report["chain"]["verified_chunk_count"],
+              "complete_chunk_chain":report["chain"]["complete_chunk_chain"],
+              "control_sham_exact_by_chunk":report["final"]["control_sham_exact_by_chunk"],
+              "reducer_vectors":report["final"]["reducer_vectors"],
+              "authorization_flags":report["final"]["authorization_flags"],
+          }
+          if receipt["verified_chunk_count"] != 8 or receipt["complete_chunk_chain"] is not True:
+              raise SystemExit("post-run audit did not verify the complete chain")
+          if final.get("evidence_digest") != receipt["evidence_digest"]:
+              raise SystemExit("final evidence digest mismatch after independent audit")
+          if any(value is not False for value in receipt["authorization_flags"].values()):
+              raise SystemExit("forbidden authorization in independent audit receipt")
+
+          rendered=json.dumps(receipt,sort_keys=True,indent=2)+"\n"
+          Path("audit-input/exp336-postrun-independent-audit-receipt.json").write_text(
+              rendered,encoding="utf-8"
+          )
+          print(rendered,end="")
+          PY
+          sha256sum audit-input/exp336-independent-final-audit.json
+          sha256sum audit-input/exp336-postrun-independent-audit-receipt.json
+          sha256sum audit-input/exp336-final.json
+
+      - uses: actions/upload-artifact@v4
+        id: upload_audit
+        with:
+          name: exp336-postrun-independent-audit-${{ github.event.workflow_run.id }}
+          path: |
+            audit-input/exp336-independent-final-audit.json
+            audit-input/exp336-postrun-independent-audit-receipt.json
+            audit-input/github-artifact-manifest.json
+            audit-input/exp336-final.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Record independently verified final receipt on PR 113
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUDIT_ARTIFACT_ID: ${{ steps.upload_audit.outputs.artifact-id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' > /tmp/exp336-final-audit-comment.md
+          import json
+          import os
+          from pathlib import Path
+          r=json.loads(
+              Path("audit-input/exp336-postrun-independent-audit-receipt.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+          print("EXP-336 post-run independent audit completed successfully.")
+          print()
+          print(f"- authoritative run: `{r['authoritative_run_id']}`")
+          print(f"- sealed head: `{r['authoritative_head_sha']}`")
+          print(f"- frozen independent auditor: `{r['auditor_sha']}`")
+          print(f"- independently recomputed disposition: **`{r['decision']}`**")
+          print(f"- evidence digest: `{r['evidence_digest']}`")
+          print(f"- final JSON SHA-256: `{r['final_json_sha256']}`")
+          print(f"- independent audit report SHA-256: `{r['independent_audit_report_sha256']}`")
+          print(f"- verified chunk count: `{r['verified_chunk_count']}/8`")
+          print(f"- complete artifact chain: `{r['complete_chunk_chain']}`")
+          print(f"- audit artifact ID: `{os.environ['AUDIT_ARTIFACT_ID']}`")
+          print()
+          print("The receipt is based on re-downloading and hashing every authoritative artifact ZIP,")
+          print("validating the frozen execution identity, binding each parent to the preceding raw ZIP,")
+          print("binding final boundaries to audited chunk7, rerunning the preregistered reducer,")
+          print("and recomputing the final evidence digest.")
+          print()
+          print("Stage B/C implementation, EXP-302, EXP-320, scale, 30M and 100M remain closed")
+          print("unless the already-frozen EXP-336 transition matrix explicitly authorizes only a")
+          print("successor DESIGN/PREREGISTRATION step.")
+          PY
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/113/comments" \
+            -F body=@/tmp/exp336-final-audit-comment.md
+
+  failure_receipt:
+    if: ${{ github.event.workflow_run.id == 35481336946 && github.event.workflow_run.conclusion != 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      AUTHORITATIVE_RUN_ID: "35481336946"
+      AUTHORITATIVE_HEAD_SHA: "08e2caebca4c1b7e4b197f6d2190ef90e94468fd"
+    steps:
+      - name: Fail closed on wrong authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ github.event.workflow_run.id }}" = "${AUTHORITATIVE_RUN_ID}"
+          test "${{ github.event.workflow_run.head_sha }}" = "${AUTHORITATIVE_HEAD_SHA}"
+          test "${{ github.event.workflow_run.run_attempt }}" = "1"
+          test "${{ github.event.workflow_run.conclusion }}" != "success"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Materialize non-success authoritative-run receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p failure-receipt
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+          from pathlib import Path
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          run_id=int(os.environ["AUTHORITATIVE_RUN_ID"])
+          token=os.environ["GH_TOKEN"]
+          headers={
+              "Authorization":f"Bearer {token}",
+              "Accept":"application/vnd.github+json",
+              "X-GitHub-Api-Version":"2022-11-28",
+              "User-Agent":"exp336-authoritative-failure-receipt",
+          }
+          def get(url):
+              req=urllib.request.Request(url,headers=headers)
+              with urllib.request.urlopen(req) as response:
+                  return json.load(response)
+
+          run=get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}")
+          jobs=get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100")
+          artifacts=get(
+              f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100"
+          )
+          if run.get("head_sha") != os.environ["AUTHORITATIVE_HEAD_SHA"]:
+              raise SystemExit("authoritative failure receipt head mismatch")
+          if run.get("conclusion") == "success":
+              raise SystemExit("failure receipt cannot record a successful run")
+
+          receipt={
+              "schema":"EXP336-AUTHORITATIVE-NONSUCCESS-RECEIPT-V1",
+              "authoritative_run_id":run_id,
+              "authoritative_head_sha":run.get("head_sha"),
+              "run_status":run.get("status"),
+              "run_conclusion":run.get("conclusion"),
+              "created_at":run.get("created_at"),
+              "updated_at":run.get("updated_at"),
+              "jobs":[
+                  {
+                      "id":job.get("id"),
+                      "name":job.get("name"),
+                      "status":job.get("status"),
+                      "conclusion":job.get("conclusion"),
+                      "started_at":job.get("started_at"),
+                      "completed_at":job.get("completed_at"),
+                  }
+                  for job in jobs.get("jobs",[])
+              ],
+              "artifacts":[
+                  {
+                      "id":item.get("id"),
+                      "name":item.get("name"),
+                      "digest":item.get("digest"),
+                      "size_in_bytes":item.get("size_in_bytes"),
+                      "created_at":item.get("created_at"),
+                      "expired":item.get("expired"),
+                  }
+                  for item in artifacts.get("artifacts",[])
+              ],
+              "scientific_disposition":None,
+              "capability_interpretation_authorized":False,
+              "automatic_rerun_authorized":False,
+              "automatic_scientific_source_change_authorized":False,
+              "stage_b_implementation_authorized":False,
+              "stage_c_implementation_authorized":False,
+              "exp302_implementation_authorized":False,
+              "exp320_implementation_authorized":False,
+              "scale_authorized":False,
+              "authorized_30m":False,
+              "authorized_100m":False,
+              "rule":"Preserve the non-success run and diagnose its exact failure. Never promote partial chunks, substitute a later run, or automatically alter/reseal/rerun the scientific court.",
+          }
+          path=Path("failure-receipt/exp336-authoritative-nonsuccess-receipt.json")
+          path.write_text(json.dumps(receipt,sort_keys=True,indent=2)+"\n",encoding="utf-8")
+          print(json.dumps(receipt,sort_keys=True,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        id: upload_failure
+        with:
+          name: exp336-authoritative-nonsuccess-receipt-${{ github.event.workflow_run.id }}
+          path: failure-receipt/exp336-authoritative-nonsuccess-receipt.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Record fail-closed non-success receipt on PR 113
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RECEIPT_ARTIFACT_ID: ${{ steps.upload_failure.outputs.artifact-id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          conclusion="${{ github.event.workflow_run.conclusion }}"
+          body="EXP-336 authoritative run `${AUTHORITATIVE_RUN_ID}` completed with non-success conclusion `${conclusion}`. Fail-closed receipt artifact: `${RECEIPT_ARTIFACT_ID}`. No scientific disposition is assigned, no partial chunk is promoted, and no automatic rerun/source change is authorized."
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/113/comments" -f body="${body}"
