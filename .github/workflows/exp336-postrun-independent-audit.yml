@@ -461,6 +461,12 @@ jobs:
           if closure.get("schema") != "EXP336-FINAL-CLOSURE-V1":
               raise SystemExit("closure schema mismatch")
           req=closure["closure_requirements"]
+          frozen_required=set(req.get("required_fields",[]))
+          if not frozen_required:
+              raise SystemExit("closure frozen required-fields missing")
+          missing_frozen=sorted(frozen_required-set(closure))
+          if missing_frozen:
+              raise SystemExit(f"closure frozen required-fields mismatch: {missing_frozen}")
           if req.get("source_commit_sha") != "7c3102a15d5e5eb48b3bf6ebeed5f14c24e569ed":
               raise SystemExit("closure requirements control-commit mismatch")
           if req.get("git_blob_sha") != "c242dd78bb710aca9aa66ead22d0d5e7b889dbfa":
@@ -498,6 +504,19 @@ jobs:
           if selected.get("next_scope") is None:
               raise SystemExit("closure selected transition missing next_scope")
           guards=closure["downstream_authority"]
+          frozen_downstream={
+              "stage_b_implementation_authorized":False,
+              "stage_c_implementation_authorized":False,
+              "exp302_implementation_authorized":False,
+              "exp320_implementation_authorized":False,
+              "scale_authorized":False,
+              "authorized_30m":False,
+              "authorized_100m":False,
+          }
+          if guards != frozen_downstream:
+              raise SystemExit(
+                  f"closure downstream-authority freeze mismatch: {guards} != {frozen_downstream}"
+              )
           forbidden=(
               "stage_b_implementation_authorized",
               "stage_c_implementation_authorized",
