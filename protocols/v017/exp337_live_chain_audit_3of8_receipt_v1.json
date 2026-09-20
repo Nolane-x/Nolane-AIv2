@@ -1,0 +1,93 @@
+{
+  "schema": "EXP337-LIVE-CHAIN-AUDIT-3OF8-RECEIPT-V1",
+  "experiment_id": "EXP-337",
+  "authoritative_run_id": 35503733893,
+  "sealed_marker_sha": "ec5f98a636e9395a76509493800b6b9f06a33271",
+  "frozen_auditor_sha": "debc13fd4ec8f8ed443302ef0352d751661faafc",
+  "live_audit": {
+    "run_id": 35503830490,
+    "run_attempt": 3,
+    "conclusion": "success",
+    "artifact_id": 10606033352,
+    "artifact_zip_sha256": "3ad702a1da21a4d8c87635b368f3032d7969d9b436f269a7a85b6946dafe3a2a",
+    "report_sha256": "0a6a2fb363f86d8199bd5fac960e227a9f4fe34d81599c9a405124dc8c6df42e",
+    "verified_chunk_count": 3,
+    "complete_chunk_chain": false,
+    "last_artifact_sha256": "3b5139dde3bb9411e2ad36fb0e93186951376df4a75b703df783510ff80d41bf"
+  },
+  "chunks": [
+    {
+      "chunk_index": 0,
+      "artifact_id": 10604460939,
+      "raw_zip_sha256": "3cd0ae727a894ad24942a0cd94a0bab059c177feee5e9e287f16f978f735c920",
+      "pass_counts": {
+        "CONTROL_PROJECT_GOLD_PREFIX": 17,
+        "SHAM_SELF_ROLLIN_MEASURE_PROJECT": 17,
+        "SELF_ROLLIN_RECOVERY_PROJECT": 17
+      },
+      "aggregate_pass": {
+        "CONTROL_PROJECT_GOLD_PREFIX": false,
+        "SHAM_SELF_ROLLIN_MEASURE_PROJECT": false,
+        "SELF_ROLLIN_RECOVERY_PROJECT": false
+      },
+      "self_rollin_divergent_update_count": {
+        "CONTROL_PROJECT_GOLD_PREFIX": 0,
+        "SHAM_SELF_ROLLIN_MEASURE_PROJECT": 59,
+        "SELF_ROLLIN_RECOVERY_PROJECT": 64
+      }
+    },
+    {
+      "chunk_index": 1,
+      "artifact_id": 10604903828,
+      "raw_zip_sha256": "21787fee3bf40b597527d36f6ba2fe0d3439fd6a6c6f118ac7436a0241c7ba44",
+      "pass_counts": {
+        "CONTROL_PROJECT_GOLD_PREFIX": 14,
+        "SHAM_SELF_ROLLIN_MEASURE_PROJECT": 14,
+        "SELF_ROLLIN_RECOVERY_PROJECT": 18
+      },
+      "aggregate_pass": {
+        "CONTROL_PROJECT_GOLD_PREFIX": false,
+        "SHAM_SELF_ROLLIN_MEASURE_PROJECT": false,
+        "SELF_ROLLIN_RECOVERY_PROJECT": false
+      },
+      "self_rollin_divergent_update_count": {
+        "CONTROL_PROJECT_GOLD_PREFIX": 0,
+        "SHAM_SELF_ROLLIN_MEASURE_PROJECT": 115,
+        "SELF_ROLLIN_RECOVERY_PROJECT": 131
+      }
+    },
+    {
+      "chunk_index": 2,
+      "artifact_id": 10605333942,
+      "raw_zip_sha256": "3b5139dde3bb9411e2ad36fb0e93186951376df4a75b703df783510ff80d41bf",
+      "pass_counts": {
+        "CONTROL_PROJECT_GOLD_PREFIX": 19,
+        "SHAM_SELF_ROLLIN_MEASURE_PROJECT": 19,
+        "SELF_ROLLIN_RECOVERY_PROJECT": 16
+      },
+      "aggregate_pass": {
+        "CONTROL_PROJECT_GOLD_PREFIX": false,
+        "SHAM_SELF_ROLLIN_MEASURE_PROJECT": false,
+        "SELF_ROLLIN_RECOVERY_PROJECT": false
+      },
+      "self_rollin_divergent_update_count": {
+        "CONTROL_PROJECT_GOLD_PREFIX": 0,
+        "SHAM_SELF_ROLLIN_MEASURE_PROJECT": 174,
+        "SELF_ROLLIN_RECOVERY_PROJECT": 196
+      }
+    }
+  ],
+  "control_sham_exact": true,
+  "intermediate_boundary_non_decisional": true,
+  "scientific_interpretation_assigned": false,
+  "note": "Frozen independent live auditor verified the first three immutable EXP-337 chunks and the raw parent chain. The non-monotonic pass-count trajectory is diagnostic only and cannot select the final reducer transition.",
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
