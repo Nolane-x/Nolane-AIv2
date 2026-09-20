@@ -1,0 +1,141 @@
+name: v017-exp337-sealed-contract
+
+on:
+  push:
+    branches: [exp337-cnrs-self-rollin-sequence-recovery-design]
+    paths:
+      - ".github/workflows/v017-exp337-sealed-contract.yml"
+      - ".github/workflows/exp337-self-rollin-stage-a.yml"
+      - "protocols/v017/exp337_execution_identity_v1.json"
+      - "protocols/v017/exp337_execution_identity_v1.sha256"
+      - "protocols/v017/exp337_source_seal_v1.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  sealed-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout marker
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: marker
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Read sealed source SHA
+        id: authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          seal=json.loads(Path("marker/protocols/v017/exp337_source_seal_v1.json").read_text())
+          with open(os.environ["GITHUB_OUTPUT"],"a") as out:
+              out.write(f"source_sha={seal['scientific_source']['commit_sha']}\n")
+          PY
+      - name: Checkout sealed scientific source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.authority.outputs.source_sha }}
+          fetch-depth: 0
+          path: frozen
+      - name: Verify sealed EXP-337 identity and non-mutation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=frozen/src python - <<'PY'
+          import hashlib, json, os, subprocess, urllib.request
+          from pathlib import Path
+          from nolane_ai.experiments.exp337_identity import Exp337ExecutionIdentity, validate_execution_identity
+          from nolane_ai.protocol.identity import source_tree_digest
+
+          marker=Path("marker")
+          frozen=Path("frozen")
+          identity_path=marker/"protocols/v017/exp337_execution_identity_v1.json"
+          sidecar_path=marker/"protocols/v017/exp337_execution_identity_v1.sha256"
+          seal_path=marker/"protocols/v017/exp337_source_seal_v1.json"
+          identity_raw=identity_path.read_bytes()
+          identity=json.loads(identity_raw)
+          obj=Exp337ExecutionIdentity(**identity)
+          validate_execution_identity(obj)
+          seal=json.loads(seal_path.read_text())
+
+          observed_identity_sha=hashlib.sha256(identity_raw).hexdigest()
+          assert observed_identity_sha == "ddd1f9616e78e6c1f8adba123f4595dade9089abd1a1c58c7394cee99860f480"
+          assert sidecar_path.read_text().split()[0] == observed_identity_sha
+          assert subprocess.check_output(["git","-C","marker","rev-parse","HEAD:protocols/v017/exp337_execution_identity_v1.json"],text=True).strip() == "ca29c92e80089dce5b1f2206a92b3dd15810b5bb"
+          assert identity["source_commit_sha"] == "5a0fa8da3e3906a712bcb027d8d4e40ed60f026b"
+          assert identity["source_tree_digest"] == "211179cb6c95308aa936efeb144ee8c9729e468b13cf7e13cdaf67ea3dbf1520"
+          assert identity["workflow_sha256"] == "705319c2ab640308cbb36e8d118f7f1038644796d5099eb2f6964cee73860c9d"
+          assert identity["exp337_execution_digest"] == "c7d9b0ad756a2417d5675a9203b3dd95b4ba3e2596a3a5c91b34b8dfd73e20d2"
+          assert source_tree_digest(frozen) == identity["source_tree_digest"]
+
+          workflow=frozen/".github/workflows/exp337-self-rollin-stage-a.yml"
+          assert hashlib.sha256(workflow.read_bytes()).hexdigest() == identity["workflow_sha256"]
+          source_workflow_blob=subprocess.check_output(["git","-C","frozen","rev-parse","HEAD:.github/workflows/exp337-self-rollin-stage-a.yml"],text=True).strip()
+          marker_workflow_blob=subprocess.check_output(["git","-C","marker","rev-parse","HEAD:.github/workflows/exp337-self-rollin-stage-a.yml"],text=True).strip()
+          assert source_workflow_blob == marker_workflow_blob == "e3a147183acdbca7a9bec1de40dfec34ea303141"
+
+          changed=subprocess.check_output(["git","-C","marker","diff","--name-only","035294a7800b98920faa44df1bb93a941c62814f","5a0fa8da3e3906a712bcb027d8d4e40ed60f026b"],text=True).splitlines()
+          assert set(changed) == {
+              ".github/workflows/exp337-self-rollin-stage-a.yml",
+              ".github/workflows/v017-exp337-seal-candidate.yml",
+          }, changed
+
+          assert seal["status"] == "IMPLEMENTATION_SEALED_SCIENTIFIC_DISPATCH_CLOSED"
+          assert seal["scientific_dispatch_authorized"] is False
+          assert seal["post_seal_operator_transition_required"] is True
+          assert seal["scientific_source"]["commit_sha"] == identity["source_commit_sha"]
+          assert seal["scientific_source"]["source_tree_digest"] == identity["source_tree_digest"]
+          assert seal["scientific_source"]["workflow_sha256"] == identity["workflow_sha256"]
+          assert seal["execution_identity"]["raw_sha256"] == observed_identity_sha
+          assert all(v is False for v in seal["downstream_authority"].values())
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
+          headers={"Authorization":f"Bearer {token}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"exp337-seal"}
+          def get(path):
+              req=urllib.request.Request(f"https://api.github.com/repos/{repo}/{path}",headers=headers)
+              with urllib.request.urlopen(req) as response: return json.load(response)
+          for run_id in (35500951486,35501662552,35502464544):
+              run=get(f"actions/runs/{run_id}")
+              assert run["status"] == "completed" and run["conclusion"] == "success", (run_id,run["status"],run["conclusion"])
+
+          runs=get("actions/runs?event=workflow_dispatch&branch=exp337-cnrs-self-rollin-sequence-recovery-design&per_page=100")
+          scientific=[r for r in runs.get("workflow_runs",[]) if r.get("path") == ".github/workflows/exp337-self-rollin-stage-a.yml"]
+          assert scientific == [], scientific
+
+          receipt={
+              "schema":"EXP337-SEALED-CONTRACT-RECEIPT-V1",
+              "marker_commit_sha":os.environ["GITHUB_SHA"],
+              "source_commit_sha":identity["source_commit_sha"],
+              "source_tree_digest":identity["source_tree_digest"],
+              "workflow_sha256":identity["workflow_sha256"],
+              "workflow_git_blob_sha":marker_workflow_blob,
+              "execution_identity_raw_sha256":observed_identity_sha,
+              "execution_digest":identity["exp337_execution_digest"],
+              "preregistration_digest":identity["approved_preregistration_digest"],
+              "prereg_contract_run_id":35500951486,
+              "implementation_ci_run_id":35501662552,
+              "seal_candidate_run_id":35502464544,
+              "scientific_workflow_dispatch_count":0,
+              "scientific_dispatch_authorized":False,
+              "downstream_authority":seal["downstream_authority"],
+          }
+          Path("marker/exp337-sealed-contract-receipt.json").write_text(json.dumps(receipt,sort_keys=True,indent=2)+"\n")
+          print(json.dumps(receipt,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp337-sealed-contract-${{ github.run_id }}
+          path: marker/exp337-sealed-contract-receipt.json
+          if-no-files-found: error
+          retention-days: 90
