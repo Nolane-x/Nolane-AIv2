@@ -1,0 +1,294 @@
+name: Dispatch sealed EXP-337 once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "protocols/v017/exp337_postseal_dispatch_authorization_v1.json"
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  dispatch-and-lock:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: "exp337-cnrs-self-rollin-sequence-recovery-design"
+      SEALED_MARKER_SHA: "ec5f98a636e9395a76509493800b6b9f06a33271"
+      SCIENTIFIC_WORKFLOW_PATH: ".github/workflows/exp337-self-rollin-stage-a.yml"
+      FROZEN_AUDITOR_SHA: "debc13fd4ec8f8ed443302ef0352d751661faafc"
+      POSTRUN_VERIFIER_BLOB_SHA: "4188610ee403cbe76b62fce683228f992081dd4a"
+      SEAL_COMPLETED_AT_UTC: "2026-09-20T09:32:36Z"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate post-seal operator authorization and frozen authorities
+        id: validate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, subprocess, urllib.request
+          from datetime import datetime
+          from pathlib import Path
+
+          auth_path=Path("protocols/v017/exp337_postseal_dispatch_authorization_v1.json")
+          auth=json.loads(auth_path.read_text())
+          assert auth["schema"] == "EXP337-POSTSEAL-DISPATCH-AUTHORIZATION-V1"
+          assert auth["experiment_id"] == "EXP-337"
+          assert auth["authorization_created_from_user_message_after_seal"] is True
+          assert auth["authorize_exact_sealed_scientific_dispatch"] is True
+          assert auth["scientific_dispatch_authorized"] is True
+          assert auth["sealed_marker_sha"] == os.environ["SEALED_MARKER_SHA"]
+          assert auth["scientific_source_sha"] == "5a0fa8da3e3906a712bcb027d8d4e40ed60f026b"
+          assert auth["frozen_auditor_sha"] == os.environ["FROZEN_AUDITOR_SHA"]
+          assert auth["postrun_verifier_git_blob_sha"] == os.environ["POSTRUN_VERIFIER_BLOB_SHA"]
+          assert auth["maximum_authoritative_dispatches"] == 1
+          assert all(v is False for v in auth["downstream_authority"].values())
+
+          t=datetime.fromisoformat(auth["operator_message_timestamp_utc"].replace("Z","+00:00"))
+          seal=datetime.fromisoformat(os.environ["SEAL_COMPLETED_AT_UTC"].replace("Z","+00:00"))
+          assert t > seal, (t,seal)
+          assert isinstance(auth["operator_message_text"],str) and auth["operator_message_text"].strip()
+
+          frozen_blobs={
+              "protocols/v017/exp337_sealed_marker_receipt_v1.json":"361e757e05961099a29c76dc386e26149c552c01",
+              "protocols/v017/exp337_postrun_verifier_lock_v1.json":"aefe8b32fcec8bf92c1e3ec0e54df7dee3e89668",
+              "protocols/v017/exp337_final_closure_requirements_v1.json":"2cd7013bc5cd1d6b80c3ef2e2e4c0af33190eba2",
+              "protocols/v017/exp337_independent_audit_lock_v1.json":"ff6980318e7216280b6eccb785be985bb594d219",
+              ".github/workflows/exp337-postrun-independent-audit.yml":"4188610ee403cbe76b62fce683228f992081dd4a",
+          }
+          for path, expected in frozen_blobs.items():
+              observed=subprocess.check_output(["git","rev-parse",f"HEAD:{path}"],text=True).strip()
+              assert observed == expected, (path,observed,expected)
+
+          for forbidden in (
+              Path("protocols/v017/exp337_authoritative_run_lock_v1.json"),
+              Path("protocols/v017/exp337_authoritative_run_lock_receipt_v1.json"),
+          ):
+              assert not forbidden.exists(), forbidden
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
+          headers={"Authorization":f"Bearer {token}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"exp337-dispatch-gate"}
+          def get(url):
+              req=urllib.request.Request(url,headers=headers)
+              with urllib.request.urlopen(req) as response: return json.load(response)
+
+          ref=get(f"https://api.github.com/repos/{repo}/git/ref/heads/{os.environ['TARGET_BRANCH']}")
+          assert ref["object"]["sha"] == os.environ["SEALED_MARKER_SHA"], ref["object"]["sha"]
+
+          workflow=get(f"https://api.github.com/repos/{repo}/actions/workflows/exp337-self-rollin-stage-a.yml")
+          workflow_id=int(workflow["id"])
+          before=[]
+          page=1
+          while True:
+              listing=get(f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_id}/runs?event=workflow_dispatch&per_page=100&page={page}")
+              batch=listing.get("workflow_runs",[])
+              before.extend(r for r in batch if r.get("head_sha")==os.environ["SEALED_MARKER_SHA"] and r.get("path")==os.environ["SCIENTIFIC_WORKFLOW_PATH"])
+              if len(batch)<100: break
+              page+=1
+          assert before == [], before
+
+          auth_blob=subprocess.check_output(["git","rev-parse","HEAD:protocols/v017/exp337_postseal_dispatch_authorization_v1.json"],text=True).strip()
+          output={
+              "workflow_id":workflow_id,
+              "authorization_git_blob_sha":auth_blob,
+              "authorization_commit_sha":os.environ["GITHUB_SHA"],
+          }
+          Path("/tmp/exp337-dispatch-input.json").write_text(json.dumps(output,sort_keys=True,indent=2)+"\n")
+          with open(os.environ["GITHUB_OUTPUT"],"a") as out:
+              out.write(f"workflow_id={workflow_id}\n")
+              out.write(f"authorization_git_blob_sha={auth_blob}\n")
+          PY
+
+      - name: Dispatch exact sealed scientific workflow and bind authoritative run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SCIENTIFIC_WORKFLOW_ID: ${{ steps.validate.outputs.workflow_id }}
+          AUTHORIZATION_GIT_BLOB_SHA: ${{ steps.validate.outputs.authorization_git_blob_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import base64, json, os, time, urllib.error, urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
+          workflow_id=int(os.environ["SCIENTIFIC_WORKFLOW_ID"])
+          headers={
+              "Authorization":f"Bearer {token}",
+              "Accept":"application/vnd.github+json",
+              "X-GitHub-Api-Version":"2022-11-28",
+              "User-Agent":"exp337-dispatch-gate",
+          }
+          def request(method,url,payload=None):
+              data=None if payload is None else json.dumps(payload).encode()
+              req=urllib.request.Request(url,data=data,method=method,headers=headers)
+              with urllib.request.urlopen(req) as response:
+                  raw=response.read()
+                  return None if not raw else json.loads(raw)
+          def get(url): return request("GET",url)
+
+          runs_url=f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_id}/runs?event=workflow_dispatch&per_page=100"
+          before=get(runs_url).get("workflow_runs",[])
+          before_ids={int(r["id"]) for r in before}
+          request(
+              "POST",
+              f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_id}/dispatches",
+              {"ref":os.environ["TARGET_BRANCH"]},
+          )
+
+          selected=None
+          for _ in range(45):
+              time.sleep(2)
+              now=get(runs_url).get("workflow_runs",[])
+              candidates=[
+                  r for r in now
+                  if int(r["id"]) not in before_ids
+                  and r.get("event")=="workflow_dispatch"
+                  and r.get("head_sha")==os.environ["SEALED_MARKER_SHA"]
+                  and r.get("path")==os.environ["SCIENTIFIC_WORKFLOW_PATH"]
+              ]
+              if len(candidates)>1:
+                  raise SystemExit(f"multiple new EXP-337 sealed dispatches: {[r['id'] for r in candidates]}")
+              if len(candidates)==1:
+                  selected=candidates[0]
+                  break
+          if selected is None:
+              raise SystemExit("EXP-337 dispatched run did not become observable")
+
+          run_id=int(selected["id"])
+          if int(selected.get("run_attempt",0)) != 1:
+              raise SystemExit("EXP-337 authoritative attempt must be 1")
+          if selected.get("head_sha") != os.environ["SEALED_MARKER_SHA"]:
+              raise SystemExit("EXP-337 dispatched head drift")
+
+          artifacts=get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100").get("artifacts",[])
+          chunk0_name=f"exp337-chunk-0-{run_id}"
+          if any(a.get("name")==chunk0_name for a in artifacts):
+              raise SystemExit("EXP-337 chunk0 artifact already exists before run lock")
+
+          auth=json.loads(Path("protocols/v017/exp337_postseal_dispatch_authorization_v1.json").read_text())
+          run_lock={
+              "schema":"EXP337-AUTHORITATIVE-RUN-LOCK-V1",
+              "experiment_id":"EXP-337",
+              "created_before_first_chunk_artifact":True,
+              "sealed_marker_sha":os.environ["SEALED_MARKER_SHA"],
+              "scientific_source_sha":"5a0fa8da3e3906a712bcb027d8d4e40ed60f026b",
+              "scientific_workflow_path":os.environ["SCIENTIFIC_WORKFLOW_PATH"],
+              "scientific_workflow_git_blob_sha":"e3a147183acdbca7a9bec1de40dfec34ea303141",
+              "execution_digest":"c7d9b0ad756a2417d5675a9203b3dd95b4ba3e2596a3a5c91b34b8dfd73e20d2",
+              "frozen_auditor_sha":"debc13fd4ec8f8ed443302ef0352d751661faafc",
+              "postrun_verifier_git_blob_sha":"4188610ee403cbe76b62fce683228f992081dd4a",
+              "operator_authorization":{
+                  "authorization_commit_sha":os.environ["GITHUB_SHA"],
+                  "authorization_git_blob_sha":os.environ["AUTHORIZATION_GIT_BLOB_SHA"],
+                  "operator_message_timestamp_utc":auth["operator_message_timestamp_utc"],
+                  "operator_message_text":auth["operator_message_text"],
+              },
+              "authoritative_run":{
+                  "id":run_id,
+                  "workflow_id":workflow_id,
+                  "workflow_path":os.environ["SCIENTIFIC_WORKFLOW_PATH"],
+                  "event":"workflow_dispatch",
+                  "run_attempt":1,
+                  "head_sha":os.environ["SEALED_MARKER_SHA"],
+                  "head_branch":selected.get("head_branch"),
+                  "created_at":selected.get("created_at"),
+              },
+              "selection_rule":"earliest successfully created workflow_dispatch on exact sealed marker and frozen workflow; later duplicates excluded regardless of outcome",
+              "later_duplicate_runs_authoritative":False,
+              "downstream_authority":{
+                  "stage_b_implementation_authorized":False,
+                  "stage_c_implementation_authorized":False,
+                  "exp302_implementation_authorized":False,
+                  "exp320_implementation_authorized":False,
+                  "scale_authorized":False,
+                  "authorized_30m":False,
+                  "authorized_100m":False,
+              },
+          }
+          lock_bytes=(json.dumps(run_lock,sort_keys=True,indent=2)+"\n").encode()
+          lock_path="protocols/v017/exp337_authoritative_run_lock_v1.json"
+          lock_result=request(
+              "PUT",
+              f"https://api.github.com/repos/{repo}/contents/{lock_path}",
+              {
+                  "message":f"audit(exp337): bind authoritative scientific run {run_id}",
+                  "content":base64.b64encode(lock_bytes).decode(),
+                  "branch":"main",
+              },
+          )
+          lock_commit_sha=lock_result["commit"]["sha"]
+          lock_blob_sha=lock_result["content"]["sha"]
+
+          commit=get(f"https://api.github.com/repos/{repo}/commits/{lock_commit_sha}")
+          lock_commit_created_at=commit["commit"]["committer"]["date"]
+          artifacts_after=get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100").get("artifacts",[])
+          chunk0_count=sum(a.get("name")==chunk0_name for a in artifacts_after)
+          if chunk0_count != 0:
+              raise SystemExit("EXP-337 chunk0 artifact appeared before run-lock receipt could close")
+
+          matching=get(runs_url).get("workflow_runs",[])
+          sealed_matches=[
+              int(r["id"]) for r in matching
+              if r.get("event")=="workflow_dispatch"
+              and r.get("head_sha")==os.environ["SEALED_MARKER_SHA"]
+              and r.get("path")==os.environ["SCIENTIFIC_WORKFLOW_PATH"]
+          ]
+          receipt={
+              "schema":"EXP337-AUTHORITATIVE-RUN-LOCK-RECEIPT-V1",
+              "experiment_id":"EXP-337",
+              "authoritative_run_id":run_id,
+              "run_lock_path":lock_path,
+              "run_lock_commit_sha":lock_commit_sha,
+              "run_lock_git_blob_sha":lock_blob_sha,
+              "lock_commit_created_at":lock_commit_created_at,
+              "observed_chunk0_artifact_count_at_lock":0,
+              "sealed_head_matching_dispatch_ids_at_lock":sealed_matches,
+              "authorization_commit_sha":os.environ["GITHUB_SHA"],
+              "authorization_git_blob_sha":os.environ["AUTHORIZATION_GIT_BLOB_SHA"],
+              "dispatcher_workflow_run_id":int(os.environ["GITHUB_RUN_ID"]),
+              "sealed_marker_sha":os.environ["SEALED_MARKER_SHA"],
+          }
+          receipt_bytes=(json.dumps(receipt,sort_keys=True,indent=2)+"\n").encode()
+          receipt_path="protocols/v017/exp337_authoritative_run_lock_receipt_v1.json"
+          receipt_result=request(
+              "PUT",
+              f"https://api.github.com/repos/{repo}/contents/{receipt_path}",
+              {
+                  "message":f"audit(exp337): receipt authoritative run lock {run_id}",
+                  "content":base64.b64encode(receipt_bytes).decode(),
+                  "branch":"main",
+              },
+          )
+
+          output={
+              "schema":"EXP337-DISPATCH-AND-RUN-LOCK-RECEIPT-V1",
+              "authoritative_run_id":run_id,
+              "run_lock_commit_sha":lock_commit_sha,
+              "run_lock_git_blob_sha":lock_blob_sha,
+              "run_lock_receipt_commit_sha":receipt_result["commit"]["sha"],
+              "run_lock_receipt_git_blob_sha":receipt_result["content"]["sha"],
+              "observed_chunk0_artifact_count_at_lock":0,
+              "sealed_marker_sha":os.environ["SEALED_MARKER_SHA"],
+              "scientific_workflow_dispatch_count":len(sealed_matches),
+          }
+          Path("exp337-dispatch-and-run-lock-receipt.json").write_text(json.dumps(output,sort_keys=True,indent=2)+"\n")
+          print(json.dumps(output,sort_keys=True,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp337-dispatch-and-run-lock-${{ github.run_id }}
+          path: exp337-dispatch-and-run-lock-receipt.json
+          if-no-files-found: error
+          retention-days: 90
