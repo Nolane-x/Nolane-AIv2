@@ -1,0 +1,32 @@
+{
+  "schema": "EXP337-PREREGISTRATION-DIGEST-V1",
+  "experiment_id": "EXP-337",
+  "status": "DESIGN_PREREGISTRATION_ONLY",
+  "implementation_authorized": false,
+  "branch": "exp337-cnrs-self-rollin-sequence-recovery-design",
+  "parent_exp336_closure_commit": "818fe44bccb1b8177bea4ba622dc6306775521ed",
+  "parent_exp336_authority_snapshot_commit": "4575fa7c4e8e907aa9dd82b5836b404f0aad56e4",
+  "preregistration": {
+    "path": "protocols/v017/exp337_preregistration_v1.json",
+    "commit": "032f0442dca8880489bfbb0a75ffae38ca7af282",
+    "git_blob_sha": "37afa42cf66e874c457f31415c5f426d318e9804",
+    "raw_sha256": "95857497dcc0cc264e5e9c76e1f8cb3a15a6b05f1e3bab90795a5f9be7f84423",
+    "canonical_digest": "5172c3f85d15d71e7fc4a16e3f00ae5d9a5031f09a97c1529f8fa6e25822c53a"
+  },
+  "design": {
+    "path": "protocols/v017/EXP337_SELF_ROLLIN_SEQUENCE_RECOVERY_DESIGN_V1.md",
+    "git_blob_sha": "1e8097d4fc56686b7bd24c561811540d8d4c5321",
+    "raw_sha256": "850beada84c0df269c8605a3c1ba1c6a5cf0804eb4e171ec6f704ad8aa933bcb",
+    "size_bytes": 10895
+  },
+  "downstream_authority": {
+    "exp337_implementation_authorized": false,
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
