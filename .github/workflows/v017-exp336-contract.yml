@@ -1,0 +1,30 @@
+name: v017-exp336-contract
+on:
+  pull_request:
+    paths:
+      - "src/nolane_ai/experiments/exp336_*"
+      - "scripts/exp336_*"
+      - "protocols/v017/exp336_*"
+      - "tests/test_exp336_*"
+      - ".github/workflows/exp336-*"
+      - ".github/workflows/v017-exp336-contract.yml"
+  workflow_dispatch:
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install pytest
+      - run: PYTHONPATH=src python -m pytest -q tests/test_exp336_contract.py tests/test_exp336_identity.py tests/test_exp336_runtime_surface.py tests/test_exp336_preregistration.py tests/test_exp336_workflow.py
+      - name: Emit freeze inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python - <<'PY'
+          from nolane_ai.protocol.identity import source_tree_digest
+          print("EXP336_SOURCE_TREE_DIGEST=" + source_tree_digest("."))
+          PY
+          echo "EXP336_WORKFLOW_SHA256=$(sha256sum .github/workflows/exp336-cnrs-full32-stage-a.yml | awk '{print $1}')"
