@@ -195,3 +195,68 @@ jobs:
           }
           print("EXP-337 exact parent smoke: VERIFIED")
           PY
+      - name: Verify real one-step CONTROL SHAM nonperturbation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from nolane_ai.experiments.exp337_runtime import (
+              _parent_arm,
+              _projected_step,
+              _state_digests,
+              _world_map,
+          )
+
+          worlds=_world_map()
+          source_id=next(iter(worlds))
+          source=worlds[source_id]
+          targets=[(key,value) for key,value in worlds.items() if key != source_id]
+          assert len(targets) == 31
+
+          control,control_opt,_=_parent_arm(
+              checkpoint_path="/tmp/parent/project.pt",
+              receipt_path="/tmp/parent/project-receipt.json",
+          )
+          control_row=_projected_step(
+              control,
+              source,
+              targets,
+              optimizer=control_opt,
+              effort=1,
+              arm="CONTROL_PROJECT_GOLD_PREFIX",
+              exposure_index=0,
+              source_world_id=source_id,
+          )
+          control_state=_state_digests(control,control_opt)
+
+          sham,sham_opt,_=_parent_arm(
+              checkpoint_path="/tmp/parent/project.pt",
+              receipt_path="/tmp/parent/project-receipt.json",
+          )
+          sham_row=_projected_step(
+              sham,
+              source,
+              targets,
+              optimizer=sham_opt,
+              effort=1,
+              arm="SHAM_SELF_ROLLIN_MEASURE_PROJECT",
+              exposure_index=0,
+              source_world_id=source_id,
+          )
+          sham_state=_state_digests(sham,sham_opt)
+
+          assert control_state == sham_state
+          assert control_row["gold_source_loss"] == sham_row["gold_source_loss"]
+          assert control_row["projected_targets"] == sham_row["projected_targets"]
+          assert control_row["negative_targets"] == sham_row["negative_targets"]
+          assert control_row["raw_source_target_dots"] == sham_row["raw_source_target_dots"]
+          assert control_row["post_projection_source_target_dots"] == sham_row["post_projection_source_target_dots"]
+          assert control_row["nonfinite_events"] == sham_row["nonfinite_events"] == 0
+          assert control_row["self_rollin_measured"] is False
+          assert sham_row["self_rollin_measured"] is True
+          assert sham_row["self_rollin_active"] is False
+          print("EXP-337 real CONTROL/SHAM one-step nonperturbation: VERIFIED")
+          print("source world:",source_id)
+          print("projected targets:",len(control_row["projected_targets"]))
+          print("state:",control_state)
+          PY
