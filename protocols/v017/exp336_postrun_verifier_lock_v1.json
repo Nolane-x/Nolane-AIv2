@@ -1,0 +1,67 @@
+{
+  "schema": "EXP336-POSTRUN-VERIFIER-LOCK-V1",
+  "experiment_id": "EXP-336",
+  "created_before_final_result_visibility": true,
+  "authoritative_science": {
+    "run_id": 35481336946,
+    "run_attempt": 1,
+    "sealed_head_sha": "08e2caebca4c1b7e4b197f6d2190ef90e94468fd",
+    "scientific_source_sha": "5220e50adec7f6f048510aac44a077a4ddfdaf44",
+    "preregistration_digest": "491899f5f613b3d80b36689e7882e8c72875fb268a6886e1a40542eb09dc33ce",
+    "execution_digest": "f81f382846d1c128934be40717e6eee33c48fe00dde00fd736a2ad2fdb15d5db"
+  },
+  "frozen_independent_auditor": {
+    "sha": "208be21e035a5064eb9d60a9269154768717f5b1"
+  },
+  "postrun_verifier": {
+    "commit_sha": "fb237efb887bc3767349b02d3b4c0abb5faa3fcb",
+    "workflow_path": ".github/workflows/exp336-postrun-independent-audit.yml",
+    "workflow_git_blob_sha": "c44d3adcaa202b88c6c69b986af536b5dcb34905",
+    "ci_run_id": 35493539177,
+    "ci_status": "completed",
+    "ci_conclusion": "success",
+    "ci_jobs": [
+      {
+        "id": 106032464858,
+        "name": "core (3.11)",
+        "conclusion": "success"
+      },
+      {
+        "id": 106032464749,
+        "name": "core (3.13)",
+        "conclusion": "success"
+      },
+      {
+        "id": 106032465005,
+        "name": "model-smoke",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "closure_control": {
+    "commit_sha": "7c3102a15d5e5eb48b3bf6ebeed5f14c24e569ed",
+    "requirements_path": "protocols/v017/exp336_final_closure_requirements_v1.json",
+    "requirements_git_blob_sha": "c242dd78bb710aca9aa66ead22d0d5e7b889dbfa"
+  },
+  "enforced_properties": [
+    "accept only authoritative run 35481336946 with attempt 1 and sealed head 08e2caeb...",
+    "fail closed if any duplicate or substitute workflow_dispatch exists on the sealed scientific head",
+    "re-download and hash the identity artifact, all eight chunk artifacts, and final artifact",
+    "verify the complete raw-ZIP parent chain and frozen checkpoint/receipt contracts",
+    "rerun the preregistered reducer with frozen auditor 208be21e...",
+    "require independent decision and evidence digest equality with authoritative final evidence",
+    "materialize and verify EXP336-FINAL-CLOSURE-V1 against frozen closure requirements",
+    "select the successor only from the pre-result EXP-336 transition matrix",
+    "keep Stage-B implementation, Stage-C implementation, EXP-302, EXP-320, scaling, 30M and 100M unauthorized"
+  ],
+  "mutation_rule": "Do not modify or replace the locked post-run verifier, closure-control requirements, frozen auditor, scientific source, scientific workflow, preregistration, thresholds, projector geometry or reducer after this lock and before EXP-336 final closure. If the verifier itself fails, preserve the failure and diagnose before any proposed repair; never reinterpret the scientific result through a modified verifier.",
+  "downstream_authority": {
+    "stage_b_implementation_authorized": false,
+    "stage_c_implementation_authorized": false,
+    "exp302_implementation_authorized": false,
+    "exp320_implementation_authorized": false,
+    "scale_authorized": false,
+    "authorized_30m": false,
+    "authorized_100m": false
+  }
+}
