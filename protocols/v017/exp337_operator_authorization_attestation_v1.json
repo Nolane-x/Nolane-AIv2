@@ -1,0 +1,38 @@
+{
+  "schema": "EXP337-OPERATOR-AUTHORIZATION-ATTESTATION-V1",
+  "experiment_id": "EXP-337",
+  "authorization_type": "external_operator_transition_after_frozen_preregistration_and_green_contract_ci",
+  "operator_message_timestamp_utc": "2026-09-20T08:51:51Z",
+  "operator_message": "TIếp tục haofn thành đi nhé",
+  "frozen_scientific_bytes_commit": "2bf7f6ac50c03b5891653c100c4fc452183f4fcb",
+  "preregistration_lock_v2_commit": "aad22e80f1f51a55ab8d2a026fe357191af8d9e9",
+  "preregistration_lock_v2_blob": "f200c69090cdb8c0f8e1b7f72b63ce3f227b2bc8",
+  "preregistration_canonical_digest": "5172c3f85d15d71e7fc4a16e3f00ae5d9a5031f09a97c1529f8fa6e25822c53a",
+  "preregistration_raw_sha256": "95857497dcc0cc264e5e9c76e1f8cb3a15a6b05f1e3bab90795a5f9be7f84423",
+  "design_git_blob_sha": "1e8097d4fc56686b7bd24c561811540d8d4c5321",
+  "design_raw_sha256": "2b251900e435f219a8d2cb48ecf486674bbb1831cf99b9e41d0396c8b0ef19bf",
+  "exact_head_gate": {
+    "workflow_run_id": 35500951486,
+    "workflow_name": "v017-exp337-prereg-contract",
+    "conclusion": "success"
+  },
+  "authorized_scope": [
+    "implement exactly the already-frozen EXP-337 self-roll-in sequence-recovery court without changing scientific geometry",
+    "add contract/runtime tests and non-scientific CI validation",
+    "materialize immutable execution identity and source-tree digests after green implementation CI",
+    "seal the implementation source after all required tests are green"
+  ],
+  "scientific_dispatch_authorized": false,
+  "explicitly_not_authorized": [
+    "altering frozen EXP-337 source-loss mixture, self-roll-in construction, thresholds, parent checkpoint, world population, schedule, learning rate, effort geometry, projector, or reducer",
+    "dispatching an authoritative EXP-337 scientific run before a separate post-seal operator transition",
+    "Stage B implementation",
+    "Stage C implementation",
+    "EXP-302 implementation",
+    "EXP-320 implementation",
+    "scaling",
+    "30M",
+    "100M"
+  ],
+  "note": "This attestation transitions only from frozen design/preregistration into exact implementation and sealing work. It does not authorize scientific execution."
+}
