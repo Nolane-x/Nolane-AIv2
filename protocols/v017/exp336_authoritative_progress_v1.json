@@ -473,5 +473,15 @@
     "lineage_order_verified": true,
     "postrun_hook_on_current_default_branch": true,
     "note": "The one-shot dispatcher is historical ops provenance only. The current main head contains the registered scientific workflow and the hard-bound post-run verifier."
+  },
+  "transition_lock_coverage_audit": {
+    "reducer_label_count": 8,
+    "transition_label_count": 8,
+    "exact_label_coverage": true,
+    "missing_labels": [],
+    "extra_labels": [],
+    "universal_guards_all_closed": true,
+    "audited_against_scientific_source_sha": "5220e50adec7f6f048510aac44a077a4ddfdaf44",
+    "note": "Every frozen EXP-336 reducer disposition has exactly one pre-result repository transition mapping."
   }
 }
