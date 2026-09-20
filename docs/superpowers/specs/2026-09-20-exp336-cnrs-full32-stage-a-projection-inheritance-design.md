@@ -41,6 +41,12 @@ Instead EXP-336 starts from the exact C_NRS_CORE state already selected by EXP-3
 EXP-319 repair run:
 
 - run: `35311529822`
+- overall workflow conclusion: **failure**
+- accepted authority scope: immutable Stage-A selection artifact + selected C_NRS chunk-3 artifact only
+- `stage-a-select` job `105498710455`: **SUCCESS**
+- `stage-a-gate` job `105499052525`: **FAILURE** in post-selection artifact-upload plumbing
+- Stage B was not opened
+- overall run success is therefore not required to validate these already-emitted immutable Stage-A artifacts, and the run failure is not treated as a scientific Stage-A disposition
 - Stage-A selection artifact: `10533822077`
 - selection ZIP SHA-256: `ee65f07a5f63c5b7f472eba5aea5ab17a624697138c23266d515810024bfb559`
 - selection JSON SHA-256: `4da236ea06a76df94ab6aa3e8141c6855a97f427f0b8614fc380d5c71e88e34a`
