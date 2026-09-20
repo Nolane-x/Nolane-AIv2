@@ -1,0 +1,140 @@
+name: EXP-337 authoritative run lock enforcement
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/exp337-authoritative-run-lock.yml"
+      - "protocols/v017/exp337_authoritative_run_lock_v1.json"
+      - "protocols/v017/exp337_authoritative_run_lock_receipt_v1.json"
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/exp337-authoritative-run-lock.yml"
+      - "protocols/v017/exp337_authoritative_run_lock_v1.json"
+      - "protocols/v017/exp337_authoritative_run_lock_receipt_v1.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify-authoritative-run-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Enforce EXP-337 authoritative run authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, subprocess, urllib.request
+          from datetime import datetime
+          from pathlib import Path
+
+          run_id=35503733893
+          sealed="ec5f98a636e9395a76509493800b6b9f06a33271"
+          workflow_path=".github/workflows/exp337-self-rollin-stage-a.yml"
+          lock_path=Path("protocols/v017/exp337_authoritative_run_lock_v1.json")
+          receipt_path=Path("protocols/v017/exp337_authoritative_run_lock_receipt_v1.json")
+          expected_lock_blob="f9d96d59628eea8765814c1fba1d7cb8898ea221"
+          expected_receipt_blob="a79de8c91f5e1dbf89d211b92515b2bd5130c7d3"
+
+          def blob(path):
+              return subprocess.check_output(["git","rev-parse",f"HEAD:{path.as_posix()}"],text=True).strip()
+          assert blob(lock_path)==expected_lock_blob
+          assert blob(receipt_path)==expected_receipt_blob
+          assert subprocess.check_output(["git","rev-parse","HEAD:.github/workflows/exp337-self-rollin-stage-a.yml"],text=True).strip()=="e3a147183acdbca7a9bec1de40dfec34ea303141"
+
+          lock=json.loads(lock_path.read_text())
+          receipt=json.loads(receipt_path.read_text())
+          assert lock["schema"]=="EXP337-AUTHORITATIVE-RUN-LOCK-V1"
+          assert lock["created_before_first_chunk_artifact"] is True
+          assert lock["sealed_marker_sha"]==sealed
+          assert lock["scientific_source_sha"]=="5a0fa8da3e3906a712bcb027d8d4e40ed60f026b"
+          assert lock["scientific_workflow_git_blob_sha"]=="e3a147183acdbca7a9bec1de40dfec34ea303141"
+          assert lock["execution_digest"]=="c7d9b0ad756a2417d5675a9203b3dd95b4ba3e2596a3a5c91b34b8dfd73e20d2"
+          assert lock["frozen_auditor_sha"]=="debc13fd4ec8f8ed443302ef0352d751661faafc"
+          assert lock["postrun_verifier_git_blob_sha"]=="4188610ee403cbe76b62fce683228f992081dd4a"
+          assert all(v is False for v in lock["downstream_authority"].values())
+          auth=lock["operator_authorization"]
+          assert auth["authorization_commit_sha"]=="679f262b6f18e3cd7ba6a68e0df30e7153dcf2e3"
+          assert auth["authorization_git_blob_sha"]=="f6da2c87b200a883847ff3d83c25235f8f05a6f3"
+          assert auth["operator_message_timestamp_utc"]=="2026-09-20T09:55:21Z"
+
+          authoritative=lock["authoritative_run"]
+          assert int(authoritative["id"])==run_id
+          assert int(authoritative["workflow_id"])==362574875
+          assert authoritative["workflow_path"]==workflow_path
+          assert authoritative["event"]=="workflow_dispatch"
+          assert int(authoritative["run_attempt"])==1
+          assert authoritative["head_sha"]==sealed
+
+          assert receipt["schema"]=="EXP337-AUTHORITATIVE-RUN-LOCK-RECEIPT-V1"
+          assert int(receipt["authoritative_run_id"])==run_id
+          assert receipt["run_lock_commit_sha"]=="ba1d5307e1fa23e959b803edb851c71900ba4476"
+          assert receipt["run_lock_git_blob_sha"]==expected_lock_blob
+          assert receipt["observed_chunk0_artifact_count_at_lock"]==0
+          assert receipt["sealed_head_matching_dispatch_ids_at_lock"]==[run_id]
+          assert receipt["authorization_commit_sha"]==auth["authorization_commit_sha"]
+          assert receipt["authorization_git_blob_sha"]==auth["authorization_git_blob_sha"]
+
+          subprocess.check_call(["git","cat-file","-e","ba1d5307e1fa23e959b803edb851c71900ba4476^{commit}"])
+          historic=subprocess.check_output(["git","rev-parse","ba1d5307e1fa23e959b803edb851c71900ba4476:protocols/v017/exp337_authoritative_run_lock_v1.json"],text=True).strip()
+          assert historic==expected_lock_blob
+
+          repo=os.environ["GITHUB_REPOSITORY"]
+          token=os.environ["GH_TOKEN"]
+          headers={"Authorization":f"Bearer {token}","Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28","User-Agent":"exp337-run-lock-enforcement"}
+          def get(url):
+              req=urllib.request.Request(url,headers=headers)
+              with urllib.request.urlopen(req) as response: return json.load(response)
+
+          ref=get(f"https://api.github.com/repos/{repo}/git/ref/heads/exp337-cnrs-self-rollin-sequence-recovery-design")
+          assert ref["object"]["sha"]==sealed
+          run=get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}")
+          assert run["head_sha"]==sealed
+          assert run["event"]=="workflow_dispatch"
+          assert int(run["run_attempt"])==1
+          assert run["path"]==workflow_path
+
+          listing=get(f"https://api.github.com/repos/{repo}/actions/workflows/362574875/runs?event=workflow_dispatch&per_page=100")
+          matches=sorted(
+              [r for r in listing.get("workflow_runs",[]) if r.get("head_sha")==sealed and r.get("path")==workflow_path],
+              key=lambda r:(r["created_at"],int(r["id"]))
+          )
+          assert [int(r["id"]) for r in matches]==[run_id], [r["id"] for r in matches]
+
+          artifacts=get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100").get("artifacts",[])
+          chunk0=[a for a in artifacts if a.get("name")==f"exp337-chunk-0-{run_id}"]
+          lock_time=datetime.fromisoformat(receipt["lock_commit_created_at"].replace("Z","+00:00"))
+          if chunk0:
+              assert len(chunk0)==1
+              created=datetime.fromisoformat(chunk0[0]["created_at"].replace("Z","+00:00"))
+              assert lock_time < created, (lock_time,created)
+
+          out={
+              "schema":"EXP337-AUTHORITATIVE-RUN-LOCK-ENFORCEMENT-RECEIPT-V1",
+              "commit_sha":os.environ["GITHUB_SHA"],
+              "authoritative_run_id":run_id,
+              "run_lock_git_blob_sha":expected_lock_blob,
+              "run_lock_receipt_git_blob_sha":expected_receipt_blob,
+              "sealed_head_matching_dispatch_ids":[run_id],
+              "chunk0_artifact_count":len(chunk0),
+              "lock_before_chunk0_verified":True,
+              "downstream_authority":lock["downstream_authority"],
+          }
+          Path("exp337-authoritative-run-lock-enforcement-receipt.json").write_text(json.dumps(out,sort_keys=True,indent=2)+"\n")
+          print(json.dumps(out,sort_keys=True,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exp337-authoritative-run-lock-enforcement-${{ github.run_id }}
+          path: exp337-authoritative-run-lock-enforcement-receipt.json
+          if-no-files-found: error
+          retention-days: 90
