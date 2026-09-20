@@ -23,6 +23,8 @@ jobs:
           set -euo pipefail
           sha256sum protocols/v017/exp336_independent_final_audit_v1.json
           sha256sum protocols/v017/exp336_postrun_independent_audit_receipt_v1.json
+          sha256sum protocols/v017/exp336_final_closure_v1.json
+          test "$(sha256sum protocols/v017/exp336_final_closure_v1.json | awk '{print $1}')" = "93897956c081a0534399149bd47bf299b0ef9215a127e8767d4f7d6c2c731f1a"
           test "$(sha256sum protocols/v017/exp336_independent_final_audit_v1.json | awk '{print $1}')" = "5f8f69b93ba12bbf17713f09afb8dab4e6d04a4bb277be544c15b870b0a96536"
           test "$(sha256sum protocols/v017/exp336_postrun_independent_audit_receipt_v1.json | awk '{print $1}')" = "0a8c81f9ace0e33decaa9a6a95b700df017aae40af3562b03c28f0ac88ead5f6"
 
@@ -61,6 +63,15 @@ jobs:
           assert a["authorization_flags"] == expected
           assert r["control_sham_exact_by_chunk"] == [True]*8
           assert a["control_sham_exact_by_chunk"] == [True]*8
+          c=json.loads(Path("protocols/v017/exp336_final_closure_v1.json").read_text())
+          assert c["schema"] == "EXP336-FINAL-CLOSURE-V1"
+          claimed=c.pop("closure_digest")
+          import hashlib
+          observed=hashlib.sha256(json.dumps(c,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
+          assert claimed == observed == "f33df20c0a1edea2751b4804cd5e51c7e34512841f2ad25aa1819ddad7a9666d"
+          assert c["final_reducer"]["decision"] == "CNRS_FULL32_STAGE_A_NOT_ESTABLISHED"
+          assert c["transition_selected_from_frozen_matrix"]["selected_transition"]["next_scope"] == "NEW_CAUSAL_HYPOTHESIS_PREREGISTRATION_ONLY"
+          assert c["downstream_authority"] == expected
           PY
 
       - uses: actions/upload-artifact@v4
@@ -70,5 +81,6 @@ jobs:
           path: |
             protocols/v017/exp336_independent_final_audit_v1.json
             protocols/v017/exp336_postrun_independent_audit_receipt_v1.json
+            protocols/v017/exp336_final_closure_v1.json
           if-no-files-found: error
           retention-days: 90
