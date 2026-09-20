@@ -394,5 +394,69 @@
     "evaluation_rng_restored_after_measurement": true,
     "runtime_drift_detected": false,
     "note": "Read-only source audit against frozen preregistration; no scientific bytes changed."
+  },
+  "independent_audit_through_chunk2": {
+    "frozen_auditor_sha": "208be21e035a5064eb9d60a9269154768717f5b1",
+    "workflow_run_id": 35486348709,
+    "workflow_run_attempt": 2,
+    "conclusion": "success",
+    "audit_artifact_id": 10598291494,
+    "audit_artifact_zip_sha256": "ddc7c708d8a078046bb33ef16e7103ec8a3ac33b818b6b83f2c3e6af01906176",
+    "audit_report_json_sha256": "10cc46e0d5dd826fafd1415b913a81217b8b89ded62842614141cc269c52a3d8",
+    "discovered_chunks_json_sha256": "cf861114b03092bfab6a043fa5a90e967d231b63f43d0b97db69ee93568bcb7e",
+    "verified_chunk_count": 3,
+    "complete_chunk_chain": false,
+    "first_parent_cnrs_zip_digest": "d88a9d85584476ec5226321479560a1255f0d015122827d4be75f67a6f337755",
+    "last_artifact_sha256": "8063277a4f0a99c34d8c4491eb57606717f68ee93f46212eea582f21c696c784",
+    "control_sham_exact_by_chunk": [
+      true,
+      true,
+      true
+    ],
+    "pass_counts_by_chunk": {
+      "0": {
+        "CONTROL_CNRS_FULL32": 9,
+        "SHAM_MEASURE_CNRS_FULL32": 9,
+        "SUBSPACE_PROJECT_CNRS_FULL32": 8
+      },
+      "1": {
+        "CONTROL_CNRS_FULL32": 10,
+        "SHAM_MEASURE_CNRS_FULL32": 10,
+        "SUBSPACE_PROJECT_CNRS_FULL32": 11
+      },
+      "2": {
+        "CONTROL_CNRS_FULL32": 9,
+        "SHAM_MEASURE_CNRS_FULL32": 9,
+        "SUBSPACE_PROJECT_CNRS_FULL32": 14
+      }
+    },
+    "aggregate_pass_by_chunk": {
+      "0": {
+        "CONTROL_CNRS_FULL32": false,
+        "SHAM_MEASURE_CNRS_FULL32": false,
+        "SUBSPACE_PROJECT_CNRS_FULL32": false
+      },
+      "1": {
+        "CONTROL_CNRS_FULL32": false,
+        "SHAM_MEASURE_CNRS_FULL32": false,
+        "SUBSPACE_PROJECT_CNRS_FULL32": false
+      },
+      "2": {
+        "CONTROL_CNRS_FULL32": false,
+        "SHAM_MEASURE_CNRS_FULL32": false,
+        "SUBSPACE_PROJECT_CNRS_FULL32": false
+      }
+    },
+    "project_projection_updates_by_chunk": [
+      128,
+      256,
+      382
+    ],
+    "project_projected_targets_by_chunk": [
+      1384,
+      2917,
+      4362
+    ],
+    "note": "Frozen auditor SHA 208be21e... independently verified the consecutive authoritative chain through chunk2. Intermediate evidence only; reducer_input=false."
   }
 }
