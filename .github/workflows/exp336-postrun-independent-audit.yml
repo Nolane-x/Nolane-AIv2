@@ -18,6 +18,8 @@ jobs:
       AUTHORITATIVE_RUN_ID: "35481336946"
       AUTHORITATIVE_HEAD_SHA: "08e2caebca4c1b7e4b197f6d2190ef90e94468fd"
       AUDITOR_SHA: "208be21e035a5064eb9d60a9269154768717f5b1"
+      CLOSURE_CONTROL_SHA: "7c3102a15d5e5eb48b3bf6ebeed5f14c24e569ed"
+      CLOSURE_REQUIREMENTS_BLOB_SHA: "c242dd78bb710aca9aa66ead22d0d5e7b889dbfa"
     steps:
       - name: Fail closed on wrong authority
         shell: bash
@@ -37,6 +39,35 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Checkout frozen closure-control requirements
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CLOSURE_CONTROL_SHA }}
+          path: closure-control
+          sparse-checkout: |
+            protocols/v017/exp336_final_closure_requirements_v1.json
+          sparse-checkout-cone-mode: false
+          fetch-depth: 1
+
+      - name: Verify frozen closure-control requirements
+        shell: bash
+        run: |
+          set -euo pipefail
+          observed="$(git -C closure-control rev-parse "HEAD:protocols/v017/exp336_final_closure_requirements_v1.json")"
+          test "${observed}" = "${CLOSURE_REQUIREMENTS_BLOB_SHA}"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("closure-control/protocols/v017/exp336_final_closure_requirements_v1.json")
+          r=json.loads(p.read_text(encoding="utf-8"))
+          assert r["schema"] == "EXP336-FINAL-CLOSURE-REQUIREMENTS-V1"
+          assert r["frozen_before_final_result_visibility"] is True
+          assert r["authoritative_run_id"] == 35481336946
+          assert r["authoritative_head_sha"] == "08e2caebca4c1b7e4b197f6d2190ef90e94468fd"
+          assert r["authoritative_run_attempt"] == 1
+          assert r["frozen_auditor_sha"] == "208be21e035a5064eb9d60a9269154768717f5b1"
+          PY
 
       - name: Download and hash every authoritative artifact
         env:
@@ -248,6 +279,9 @@ jobs:
           manifest_path=root/"github-artifact-manifest.json"
           identity_path=Path("protocols/v017/exp336_execution_identity_v1.json")
           transition_path=Path("protocols/v017/exp336_post_result_transition_lock_v1.json")
+          requirements_path=Path(
+              "closure-control/protocols/v017/exp336_final_closure_requirements_v1.json"
+          )
 
           receipt=json.loads(receipt_path.read_text(encoding="utf-8"))
           final=json.loads(final_path.read_text(encoding="utf-8"))
@@ -255,6 +289,7 @@ jobs:
           manifest=json.loads(manifest_path.read_text(encoding="utf-8"))
           identity=json.loads(identity_path.read_text(encoding="utf-8"))
           transition_lock=json.loads(transition_path.read_text(encoding="utf-8"))
+          requirements=json.loads(requirements_path.read_text(encoding="utf-8"))
 
           decision=receipt["decision"]
           transitions=transition_lock.get("transitions",{})
@@ -265,6 +300,14 @@ jobs:
 
           if transition_lock.get("created_before_scientific_result") is not True:
               raise SystemExit("transition matrix is not marked pre-result")
+          if requirements.get("frozen_before_final_result_visibility") is not True:
+              raise SystemExit("closure requirements are not marked pre-result")
+          if requirements.get("authoritative_run_id") != int(os.environ["AUTHORITATIVE_RUN_ID"]):
+              raise SystemExit("closure requirements authoritative-run mismatch")
+          if requirements.get("authoritative_head_sha") != os.environ["AUTHORITATIVE_HEAD_SHA"]:
+              raise SystemExit("closure requirements authoritative-head mismatch")
+          if requirements.get("frozen_auditor_sha") != os.environ["AUDITOR_SHA"]:
+              raise SystemExit("closure requirements frozen-auditor mismatch")
           if transition_lock.get("source_commit_sha") != identity.get("source_commit_sha"):
               raise SystemExit("transition/source identity mismatch")
           if transition_lock.get("preregistration_digest") != identity.get("approved_preregistration_digest"):
@@ -303,6 +346,7 @@ jobs:
 
           raw_sha=lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
           transition_sha=raw_sha(transition_path)
+          requirements_sha=raw_sha(requirements_path)
           identity_sha=raw_sha(identity_path)
           receipt_sha=raw_sha(receipt_path)
           report_sha=raw_sha(report_path)
@@ -317,6 +361,16 @@ jobs:
                   "conclusion":"success",
                   "run_attempt":1,
                   "head_sha":os.environ["AUTHORITATIVE_HEAD_SHA"],
+              },
+              "closure_requirements":{
+                  "source_commit_sha":os.environ["CLOSURE_CONTROL_SHA"],
+                  "git_blob_sha":os.environ["CLOSURE_REQUIREMENTS_BLOB_SHA"],
+                  "raw_json_sha256":requirements_sha,
+                  "frozen_before_final_result_visibility":requirements[
+                      "frozen_before_final_result_visibility"
+                  ],
+                  "required_fields":requirements["closure_output_required_fields"],
+                  "forbidden_closure_shortcuts":requirements["forbidden_closure_shortcuts"],
               },
               "scientific_source":{
                   "source_commit_sha":identity["source_commit_sha"],
@@ -391,6 +445,7 @@ jobs:
           closure=json.loads(path.read_text(encoding="utf-8"))
           required={
               "authoritative_run",
+              "closure_requirements",
               "scientific_source",
               "sealed_identity",
               "parent_authority",
@@ -405,6 +460,13 @@ jobs:
               raise SystemExit(f"closure missing required fields: {missing}")
           if closure.get("schema") != "EXP336-FINAL-CLOSURE-V1":
               raise SystemExit("closure schema mismatch")
+          req=closure["closure_requirements"]
+          if req.get("source_commit_sha") != "7c3102a15d5e5eb48b3bf6ebeed5f14c24e569ed":
+              raise SystemExit("closure requirements control-commit mismatch")
+          if req.get("git_blob_sha") != "c242dd78bb710aca9aa66ead22d0d5e7b889dbfa":
+              raise SystemExit("closure requirements blob mismatch")
+          if req.get("frozen_before_final_result_visibility") is not True:
+              raise SystemExit("closure requirements freeze mismatch")
           expected_digest=closure.pop("closure_digest",None)
           if not expected_digest:
               raise SystemExit("closure digest missing")
